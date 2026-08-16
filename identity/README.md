@@ -110,9 +110,13 @@ access_token_authenticator = JwtAccessTokenAuthenticator(
 )
 ```
 
+For the default HS256 algorithm, `jwt_signing_secret` must be at least 32 bytes long. `PyJwtHmacCodec` rejects shorter secrets during construction. Generate the secret from a cryptographically secure source and load it from the host application's secret/configuration layer; do not hard-code it in application code or commit it to the repository.
+
 The JWT contains only the canonical token claims needed by Identity: user ID (`sub`), session ID (`sid`), issued-at time, and expiration time. Access tokens are not stored in the database.
 
-Authentication verifies the JWT first, then reads the referenced session through the `SessionReader` contract and rejects the token if the session is missing, revoked, expired, or belongs to another user. The concrete SQLAlchemy reader is isolated behind that contract, so the authenticator itself does not depend on SQLAlchemy.
+Authentication verifies the JWT signature and structure first, then reads the referenced session through the `SessionReader` contract and rejects the token if the token is expired or if the session is missing, revoked, expired, or belongs to another user. Expiration is evaluated by `JwtAccessTokenAuthenticator` through its injected `Clock`, which keeps authentication deterministic and independently testable.
+
+The concrete SQLAlchemy reader is isolated behind `SessionReader`, so the authenticator itself does not depend on SQLAlchemy.
 
 Refresh tokens remain hash-backed session credentials in the database and continue to use the existing rotation/revocation flow.
 
