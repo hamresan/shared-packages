@@ -2,6 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /workspace
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY notification /workspace/notification
 COPY identity /workspace/identity
 COPY examples/identity_notification_consumer /workspace/examples/identity_notification_consumer
