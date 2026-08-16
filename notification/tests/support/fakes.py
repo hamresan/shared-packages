@@ -1,5 +1,6 @@
 from notification.application.dto import DeliveryRequest, DeliveryResult, NotificationJobPayload
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue
 from notification.domain.value_objects import RenderedMessage
 from notification.public.dto import NotificationReference
 
@@ -19,7 +20,7 @@ class FakeTemplateRenderer:
         template_key: str,
         locale: str,
         channel: NotificationChannel,
-        variables: dict[str, object],
+        variables: dict[str, JsonValue],
     ) -> RenderedMessage:
         return RenderedMessage(subject=None, body=f"OTP {variables['otp']}")
 
