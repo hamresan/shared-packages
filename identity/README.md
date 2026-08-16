@@ -45,8 +45,7 @@ from identity.public import AccessTokenAuthenticator, AuthenticatedPrincipal
 
 
 class ApplicationAccessTokenAuthenticator(AccessTokenAuthenticator):
-    async def authenticate(self, access_token: str) -> AuthenticatedPrincipal:
-        ...
+    async def authenticate(self, access_token: str) -> AuthenticatedPrincipal: ...
 ```
 
 Then compose the module:
