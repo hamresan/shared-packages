@@ -1,11 +1,30 @@
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
-from typing import cast
+from typing import Protocol, cast
 from uuid import UUID
 
 import jwt
 from jwt import InvalidTokenError
 
 from identity.infrastructure.security.access_tokens.contracts import AccessTokenClaims
+
+JwtPayloadValue = str | int
+
+
+class JwtLibrary(Protocol):
+    def encode(
+        self,
+        payload: Mapping[str, JwtPayloadValue],
+        key: str,
+        algorithm: str,
+    ) -> str: ...
+
+    def decode(
+        self,
+        token: str,
+        key: str,
+        algorithms: Sequence[str],
+    ) -> dict[str, object]: ...
 
 
 class JwtTokenError(ValueError):
@@ -16,21 +35,23 @@ class PyJwtHmacCodec:
     def __init__(self, secret: str, algorithm: str = "HS256") -> None:
         self._secret = secret
         self._algorithm = algorithm
+        self._jwt = cast(JwtLibrary, jwt)
 
     def sign(self, claims: AccessTokenClaims) -> str:
-        payload = {
+        payload: dict[str, JwtPayloadValue] = {
             "sub": str(claims.user_id),
             "sid": str(claims.session_id),
             "iat": int(claims.issued_at.timestamp()),
             "exp": int(claims.expires_at.timestamp()),
         }
-        return jwt.encode(payload, self._secret, algorithm=self._algorithm)
+        return self._jwt.encode(payload, self._secret, algorithm=self._algorithm)
 
     def verify(self, token: str) -> AccessTokenClaims:
         try:
-            payload = cast(
-                dict[str, object],
-                jwt.decode(token, self._secret, algorithms=[self._algorithm]),
+            payload = self._jwt.decode(
+                token,
+                self._secret,
+                algorithms=[self._algorithm],
             )
             user_id = UUID(str(payload["sub"]))
             session_id = UUID(str(payload["sid"]))
