@@ -2,7 +2,7 @@
 
 Reusable passwordless identity and session package for FastAPI applications using async SQLAlchemy persistence.
 
-Identity owns OTP challenges, passwordless registration/login, session persistence, refresh-token rotation, and revocation. The host application owns the database engine/session lifecycle and the access-token representation.
+Identity owns OTP challenges, passwordless registration/login, session persistence, refresh-token rotation, and revocation. The host application owns the database engine/session lifecycle. The package exposes access-token contracts and also provides an optional production JWT implementation.
 
 OTP delivery is delegated through the public `NotificationSender` contract from `hamresan-notification`. Identity does not know about SMS providers, SMTP, queues, Redis, workers, or notification provider details.
 
@@ -14,7 +14,8 @@ OTP delivery is delegated through the public `NotificationSender` contract from 
 - HMAC-SHA256 storage for OTP codes and refresh tokens.
 - Secure OTP and refresh-token generation.
 - Session creation, refresh-token rotation, and revocation.
-- Host-provided access-token issuer and authenticator contracts.
+- Access-token issuer and authenticator contracts.
+- Production JWT access-token issuer/authenticator with database-backed session validation.
 - Async SQLAlchemy persistence with host-provided session factory.
 - FastAPI routes for OTP, sessions, and the current authenticated identity.
 - `identity_` table prefix for package-owned tables.
@@ -77,17 +78,49 @@ notification_sender = notification_module.sender
 
 Identity sends OTP messages with template key `identity.otp` and variables `otp` and `purpose`. Notification remains responsible for template rendering, provider selection, queueing, and delivery.
 
-## Access-token contracts
+## Production JWT access tokens
 
-The host application supplies implementations of these public contracts:
+The package ships an optional JWT implementation exposed from `identity.access_tokens`.
 
 ```python
-from identity import AccessTokenAuthenticator, AccessTokenIssuer
+from datetime import timedelta
+
+from identity.access_tokens import (
+    JwtAccessTokenAuthenticator,
+    JwtAccessTokenIssuer,
+    PyJwtHmacCodec,
+    SqlAlchemySessionReader,
+)
+from identity.infrastructure.security.system_clock import SystemClock
+
+clock = SystemClock()
+codec = PyJwtHmacCodec(secret=jwt_signing_secret)
+session_reader = SqlAlchemySessionReader(identity_session_factory)
+
+access_token_issuer = JwtAccessTokenIssuer(
+    signer=codec,
+    clock=clock,
+    ttl=timedelta(minutes=15),
+)
+
+access_token_authenticator = JwtAccessTokenAuthenticator(
+    verifier=codec,
+    session_reader=session_reader,
+    clock=clock,
+)
 ```
 
-`AccessTokenIssuer` creates the access token for a user/session pair. `AccessTokenAuthenticator` validates an incoming access token and returns an `AuthenticatedPrincipal`.
+For the default HS256 algorithm, `jwt_signing_secret` must be at least 32 bytes long. `PyJwtHmacCodec` rejects shorter secrets during construction. Generate the secret from a cryptographically secure source and load it from the host application's secret/configuration layer; do not hard-code it in application code or commit it to the repository.
 
-This allows Identity to manage sessions without being coupled to a particular token library or provider.
+The JWT contains only the canonical token claims needed by Identity: user ID (`sub`), session ID (`sid`), issued-at time, and expiration time. Access tokens are not stored in the database.
+
+Authentication verifies the JWT signature and structure first, then reads the referenced session through the `SessionReader` contract and rejects the token if the token is expired or if the session is missing, revoked, expired, or belongs to another user. Expiration is evaluated by `JwtAccessTokenAuthenticator` through its injected `Clock`, which keeps authentication deterministic and independently testable.
+
+The concrete SQLAlchemy reader is isolated behind `SessionReader`, so the authenticator itself does not depend on SQLAlchemy.
+
+Refresh tokens remain hash-backed session credentials in the database and continue to use the existing rotation/revocation flow.
+
+Hosts can still provide their own `AccessTokenIssuer` and `AccessTokenAuthenticator` implementations instead of JWT.
 
 ## Compose Identity
 
@@ -107,7 +140,7 @@ identity = IdentityModule(
 
 Default settings are 5 minutes for OTP lifetime, 60 seconds for resend delay, 5 maximum OTP attempts, and 30 days for refresh sessions. They can be overridden through `IdentityModuleConfig`.
 
-The signing secret is used only by the package HMAC hasher for OTP and refresh-token hashes. Supply it from the host configuration layer.
+The signing secret in `IdentityModuleConfig` is used by the package HMAC hasher for OTP and refresh-token hashes. JWT signing can use a separate secret supplied to `PyJwtHmacCodec`.
 
 ## FastAPI integration
 
@@ -128,70 +161,9 @@ POST /identity/sessions/revoke
 GET  /identity/me
 ```
 
-### Request an OTP
-
-```json
-{
-  "identity_type": "mobile",
-  "destination": "+96890000000",
-  "purpose": "registration",
-  "locale": "en"
-}
-```
-
-For login, use `"purpose": "login"`. Registration is rejected for an existing identity and login is rejected for an unknown identity.
-
-### Verify an OTP
-
-```json
-{
-  "challenge_id": "<uuid>",
-  "code": "123456",
-  "full_name": "Mehran",
-  "device_info": "web",
-  "ip_address": "127.0.0.1"
-}
-```
-
-`full_name` is required for registration. Successful verification creates a session and returns access-token and refresh-token data.
-
-### Refresh a session
-
-```json
-{
-  "refresh_token": "<refresh-token>",
-  "device_info": "web"
-}
-```
-
-Refresh tokens are rotated. The previous session is revoked and linked to its replacement.
-
-### Revoke a session
-
-```json
-{
-  "refresh_token": "<refresh-token>"
-}
-```
-
-Successful revocation returns HTTP `204`.
-
 ## Direct Python API
 
-The use cases are also available through `identity.public_api` without FastAPI:
-
-```python
-from identity import RequestOtpCommand
-from identity.domain import IdentityType, OtpPurpose
-
-result = await identity.public_api.otp_requester.execute(
-    RequestOtpCommand(
-        identity_type=IdentityType.MOBILE,
-        destination="+96890000000",
-        purpose=OtpPurpose.LOGIN,
-    )
-)
-```
+The use cases are also available through `identity.public_api` without FastAPI.
 
 Public services:
 
@@ -222,7 +194,7 @@ application use cases
         ↓
 contracts / domain
         ↑
-SQLAlchemy, security implementations, NotificationSender
+SQLAlchemy, JWT/security implementations, NotificationSender
 ```
 
-Application services orchestrate workflows only. Persistence stays in repositories, entity/schema conversion stays in mappers, security behavior stays in dedicated security components, entity construction stays in factories, and OTP eligibility rules stay in policies.
+Application services orchestrate workflows only. Persistence stays in repositories/readers, entity/schema conversion stays in mappers, security behavior stays in dedicated security components, entity construction stays in factories, and OTP eligibility rules stay in policies.
