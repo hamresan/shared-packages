@@ -1,15 +1,18 @@
-.PHONY: check lint format-check typecheck test
+.PHONY: install-dev check lint format-check typecheck test
+
+install-dev:
+	python -m pip install -e ".[test]"
 
 check: lint format-check typecheck test
 
 lint:
-	ruff check .
+	python -m ruff check .
 
 format-check:
-	ruff format --check .
+	python -m ruff format --check .
 
 typecheck:
-	pyright
+	python -m pyright
 
 test:
-	pytest
+	PYTHONPATH=src python -m pytest
