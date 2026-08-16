@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
 
 from notification.domain.enums import NotificationChannel
-
-type JsonScalar = str | int | float | bool | None
-type JsonValue = JsonScalar | list[JsonValue] | dict[str, JsonValue]
+from notification.domain.types import JsonValue, empty_json_object
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,4 +10,4 @@ class SendNotification:
     recipient: str
     template_key: str
     locale: str = "en"
-    variables: dict[str, JsonValue] = field(default_factory=dict)
+    variables: dict[str, JsonValue] = field(default_factory=empty_json_object)
