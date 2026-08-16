@@ -2,6 +2,7 @@ from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue, empty_json_object
 from notification.public.commands import SendNotification
 from notification.public.services import NotificationSender
 
@@ -11,21 +12,19 @@ class SendNotificationRequest(BaseModel):
     recipient: str = Field(min_length=1)
     template_key: str = Field(min_length=1)
     locale: str = Field(default="en", min_length=2)
-    variables: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
+    variables: dict[str, JsonValue] = Field(default_factory=empty_json_object)
 
 
 class SendNotificationResponse(BaseModel):
     job_id: str
 
 
-def create_notification_router(sender: NotificationSender) -> APIRouter:
-    router = APIRouter(prefix="/notifications", tags=["notifications"])
+class SendTestNotificationEndpoint:
+    def __init__(self, sender: NotificationSender) -> None:
+        self._sender = sender
 
-    @router.post(
-        "/test", response_model=SendNotificationResponse, status_code=status.HTTP_202_ACCEPTED
-    )
-    async def send_test_notification(request: SendNotificationRequest) -> SendNotificationResponse:
-        reference = await sender.send(
+    async def __call__(self, request: SendNotificationRequest) -> SendNotificationResponse:
+        reference = await self._sender.send(
             SendNotification(
                 channel=request.channel,
                 recipient=request.recipient,
@@ -36,4 +35,14 @@ def create_notification_router(sender: NotificationSender) -> APIRouter:
         )
         return SendNotificationResponse(job_id=reference.job_id)
 
+
+def create_notification_router(sender: NotificationSender) -> APIRouter:
+    router = APIRouter(prefix="/notifications", tags=["notifications"])
+    router.add_api_route(
+        "/test",
+        SendTestNotificationEndpoint(sender),
+        methods=["POST"],
+        response_model=SendNotificationResponse,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
     return router
