@@ -1,9 +1,9 @@
-.PHONY: install-dev check lint format-check typecheck test
+.PHONY: install-dev check lint format-check typecheck test coverage
 
 install-dev:
 	python -m pip install -e ".[test]"
 
-check: lint format-check typecheck test
+check: lint format-check typecheck coverage
 
 lint:
 	python -m ruff check .
@@ -16,3 +16,11 @@ typecheck:
 
 test:
 	PYTHONPATH=src python -m pytest
+
+coverage:
+	PYTHONPATH=src python -m pytest \
+		--cov=notification \
+		--cov-branch \
+		--cov-report=term-missing \
+		--cov-report=xml \
+		--cov-fail-under=85
