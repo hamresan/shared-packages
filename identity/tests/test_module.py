@@ -1,30 +1,24 @@
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from identity.application.services.refresh_session import RefreshSessionService
+from identity.application.services.request_otp import RequestOtpService
+from identity.application.services.revoke_session import RevokeSessionService
+from identity.application.services.verify_otp import VerifyOtpService
 from identity.infrastructure.persistence.sqlalchemy import SqlAlchemyIdentityUnitOfWork
-from identity.module import IdentityModule, IdentityModuleConfig
 from identity.presentation.fastapi import FastApiIdentityAdapter
-from tests.support import FakeAccessTokenAuthenticator
+from tests.support.database import SqliteIdentityDatabase
+from tests.support.integrations import FakeNotificationSender
+from tests.support.module_builder import IdentityTestModuleBuilder
 
 
-@asynccontextmanager
-async def unused_session_factory() -> AsyncGenerator[AsyncSession]:
-    raise AssertionError("Session factory should not be opened while testing module wiring")
-    yield  # pragma: no cover
-
-
-def test_identity_module_wires_public_components() -> None:
-    authenticator = FakeAccessTokenAuthenticator()
-    module = IdentityModule(
-        IdentityModuleConfig(
-            session_factory=unused_session_factory,
-            access_token_authenticator=authenticator,
-        )
+def test_identity_module_wires_authentication_components() -> None:
+    module = IdentityTestModuleBuilder().build(
+        SqliteIdentityDatabase(),
+        FakeNotificationSender(),
     )
 
     assert isinstance(module.unit_of_work, SqlAlchemyIdentityUnitOfWork)
-    assert module.public_api.access_token_authenticator is authenticator
+    assert isinstance(module.otp_requester, RequestOtpService)
+    assert isinstance(module.otp_verifier, VerifyOtpService)
+    assert isinstance(module.session_refresher, RefreshSessionService)
+    assert isinstance(module.session_revoker, RevokeSessionService)
+    assert module.public_api.otp_requester is module.otp_requester
     assert isinstance(module.fastapi, FastApiIdentityAdapter)
-    assert module.fastapi.access_token_authenticator is authenticator
