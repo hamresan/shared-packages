@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import cast
 
 import httpx
 
 from notification.application.contracts.providers import NotificationProvider
 from notification.application.dto import DeliveryRequest, DeliveryResult
+from notification.infrastructure.providers.http_sms_response_mapper import HttpSmsResponseMapper
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,9 +16,15 @@ class HttpSmsSettings:
 
 
 class HttpSmsProvider(NotificationProvider):
-    def __init__(self, client: httpx.AsyncClient, settings: HttpSmsSettings) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        settings: HttpSmsSettings,
+        response_mapper: HttpSmsResponseMapper,
+    ) -> None:
         self._client = client
         self._settings = settings
+        self._response_mapper = response_mapper
 
     async def send(self, request: DeliveryRequest) -> DeliveryResult:
         response = await self._client.post(
@@ -32,18 +38,7 @@ class HttpSmsProvider(NotificationProvider):
             timeout=self._settings.timeout_seconds,
         )
         response.raise_for_status()
-        provider_message_id = self._extract_message_id(response)
-        return DeliveryResult(provider="http_sms", provider_message_id=provider_message_id)
-
-    @staticmethod
-    def _extract_message_id(response: httpx.Response) -> str | None:
-        if not response.content:
-            return None
-
-        raw_data: object = response.json()
-        if not isinstance(raw_data, dict):
-            return None
-
-        data = cast(dict[str, object], raw_data)
-        raw_message_id = data.get("message_id")
-        return raw_message_id if isinstance(raw_message_id, str) else None
+        return DeliveryResult(
+            provider="http_sms",
+            provider_message_id=self._response_mapper.get_provider_message_id(response),
+        )
