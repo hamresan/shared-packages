@@ -11,6 +11,7 @@ from identity.application.dto import (
     RequestOtpResult,
     VerifyOtpCommand,
 )
+from identity.domain import IdentityType, OtpPurpose
 from identity.public.services import OtpRequester, OtpVerifier, SessionRefresher, SessionRevoker
 
 
@@ -43,7 +44,9 @@ __all__ = [
     "AuthSessionResult",
     "AuthenticatedPrincipal",
     "IdentityPublicApi",
+    "IdentityType",
     "IssuedAccessToken",
+    "OtpPurpose",
     "OtpRequester",
     "OtpVerifier",
     "RefreshSessionCommand",
