@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue
 from notification.domain.value_objects import RenderedMessage
 
 
@@ -24,4 +25,4 @@ class NotificationJobPayload:
     recipient: str
     template_key: str
     locale: str
-    variables: dict[str, object]
+    variables: dict[str, JsonValue]
