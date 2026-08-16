@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "identity/**"
+      - "notification/**"
       - ".github/workflows/identity-ci.yml"
   push:
     branches: [main]
     paths:
       - "identity/**"
+      - "notification/**"
       - ".github/workflows/identity-ci.yml"
 
 jobs:
@@ -20,7 +22,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install package
+      - name: Install notification package
+        run: python -m pip install -e "./notification"
+      - name: Install identity package
         run: python -m pip install -e "./identity[test]"
       - name: Lint
         working-directory: identity
@@ -33,4 +37,4 @@ jobs:
         run: python -m pyright
       - name: Test with coverage
         working-directory: identity
-        run: python -m pytest
+        run: make coverage
