@@ -1,16 +1,19 @@
+from typing import cast
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from notification.application.services.queue_notification_service import QueueNotificationService
 from notification.presentation.fastapi import create_notification_router
 from tests.support.fakes import FakeNotificationQueue
+from tests.support.http_client import JsonPostClient
 
 
 def test_fastapi_adapter_queues_notification() -> None:
     queue = FakeNotificationQueue()
     app = FastAPI()
     app.include_router(create_notification_router(QueueNotificationService(queue)))
-    client = TestClient(app)
+    client = cast(JsonPostClient, TestClient(app))
 
     response = client.post(
         "/notifications/test",
