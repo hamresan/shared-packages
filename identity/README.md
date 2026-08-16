@@ -1,32 +1,44 @@
 # hamresan-identity
 
-Reusable identity foundation for FastAPI applications using SQLAlchemy async persistence.
+Reusable passwordless identity and session package for FastAPI applications using async SQLAlchemy persistence.
 
-## Current status
+Identity owns OTP challenges, passwordless registration/login, session persistence, refresh-token rotation, and revocation. The host application owns the database engine/session lifecycle and the access-token representation.
 
-This package is not yet feature-complete. The current branch provides the reusable identity foundation:
+OTP delivery is delegated through the public `NotificationSender` contract from `hamresan-notification`. Identity does not know about SMS providers, SMTP, queues, Redis, workers, or notification provider details.
 
-- identity user, identifier, OTP challenge, and session persistence models;
-- `identity_` table naming prefix;
-- host-owned async SQLAlchemy session factory contract;
-- SQLAlchemy unit-of-work transaction boundary;
-- public access-token authentication contract and authenticated principal;
-- FastAPI authentication adapter with `/identity/me`;
-- strict Ruff, Pyright, Pytest, and coverage checks.
+## Features
 
-OTP request/verification services, registration/login orchestration, session issuance/refresh/revocation, and integration with `hamresan-notification` are the next implementation stage and are not documented here as completed features.
+- Mobile and email identities.
+- OTP registration and login.
+- OTP resend cooldown, expiry, and attempt limits.
+- HMAC-SHA256 storage for OTP codes and refresh tokens.
+- Secure OTP and refresh-token generation.
+- Session creation, refresh-token rotation, and revocation.
+- Host-provided access-token issuer and authenticator contracts.
+- Async SQLAlchemy persistence with host-provided session factory.
+- FastAPI routes for OTP, sessions, and the current authenticated identity.
+- `identity_` table prefix for package-owned tables.
+- Ruff, Pyright strict mode, Pytest, and branch coverage with an 85% minimum.
+
+## Development installation
+
+From the `identity` directory:
+
+```bash
+make install-dev
+```
+
+This installs `../notification` first, then installs Identity and its test dependencies.
 
 ## Database ownership
 
-The package does not create an SQLAlchemy engine or sessionmaker. The consuming application owns database configuration and lifecycle and injects an `AsyncSessionFactory`.
+The package does not create a SQLAlchemy engine or global sessionmaker. The host injects an async session context-manager factory.
 
 ```python
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from identity import IdentityModule, IdentityModuleConfig
 
 engine = create_async_engine("postgresql+asyncpg://...")
 session_maker = async_sessionmaker(engine, expire_on_commit=False)
@@ -38,49 +50,7 @@ async def identity_session_factory() -> AsyncGenerator[AsyncSession]:
         yield session
 ```
 
-The host also supplies an implementation of the public `AccessTokenAuthenticator` contract:
-
-```python
-from identity.public import AccessTokenAuthenticator, AuthenticatedPrincipal
-
-
-class ApplicationAccessTokenAuthenticator(AccessTokenAuthenticator):
-    async def authenticate(self, access_token: str) -> AuthenticatedPrincipal: ...
-```
-
-Then compose the module:
-
-```python
-identity = IdentityModule(
-    IdentityModuleConfig(
-        session_factory=identity_session_factory,
-        access_token_authenticator=ApplicationAccessTokenAuthenticator(),
-    )
-)
-```
-
-## FastAPI integration
-
-Install the router into an existing FastAPI application:
-
-```python
-from fastapi import FastAPI
-
-app = FastAPI()
-identity.fastapi.install(app)
-```
-
-The current adapter exposes:
-
-```text
-GET /identity/me
-```
-
-with a Bearer access token. A successful response contains the authenticated `user_id` and `session_id`.
-
-## SQLAlchemy metadata
-
-For migrations or metadata inspection, import the persistence package API so all identity models are registered:
+For migrations, use the package metadata:
 
 ```python
 from identity.infrastructure.persistence.sqlalchemy import IdentityBase
@@ -88,7 +58,7 @@ from identity.infrastructure.persistence.sqlalchemy import IdentityBase
 metadata = IdentityBase.metadata
 ```
 
-Current tables are:
+Current tables:
 
 ```text
 identity_users
@@ -97,31 +67,162 @@ identity_otp_challenges
 identity_sessions
 ```
 
-## Development
+## Notification integration
 
-Create and activate a virtual environment, then install development dependencies:
+Compose `hamresan-notification` in the host application and pass its public sender into Identity:
 
-```bash
-make install-dev
+```python
+notification_sender = notification_module.sender
 ```
 
-Run all quality checks:
+Identity sends OTP messages with template key `identity.otp` and variables `otp` and `purpose`. Notification remains responsible for template rendering, provider selection, queueing, and delivery.
+
+## Access-token contracts
+
+The host application supplies implementations of these public contracts:
+
+```python
+from identity import AccessTokenAuthenticator, AccessTokenIssuer
+```
+
+`AccessTokenIssuer` creates the access token for a user/session pair. `AccessTokenAuthenticator` validates an incoming access token and returns an `AuthenticatedPrincipal`.
+
+This allows Identity to manage sessions without being coupled to a particular token library or provider.
+
+## Compose Identity
+
+```python
+from identity import IdentityModule, IdentityModuleConfig
+
+identity = IdentityModule(
+    IdentityModuleConfig(
+        session_factory=identity_session_factory,
+        notification_sender=notification_sender,
+        access_token_issuer=access_token_issuer,
+        access_token_authenticator=access_token_authenticator,
+        signing_secret=identity_signing_secret,
+    )
+)
+```
+
+Default settings are 5 minutes for OTP lifetime, 60 seconds for resend delay, 5 maximum OTP attempts, and 30 days for refresh sessions. They can be overridden through `IdentityModuleConfig`.
+
+The signing secret is used only by the package HMAC hasher for OTP and refresh-token hashes. Supply it from the host configuration layer.
+
+## FastAPI integration
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+identity.fastapi.install(app)
+```
+
+Routes:
+
+```text
+POST /identity/otp/request
+POST /identity/otp/verify
+POST /identity/sessions/refresh
+POST /identity/sessions/revoke
+GET  /identity/me
+```
+
+### Request an OTP
+
+```json
+{
+  "identity_type": "mobile",
+  "destination": "+96890000000",
+  "purpose": "registration",
+  "locale": "en"
+}
+```
+
+For login, use `"purpose": "login"`. Registration is rejected for an existing identity and login is rejected for an unknown identity.
+
+### Verify an OTP
+
+```json
+{
+  "challenge_id": "<uuid>",
+  "code": "123456",
+  "full_name": "Mehran",
+  "device_info": "web",
+  "ip_address": "127.0.0.1"
+}
+```
+
+`full_name` is required for registration. Successful verification creates a session and returns access-token and refresh-token data.
+
+### Refresh a session
+
+```json
+{
+  "refresh_token": "<refresh-token>",
+  "device_info": "web"
+}
+```
+
+Refresh tokens are rotated. The previous session is revoked and linked to its replacement.
+
+### Revoke a session
+
+```json
+{
+  "refresh_token": "<refresh-token>"
+}
+```
+
+Successful revocation returns HTTP `204`.
+
+## Direct Python API
+
+The use cases are also available through `identity.public_api` without FastAPI:
+
+```python
+from identity import RequestOtpCommand
+from identity.domain import IdentityType, OtpPurpose
+
+result = await identity.public_api.otp_requester.execute(
+    RequestOtpCommand(
+        identity_type=IdentityType.MOBILE,
+        destination="+96890000000",
+        purpose=OtpPurpose.LOGIN,
+    )
+)
+```
+
+Public services:
+
+```text
+identity.public_api.otp_requester
+identity.public_api.otp_verifier
+identity.public_api.session_refresher
+identity.public_api.session_revoker
+identity.public_api.access_token_authenticator
+```
+
+## Quality checks
 
 ```bash
+make test
+make coverage
 make check
 ```
 
-The test command collects branch coverage for the `identity` source package, prints missing lines, writes `coverage.xml`, and fails when total coverage is below 85%.
+`make check` runs Ruff lint, Ruff format check, Pyright strict type checking, and Pytest with branch coverage. Coverage fails below 85% and writes `coverage.xml`.
 
-Individual checks can also be run with:
+## Architecture
 
-```bash
-make lint
-make format-check
-make typecheck
-make test
+```text
+FastAPI / public API
+        ↓
+application use cases
+        ↓
+contracts / domain
+        ↑
+SQLAlchemy, security implementations, NotificationSender
 ```
 
-## Architecture rule
-
-The host owns infrastructure lifecycle. Identity owns identity behavior and persistence mappings but receives replaceable dependencies through contracts. Future OTP delivery will depend on the public `NotificationSender` API from `hamresan-notification`; Identity will not know about SMS providers, SMTP, Redis, workers, or notification templates.
+Application services orchestrate workflows only. Persistence stays in repositories, entity/schema conversion stays in mappers, security behavior stays in dedicated security components, entity construction stays in factories, and OTP eligibility rules stay in policies.
