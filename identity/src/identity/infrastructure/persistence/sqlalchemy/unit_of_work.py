@@ -7,18 +7,13 @@ from identity.application.contracts.database import AsyncSessionFactory
 
 
 class SqlAlchemyIdentityUnitOfWork:
-    """Transaction boundary that obtains sessions exclusively from the host-provided factory."""
+    """Transaction boundary backed by the host-provided async session factory."""
 
     def __init__(self, session_factory: AsyncSessionFactory) -> None:
         self._session_factory = session_factory
 
     @asynccontextmanager
     async def transaction(self) -> AsyncIterator[AsyncSession]:
-        session_iterator = self._session_factory()
-        session = await anext(session_iterator)
-        try:
+        async with self._session_factory() as session:
             async with session.begin():
                 yield session
-        finally:
-            await session.aclose()
-            await session_iterator.aclose()

@@ -1,10 +1,10 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncContextManager
 from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AsyncSessionFactory(Protocol):
-    """Creates SQLAlchemy async sessions owned/configured by the host application."""
+    """Creates host-owned SQLAlchemy async-session context managers."""
 
-    def __call__(self) -> AsyncIterator[AsyncSession]: ...
+    def __call__(self) -> AsyncContextManager[AsyncSession]: ...

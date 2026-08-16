@@ -1,9 +1,11 @@
+from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
+from identity.infrastructure.persistence.sqlalchemy import models  # noqa: F401
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import SqlAlchemyIdentityUnitOfWork
 
 
@@ -15,6 +17,7 @@ async def test_unit_of_work_uses_host_session_factory() -> None:
     async with engine.begin() as connection:
         await connection.run_sync(IdentityBase.metadata.create_all)
 
+    @asynccontextmanager
     async def session_factory() -> AsyncIterator[AsyncSession]:
         async with session_maker() as session:
             yield session
