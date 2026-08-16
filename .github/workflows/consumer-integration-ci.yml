@@ -33,3 +33,6 @@ jobs:
       - name: Check consumer integration
         working-directory: examples/identity_notification_consumer
         run: make check
+      - name: Check consumer integration in Docker
+        working-directory: examples/identity_notification_consumer
+        run: make docker-test
