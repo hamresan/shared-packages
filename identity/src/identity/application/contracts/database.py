@@ -1,4 +1,4 @@
-from collections.abc import AsyncContextManager
+from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,4 +7,4 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class AsyncSessionFactory(Protocol):
     """Creates host-owned SQLAlchemy async-session context managers."""
 
-    def __call__(self) -> AsyncContextManager[AsyncSession]: ...
+    def __call__(self) -> AbstractAsyncContextManager[AsyncSession]: ...
