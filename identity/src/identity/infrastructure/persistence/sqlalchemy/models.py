@@ -1,11 +1,10 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
-
 from identity.domain import IdentityType, OtpPurpose, UserStatus
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class UserModel(IdentityBase):
