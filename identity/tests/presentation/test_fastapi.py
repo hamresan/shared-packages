@@ -1,14 +1,16 @@
+from typing import cast
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from identity.presentation.fastapi import FastApiIdentityAdapter
-from tests.support import FakeAccessTokenAuthenticator
+from tests.support import FakeAccessTokenAuthenticator, JsonGetClient
 
 
-def build_client() -> TestClient:
+def build_client() -> JsonGetClient:
     app = FastAPI()
     FastApiIdentityAdapter(FakeAccessTokenAuthenticator()).install(app)
-    return TestClient(app)
+    return cast(JsonGetClient, TestClient(app))
 
 
 def test_me_requires_bearer_token() -> None:
