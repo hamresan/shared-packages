@@ -10,10 +10,17 @@ from identity.application.contracts.repositories import (
 
 
 class IdentityUnitOfWork(Protocol):
-    users: UserRepository
-    identities: UserIdentityRepository
-    otp_challenges: OtpChallengeRepository
-    sessions: SessionRepository
+    @property
+    def users(self) -> UserRepository: ...
+
+    @property
+    def identities(self) -> UserIdentityRepository: ...
+
+    @property
+    def otp_challenges(self) -> OtpChallengeRepository: ...
+
+    @property
+    def sessions(self) -> SessionRepository: ...
 
     async def __aenter__(self) -> Self: ...
 
