@@ -84,9 +84,7 @@ class VerifyOtpService:
             )
             access_token = await self._access_token_issuer.issue(user.id, session.id)
             await uow.sessions.add(session)
-            await uow.otp_challenges.save(
-                replace(challenge, verified_at=now, consumed_at=now)
-            )
+            await uow.otp_challenges.save(replace(challenge, verified_at=now, consumed_at=now))
             await uow.commit()
 
         return AuthSessionResult(
