@@ -1,40 +1,35 @@
-from datetime import UTC, datetime, timedelta
-from uuid import uuid4
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from identity.presentation.fastapi import FastApiIdentityAdapter
-from identity.public import AuthenticatedPrincipal
+from tests.support import FakeAccessTokenAuthenticator
 
 
-class FakeAccessTokenAuthenticator:
-    async def authenticate(self, access_token: str) -> AuthenticatedPrincipal:
-        assert access_token == "valid-token"
-        now = datetime.now(UTC)
-        return AuthenticatedPrincipal(
-            user_id=uuid4(),
-            session_id=uuid4(),
-            authentication_method="otp",
-            issued_at=now,
-            expires_at=now + timedelta(minutes=15),
-        )
+def build_client() -> TestClient:
+    app = FastAPI()
+    FastApiIdentityAdapter(FakeAccessTokenAuthenticator()).install(app)
+    return TestClient(app)
 
 
 def test_me_requires_bearer_token() -> None:
-    app = FastAPI()
-    FastApiIdentityAdapter(FakeAccessTokenAuthenticator()).install(app)
-
-    response = TestClient(app).get("/identity/me")
+    response = build_client().get("/identity/me")
 
     assert response.status_code == 401
+    assert response.json() == {"detail": "Not authenticated"}
+
+
+def test_me_rejects_invalid_bearer_token() -> None:
+    response = build_client().get(
+        "/identity/me",
+        headers={"Authorization": "Bearer invalid-token"},
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid authentication credentials"}
 
 
 def test_me_returns_authenticated_identity() -> None:
-    app = FastAPI()
-    FastApiIdentityAdapter(FakeAccessTokenAuthenticator()).install(app)
-
-    response = TestClient(app).get(
+    response = build_client().get(
         "/identity/me",
         headers={"Authorization": "Bearer valid-token"},
     )
