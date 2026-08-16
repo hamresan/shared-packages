@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from uuid import UUID
 
 import jwt
 from jwt import InvalidTokenError
@@ -25,8 +26,6 @@ class PyJwtHmacCodec:
         return jwt.encode(payload, self._secret, algorithm=self._algorithm)
 
     def verify(self, token: str) -> AccessTokenClaims:
-        from uuid import UUID
-
         try:
             payload = jwt.decode(token, self._secret, algorithms=[self._algorithm])
             user_id = UUID(str(payload["sub"]))
