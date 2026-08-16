@@ -17,25 +17,20 @@ class FastApiIdentityAdapter:
 
     def router(self) -> APIRouter:
         router = APIRouter(prefix="/identity", tags=["identity"])
-        router.add_api_route(
-            "/me",
-            self.me,
-            methods=["GET"],
-            response_model=dict[str, str],
-        )
-        return router
 
-    async def me(
-        self,
-        principal: Annotated[
-            AuthenticatedPrincipal,
-            Depends(lambda: None),
-        ],
-    ) -> dict[str, str]:
-        return {
-            "user_id": str(principal.user_id),
-            "session_id": str(principal.session_id),
-        }
+        @router.get("/me", response_model=dict[str, str])
+        async def me(
+            principal: Annotated[
+                AuthenticatedPrincipal,
+                Depends(self.require_authenticated_user),
+            ],
+        ) -> dict[str, str]:
+            return {
+                "user_id": str(principal.user_id),
+                "session_id": str(principal.session_id),
+            }
+
+        return router
 
     async def require_authenticated_user(
         self,
