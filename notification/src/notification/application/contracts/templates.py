@@ -1,6 +1,7 @@
 from typing import Protocol
 
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue
 from notification.domain.value_objects import RenderedMessage
 
 
@@ -14,5 +15,5 @@ class MessageTemplateRenderer(Protocol):
         template_key: str,
         locale: str,
         channel: NotificationChannel,
-        variables: dict[str, object],
+        variables: dict[str, JsonValue],
     ) -> RenderedMessage: ...
