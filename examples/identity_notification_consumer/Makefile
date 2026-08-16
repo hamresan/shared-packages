@@ -16,7 +16,7 @@ format-check:
 	python -m ruff format --check .
 
 typecheck:
-	PYTHONPATH=$(PYTHONPATH_VALUE) python -m pyright
+	python -m pyright --project pyrightconfig.json
 
 test:
 	PYTHONPATH=$(PYTHONPATH_VALUE) python -m pytest
