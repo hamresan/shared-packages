@@ -1,9 +1,8 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from identity.application.contracts.database import AsyncSessionFactory
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SqlAlchemyIdentityUnitOfWork:
