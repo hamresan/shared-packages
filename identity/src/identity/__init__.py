@@ -1,9 +1,11 @@
 from identity.module import IdentityModule, IdentityModuleConfig
 from identity.public import (
     AccessTokenAuthenticator,
+    AccessTokenIssuer,
     AuthSessionResult,
     AuthenticatedPrincipal,
     IdentityPublicApi,
+    IssuedAccessToken,
     RefreshSessionCommand,
     RequestOtpCommand,
     RequestOtpResult,
@@ -12,11 +14,13 @@ from identity.public import (
 
 __all__ = [
     "AccessTokenAuthenticator",
+    "AccessTokenIssuer",
     "AuthSessionResult",
     "AuthenticatedPrincipal",
     "IdentityModule",
     "IdentityModuleConfig",
     "IdentityPublicApi",
+    "IssuedAccessToken",
     "RefreshSessionCommand",
     "RequestOtpCommand",
     "RequestOtpResult",
