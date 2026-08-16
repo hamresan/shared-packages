@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         working-directory: notification
         run: ruff check .
+      - name: Typecheck
+        working-directory: notification
+        run: python -m pyright
       - name: Test
         working-directory: notification
         run: pytest
