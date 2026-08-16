@@ -1,11 +1,10 @@
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
-from identity.infrastructure.persistence.sqlalchemy import models  # noqa: F401
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import SqlAlchemyIdentityUnitOfWork
 
 

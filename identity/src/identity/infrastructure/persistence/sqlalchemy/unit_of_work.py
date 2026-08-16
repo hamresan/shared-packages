@@ -14,6 +14,5 @@ class SqlAlchemyIdentityUnitOfWork:
 
     @asynccontextmanager
     async def transaction(self) -> AsyncIterator[AsyncSession]:
-        async with self._session_factory() as session:
-            async with session.begin():
-                yield session
+        async with self._session_factory() as session, session.begin():
+            yield session

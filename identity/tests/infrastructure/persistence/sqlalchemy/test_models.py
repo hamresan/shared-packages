@@ -1,4 +1,3 @@
-from identity.infrastructure.persistence.sqlalchemy import models  # noqa: F401
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
 
 
