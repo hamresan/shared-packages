@@ -5,6 +5,7 @@ from notification.application.contracts.templates import (
     MessageTemplateRepository,
 )
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue
 from notification.domain.value_objects import RenderedMessage
 
 
@@ -18,7 +19,7 @@ class JinjaMessageTemplateRenderer(MessageTemplateRenderer):
         template_key: str,
         locale: str,
         channel: NotificationChannel,
-        variables: dict[str, object],
+        variables: dict[str, JsonValue],
     ) -> RenderedMessage:
         source = self._repository.get(template_key, locale, channel)
         rendered = self._environment.from_string(source).render(**variables)
