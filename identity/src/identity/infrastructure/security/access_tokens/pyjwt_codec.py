@@ -9,6 +9,7 @@ from jwt import InvalidTokenError
 from identity.infrastructure.security.access_tokens.contracts import AccessTokenClaims
 
 JwtPayloadValue = str | int
+JwtDecodeOptions = Mapping[str, bool]
 
 
 class JwtLibrary(Protocol):
@@ -24,6 +25,7 @@ class JwtLibrary(Protocol):
         token: str,
         key: str,
         algorithms: Sequence[str],
+        options: JwtDecodeOptions,
     ) -> dict[str, object]: ...
 
 
@@ -52,6 +54,7 @@ class PyJwtHmacCodec:
                 token,
                 self._secret,
                 algorithms=[self._algorithm],
+                options={"verify_exp": False},
             )
             user_id = UUID(str(payload["sub"]))
             session_id = UUID(str(payload["sid"]))
