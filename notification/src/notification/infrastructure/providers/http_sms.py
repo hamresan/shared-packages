@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import cast
 
 import httpx
 
@@ -31,6 +32,18 @@ class HttpSmsProvider(NotificationProvider):
             timeout=self._settings.timeout_seconds,
         )
         response.raise_for_status()
-        data = response.json() if response.content else {}
-        message_id = data.get("message_id") if isinstance(data, dict) else None
-        return DeliveryResult(provider="http_sms", provider_message_id=message_id)
+        provider_message_id = self._extract_message_id(response)
+        return DeliveryResult(provider="http_sms", provider_message_id=provider_message_id)
+
+    @staticmethod
+    def _extract_message_id(response: httpx.Response) -> str | None:
+        if not response.content:
+            return None
+
+        raw_data: object = response.json()
+        if not isinstance(raw_data, dict):
+            return None
+
+        data = cast(dict[str, object], raw_data)
+        raw_message_id = data.get("message_id")
+        return raw_message_id if isinstance(raw_message_id, str) else None
