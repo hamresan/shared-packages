@@ -1,9 +1,9 @@
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
 from identity.infrastructure.persistence.sqlalchemy.models import (
-    IdentityOtpChallengeModel,
-    IdentitySessionModel,
-    IdentityUserIdentityModel,
-    IdentityUserModel,
+    OtpChallengeModel,
+    SessionModel,
+    UserIdentityModel,
+    UserModel,
 )
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWork,
@@ -11,9 +11,9 @@ from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
 
 __all__ = [
     "IdentityBase",
-    "IdentityOtpChallengeModel",
-    "IdentitySessionModel",
-    "IdentityUserIdentityModel",
-    "IdentityUserModel",
+    "OtpChallengeModel",
+    "SessionModel",
     "SqlAlchemyIdentityUnitOfWork",
+    "UserIdentityModel",
+    "UserModel",
 ]
