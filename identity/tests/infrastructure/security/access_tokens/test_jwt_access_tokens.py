@@ -19,6 +19,8 @@ from tests.support.access_tokens import (
     utc_now,
 )
 
+TEST_JWT_SECRET = "test-jwt-secret-with-at-least-32-bytes"
+
 
 def test_pyjwt_codec_round_trip() -> None:
     now = utc_now()
@@ -28,15 +30,20 @@ def test_pyjwt_codec_round_trip() -> None:
         issued_at=now,
         expires_at=now + timedelta(minutes=15),
     )
-    codec = PyJwtHmacCodec("test-secret")
+    codec = PyJwtHmacCodec(TEST_JWT_SECRET)
 
     token = codec.sign(claims)
 
     assert codec.verify(token) == claims
 
 
+def test_pyjwt_codec_rejects_short_hmac_secret() -> None:
+    with pytest.raises(ValueError, match="at least 32 bytes"):
+        PyJwtHmacCodec("test-secret")
+
+
 def test_pyjwt_codec_rejects_invalid_token() -> None:
-    codec = PyJwtHmacCodec("test-secret")
+    codec = PyJwtHmacCodec(TEST_JWT_SECRET)
 
     with pytest.raises(JwtTokenError):
         codec.verify("not-a-jwt")
