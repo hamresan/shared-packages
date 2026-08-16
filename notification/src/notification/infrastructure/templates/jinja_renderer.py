@@ -1,6 +1,9 @@
 from jinja2 import Environment
 
-from notification.application.contracts.templates import MessageTemplateRenderer, MessageTemplateRepository
+from notification.application.contracts.templates import (
+    MessageTemplateRenderer,
+    MessageTemplateRepository,
+)
 from notification.domain.enums import NotificationChannel
 from notification.domain.value_objects import RenderedMessage
 

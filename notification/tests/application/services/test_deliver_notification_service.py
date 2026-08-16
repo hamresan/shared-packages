@@ -1,5 +1,7 @@
 from notification.application.dto import NotificationJobPayload
-from notification.application.services.deliver_notification_service import DeliverNotificationService
+from notification.application.services.deliver_notification_service import (
+    DeliverNotificationService,
+)
 from notification.domain.enums import NotificationChannel
 from tests.support.fakes import FakeProvider, FakeProviderResolver, FakeTemplateRenderer
 

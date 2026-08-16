@@ -1,4 +1,7 @@
-from notification.application.contracts.providers import NotificationProvider, NotificationProviderResolver
+from notification.application.contracts.providers import (
+    NotificationProvider,
+    NotificationProviderResolver,
+)
 from notification.domain.enums import NotificationChannel
 
 

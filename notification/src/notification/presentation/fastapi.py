@@ -21,7 +21,9 @@ class SendNotificationResponse(BaseModel):
 def create_notification_router(sender: NotificationSender) -> APIRouter:
     router = APIRouter(prefix="/notifications", tags=["notifications"])
 
-    @router.post("/test", response_model=SendNotificationResponse, status_code=status.HTTP_202_ACCEPTED)
+    @router.post(
+        "/test", response_model=SendNotificationResponse, status_code=status.HTTP_202_ACCEPTED
+    )
     async def send_test_notification(request: SendNotificationRequest) -> SendNotificationResponse:
         reference = await sender.send(
             SendNotification(
