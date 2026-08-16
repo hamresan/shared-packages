@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from identity.application.contracts.security import AccessTokenIssuer, IssuedAccessToken
 from identity.application.dto import (
     AuthSessionResult,
     RefreshSessionCommand,
@@ -38,9 +39,11 @@ class IdentityPublicApi:
 
 __all__ = [
     "AccessTokenAuthenticator",
+    "AccessTokenIssuer",
     "AuthSessionResult",
     "AuthenticatedPrincipal",
     "IdentityPublicApi",
+    "IssuedAccessToken",
     "OtpRequester",
     "OtpVerifier",
     "RefreshSessionCommand",
