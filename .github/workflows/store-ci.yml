@@ -1,0 +1,27 @@
+name: Store CI
+
+on:
+  pull_request:
+    paths:
+      - "store/**"
+      - ".github/workflows/store-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "store/**"
+      - ".github/workflows/store-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install store package
+        run: python -m pip install -e "./store[test]"
+      - name: Check
+        working-directory: store
+        run: make check
