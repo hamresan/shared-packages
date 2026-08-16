@@ -33,23 +33,6 @@ class AuthenticatedUserDependency:
 
 
 @dataclass(frozen=True, slots=True)
-class CurrentUserEndpoint:
-    require_authenticated_user: AuthenticatedUserDependency
-
-    async def __call__(
-        self,
-        principal: Annotated[
-            AuthenticatedPrincipal,
-            Depends(),
-        ],
-    ) -> dict[str, str]:
-        return {
-            "user_id": str(principal.user_id),
-            "session_id": str(principal.session_id),
-        }
-
-
-@dataclass(frozen=True, slots=True)
 class FastApiIdentityAdapter:
     access_token_authenticator: AccessTokenAuthenticator
 
@@ -57,14 +40,24 @@ class FastApiIdentityAdapter:
         require_authenticated_user = AuthenticatedUserDependency(
             self.access_token_authenticator,
         )
-        endpoint = CurrentUserEndpoint(require_authenticated_user)
+
+        async def current_user(
+            principal: Annotated[
+                AuthenticatedPrincipal,
+                Depends(require_authenticated_user),
+            ],
+        ) -> dict[str, str]:
+            return {
+                "user_id": str(principal.user_id),
+                "session_id": str(principal.session_id),
+            }
+
         router = APIRouter(prefix="/identity", tags=["identity"])
         router.add_api_route(
             "/me",
-            endpoint,
+            current_user,
             methods=["GET"],
             response_model=dict[str, str],
-            dependencies=[Depends(require_authenticated_user)],
         )
         return router
 
