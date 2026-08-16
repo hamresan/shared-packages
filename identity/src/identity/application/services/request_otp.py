@@ -1,0 +1,84 @@
+from notification.public import NotificationChannel, NotificationSender, SendNotification
+
+from identity.application.contracts.security import (
+    Clock,
+    IdentityNormalizer,
+    OtpCodeGenerator,
+    SecretHasher,
+)
+from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
+from identity.application.dto import RequestOtpCommand, RequestOtpResult
+from identity.application.errors import OtpResendNotAvailableError
+from identity.application.factories.entities import OtpChallengeFactory
+from identity.application.policies.otp_purpose import OtpPurposePolicy
+from identity.domain import IdentityType
+
+
+class RequestOtpService:
+    def __init__(
+        self,
+        *,
+        unit_of_work_factory: IdentityUnitOfWorkFactory,
+        notification_sender: NotificationSender,
+        clock: Clock,
+        normalizer: IdentityNormalizer,
+        code_generator: OtpCodeGenerator,
+        hasher: SecretHasher,
+        challenge_factory: OtpChallengeFactory,
+        purpose_policy: OtpPurposePolicy,
+    ) -> None:
+        self._unit_of_work_factory = unit_of_work_factory
+        self._notification_sender = notification_sender
+        self._clock = clock
+        self._normalizer = normalizer
+        self._code_generator = code_generator
+        self._hasher = hasher
+        self._challenge_factory = challenge_factory
+        self._purpose_policy = purpose_policy
+
+    async def execute(self, command: RequestOtpCommand) -> RequestOtpResult:
+        now = self._clock.now()
+        destination = self._normalizer.normalize(command.identity_type, command.destination)
+
+        async with self._unit_of_work_factory() as uow:
+            identity = await uow.identities.get_by_destination(command.identity_type, destination)
+            self._purpose_policy.validate(command.purpose, identity)
+            latest = await uow.otp_challenges.get_latest(destination, command.purpose)
+            if latest is not None and latest.resend_available_at > now:
+                raise OtpResendNotAvailableError("OTP resend is not available yet")
+
+            code = self._code_generator.generate()
+            challenge = self._challenge_factory.create(
+                now=now,
+                identity_type=command.identity_type,
+                destination=destination,
+                purpose=command.purpose,
+                code_hash=self._hasher.hash(code),
+                user_id=identity.user_id if identity else None,
+                identity_id=identity.id if identity else None,
+            )
+            await uow.otp_challenges.add(challenge)
+            await uow.commit()
+
+        channel = (
+            NotificationChannel.SMS
+            if command.identity_type is IdentityType.MOBILE
+            else NotificationChannel.EMAIL
+        )
+        await self._notification_sender.send(
+            SendNotification(
+                channel=channel,
+                recipient=destination,
+                template_key="identity.otp",
+                locale=command.locale,
+                variables={
+                    "otp": code,
+                    "purpose": command.purpose.value,
+                },
+            )
+        )
+        return RequestOtpResult(
+            challenge_id=challenge.id,
+            expires_at=challenge.expires_at,
+            resend_available_at=challenge.resend_available_at,
+        )
