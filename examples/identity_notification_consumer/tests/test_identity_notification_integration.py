@@ -18,8 +18,11 @@ async def test_identity_notification_database_and_fastapi_integration() -> None:
             )
         )
 
-        payload = application.notification_queue.items[-1]
+        assert len(application.notification_queue.items) == 1
+
+        payload = application.notification_queue.items[0]
         otp = payload.variables["otp"]
+
         assert isinstance(otp, str)
         assert payload.recipient == "owner@example.com"
         assert payload.template_key == "identity.otp"
@@ -31,6 +34,9 @@ async def test_identity_notification_database_and_fastapi_integration() -> None:
                 full_name="Store Owner",
             )
         )
+
+        assert auth_result.access_token
+        assert auth_result.refresh_token
 
         principal = await application.token_adapter.authenticate(auth_result.access_token)
         assert principal.user_id == auth_result.user_id
