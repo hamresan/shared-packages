@@ -1,4 +1,6 @@
-from notification.application.services.deliver_notification_service import DeliverNotificationService
+from notification.application.services.deliver_notification_service import (
+    DeliverNotificationService,
+)
 from notification.application.services.queue_notification_service import QueueNotificationService
 from notification.module import NotificationModule, NotificationModuleConfig
 from tests.support.fakes import (
