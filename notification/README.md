@@ -124,9 +124,7 @@ from notification.infrastructure.templates.jinja_renderer import JinjaMessageTem
 Configure templates:
 
 ```python
-template_repository = FilesystemTemplateRepository(
-    root=Path("templates/notifications")
-)
+template_repository = FilesystemTemplateRepository(root=Path("templates/notifications"))
 
 template_renderer = JinjaMessageTemplateRenderer(
     repository=template_repository,
