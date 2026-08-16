@@ -2,7 +2,7 @@
 
 install-dev:
 	python -m pip install -e "../notification"
-	python -m pip install -e ".[test]"
+	python -m pip install -e ".[test,migrations]"
 
 check: lint format-check typecheck coverage
 

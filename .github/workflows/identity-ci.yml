@@ -25,7 +25,7 @@ jobs:
       - name: Install notification package
         run: python -m pip install -e "./notification"
       - name: Install identity package
-        run: python -m pip install -e "./identity[test]"
+        run: python -m pip install -e "./identity[test,migrations]"
       - name: Lint
         working-directory: identity
         run: python -m ruff check .
