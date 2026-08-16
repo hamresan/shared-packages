@@ -60,4 +60,18 @@ make install-dev
 make check
 ```
 
+`make typecheck` resolves the local `src/consumer_app` package directly through the Pyright execution environment, so the source layout is type-checkable even before installing the example itself.
+
+## Run in Docker
+
+The Docker image is test-only. It installs Notification, Identity, and this consumer example from the monorepo and runs Ruff, format checking, Pyright, and Pytest inside the container.
+
+From this directory:
+
+```bash
+make docker-test
+```
+
+The Dockerfile deliberately does not expose or map any port. The integration test uses FastAPI through an in-process ASGI transport, so no network port is required and it cannot conflict with services already running on the host.
+
 The example is intentionally small and should be treated as a reference composition pattern, not production token or queue infrastructure.
