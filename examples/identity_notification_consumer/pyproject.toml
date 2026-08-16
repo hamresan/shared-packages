@@ -33,6 +33,7 @@ testpaths = ["tests"]
 
 [tool.pyright]
 include = ["src", "tests"]
+extraPaths = ["src", "../../identity/src", "../../notification/src"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 executionEnvironments = [
