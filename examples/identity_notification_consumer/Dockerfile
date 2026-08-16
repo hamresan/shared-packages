@@ -12,4 +12,4 @@ RUN python -m pip install --no-cache-dir -e "/workspace/notification" \
 
 WORKDIR /workspace/examples/identity_notification_consumer
 
-CMD ["make", "check"]
+CMD ["sh", "-c", "python -m ruff check . && python -m ruff format --check . && python -m pyright && python -m pytest"]
