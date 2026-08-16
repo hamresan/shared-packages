@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1.0",
+  "hamresan-notification>=0.1.0,<1.0",
   "pydantic>=2.8,<3.0",
   "sqlalchemy[asyncio]>=2.0,<3.0",
 ]
@@ -30,7 +31,7 @@ packages = ["src/identity"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = ["src"]
+pythonpath = ["src", "../notification/src"]
 testpaths = ["tests"]
 addopts = "--cov=identity --cov-report=term-missing --cov-report=xml --cov-fail-under=85"
 
@@ -45,7 +46,7 @@ skip_covered = true
 
 [tool.pyright]
 include = ["src", "tests"]
-extraPaths = ["src"]
+extraPaths = ["src", "../notification/src"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
