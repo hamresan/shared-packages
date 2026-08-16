@@ -1,4 +1,4 @@
-from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
+from identity.infrastructure.persistence.sqlalchemy import IdentityBase
 
 
 def test_all_identity_tables_use_identity_prefix() -> None:
