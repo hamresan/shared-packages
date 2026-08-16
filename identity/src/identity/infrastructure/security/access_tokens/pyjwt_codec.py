@@ -37,9 +37,7 @@ class JwtTokenError(ValueError):
 class PyJwtHmacCodec:
     def __init__(self, secret: str, algorithm: str = "HS256") -> None:
         if len(secret.encode("utf-8")) < MIN_HMAC_SECRET_BYTES:
-            raise ValueError(
-                f"JWT HMAC secret must be at least {MIN_HMAC_SECRET_BYTES} bytes"
-            )
+            raise ValueError(f"JWT HMAC secret must be at least {MIN_HMAC_SECRET_BYTES} bytes")
         self._secret = secret
         self._algorithm = algorithm
         self._jwt = cast(JwtLibrary, jwt)
