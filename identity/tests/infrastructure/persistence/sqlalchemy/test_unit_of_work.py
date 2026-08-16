@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import pytest
@@ -17,7 +17,7 @@ async def test_unit_of_work_uses_host_session_factory() -> None:
         await connection.run_sync(IdentityBase.metadata.create_all)
 
     @asynccontextmanager
-    async def session_factory() -> AsyncIterator[AsyncSession]:
+    async def session_factory() -> AsyncGenerator[AsyncSession]:
         async with session_maker() as session:
             yield session
 
