@@ -17,6 +17,7 @@ OTP delivery is delegated through the public `NotificationSender` contract from 
 - Access-token issuer and authenticator contracts.
 - Production JWT access-token issuer/authenticator with database-backed session validation.
 - Async SQLAlchemy persistence with host-provided session factory.
+- Public Alembic integration helpers for host-owned migration histories.
 - FastAPI routes for OTP, sessions, and the current authenticated identity.
 - `identity_` table prefix for package-owned tables.
 - Ruff, Pyright strict mode, Pytest, and branch coverage with an 85% minimum.
@@ -29,7 +30,19 @@ From the `identity` directory:
 make install-dev
 ```
 
-This installs `../notification` first, then installs Identity and its test dependencies.
+This installs `../notification`, Identity test dependencies, and the optional Alembic migration tooling.
+
+For an application that only needs runtime Identity features:
+
+```bash
+pip install hamresan-identity
+```
+
+For an application that also manages Identity schema changes with Alembic:
+
+```bash
+pip install "hamresan-identity[migrations]"
+```
 
 ## Database ownership
 
@@ -51,15 +64,7 @@ async def identity_session_factory() -> AsyncGenerator[AsyncSession]:
         yield session
 ```
 
-For migrations, use the package metadata:
-
-```python
-from identity.infrastructure.persistence.sqlalchemy import IdentityBase
-
-metadata = IdentityBase.metadata
-```
-
-Current tables:
+Current package-owned tables:
 
 ```text
 identity_users
@@ -67,6 +72,64 @@ identity_user_identities
 identity_otp_challenges
 identity_sessions
 ```
+
+## Alembic integration
+
+The host application owns the Alembic revision graph. Identity does not ship an independent revision history because package-owned revisions with their own heads can conflict with an application's existing migration graph.
+
+Identity instead exposes its SQLAlchemy metadata and an optional reflection filter through the public `identity.migrations` API:
+
+```python
+from identity.migrations import identity_metadata, include_identity_name
+```
+
+### Combined application migrations
+
+If the application already has its own SQLAlchemy metadata, configure Alembic with both metadata collections:
+
+```python
+from identity.migrations import identity_metadata
+from myapp.database import AppBase
+
+target_metadata = [
+    AppBase.metadata,
+    identity_metadata(),
+]
+```
+
+Use that value in the host application's Alembic `env.py`:
+
+```python
+context.configure(
+    connection=connection,
+    target_metadata=target_metadata,
+)
+```
+
+The application's normal migration workflow can then create the Identity schema inside the same revision graph:
+
+```bash
+alembic revision --autogenerate -m "add identity tables"
+alembic upgrade head
+```
+
+### Identity-only autogeneration
+
+If a migration run should inspect only Identity-owned tables in a database that also contains unrelated application tables, use the provided name filter:
+
+```python
+from identity.migrations import identity_metadata, include_identity_name
+
+context.configure(
+    connection=connection,
+    target_metadata=identity_metadata(),
+    include_name=include_identity_name,
+)
+```
+
+`include_identity_name` accepts only tables beginning with `identity_` and objects belonging to those tables. This prevents an Identity-only autogenerate run from treating unrelated application tables as candidates for removal.
+
+Do not call `IdentityBase.metadata.create_all()` as the production schema-management strategy. It is useful for isolated tests, but production applications should evolve the schema through their normal Alembic revision history.
 
 ## Notification integration
 
