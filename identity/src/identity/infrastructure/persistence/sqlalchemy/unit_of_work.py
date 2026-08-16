@@ -3,8 +3,6 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from types import TracebackType
 from typing import Self
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from identity.application.contracts.database import AsyncSessionFactory
 from identity.application.contracts.repositories import (
     OtpChallengeRepository,
@@ -31,6 +29,7 @@ from identity.infrastructure.persistence.sqlalchemy.repositories.user_identities
 from identity.infrastructure.persistence.sqlalchemy.repositories.users import (
     SqlAlchemyUserRepository,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SqlAlchemyIdentityUnitOfWork(IdentityUnitOfWork):
