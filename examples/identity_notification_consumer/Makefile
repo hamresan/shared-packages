@@ -1,5 +1,7 @@
 .PHONY: install-dev check lint format-check typecheck test docker-test
 
+PYTHONPATH_VALUE := src:../../identity/src:../../notification/src
+
 install-dev:
 	python -m pip install -e "../../notification"
 	python -m pip install -e "../../identity"
@@ -14,10 +16,10 @@ format-check:
 	python -m ruff format --check .
 
 typecheck:
-	python -m pyright
+	PYTHONPATH=$(PYTHONPATH_VALUE) python -m pyright
 
 test:
-	python -m pytest
+	PYTHONPATH=$(PYTHONPATH_VALUE) python -m pytest
 
 docker-test:
 	docker build -f Dockerfile -t identity-notification-consumer-test ../..
