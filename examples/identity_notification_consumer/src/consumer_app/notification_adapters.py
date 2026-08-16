@@ -1,8 +1,12 @@
-from notification.application.contracts.providers import NotificationProviderResolver
+from notification.application.contracts.providers import (
+    NotificationProvider,
+    NotificationProviderResolver,
+)
 from notification.application.contracts.queue import NotificationQueue
 from notification.application.contracts.templates import MessageTemplateRenderer
 from notification.application.dto import NotificationJobPayload
 from notification.domain.enums import NotificationChannel
+from notification.domain.types import JsonValue
 from notification.domain.value_objects import RenderedMessage
 from notification.public import NotificationReference
 
@@ -17,15 +21,16 @@ class InMemoryNotificationQueue(NotificationQueue):
 
 
 class UnusedTemplateRenderer(MessageTemplateRenderer):
-    async def render(
+    def render(
         self,
         template_key: str,
         locale: str,
-        variables: dict[str, object],
+        channel: NotificationChannel,
+        variables: dict[str, JsonValue],
     ) -> RenderedMessage:
         raise AssertionError("Delivery rendering is outside this smoke test")
 
 
 class UnusedProviderResolver(NotificationProviderResolver):
-    def resolve(self, channel: NotificationChannel):
+    def resolve(self, channel: NotificationChannel) -> NotificationProvider:
         raise AssertionError("Delivery provider resolution is outside this smoke test")
