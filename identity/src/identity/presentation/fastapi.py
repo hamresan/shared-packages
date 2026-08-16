@@ -1,0 +1,65 @@
+from dataclasses import dataclass
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from identity.public import AccessTokenAuthenticator, AuthenticatedPrincipal
+
+bearer = HTTPBearer(auto_error=False)
+BearerCredentials = Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]
+
+
+@dataclass(frozen=True, slots=True)
+class AuthenticatedUserDependency:
+    access_token_authenticator: AccessTokenAuthenticator
+
+    async def __call__(
+        self,
+        credentials: BearerCredentials,
+    ) -> AuthenticatedPrincipal:
+        if credentials is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+            )
+        try:
+            return await self.access_token_authenticator.authenticate(credentials.credentials)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+            ) from exc
+
+
+@dataclass(frozen=True, slots=True)
+class FastApiIdentityAdapter:
+    access_token_authenticator: AccessTokenAuthenticator
+
+    def router(self) -> APIRouter:
+        require_authenticated_user = AuthenticatedUserDependency(
+            self.access_token_authenticator,
+        )
+
+        async def current_user(
+            principal: Annotated[
+                AuthenticatedPrincipal,
+                Depends(require_authenticated_user),
+            ],
+        ) -> dict[str, str]:
+            return {
+                "user_id": str(principal.user_id),
+                "session_id": str(principal.session_id),
+            }
+
+        router = APIRouter(prefix="/identity", tags=["identity"])
+        router.add_api_route(
+            "/me",
+            current_user,
+            methods=["GET"],
+            response_model=dict[str, str],
+        )
+        return router
+
+    def install(self, app: FastAPI) -> None:
+        app.include_router(self.router())
