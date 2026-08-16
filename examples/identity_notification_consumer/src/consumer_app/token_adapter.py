@@ -1,7 +1,12 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from identity import AccessTokenAuthenticator, AccessTokenIssuer, AuthenticatedPrincipal, IssuedAccessToken
+from identity import (
+    AccessTokenAuthenticator,
+    AccessTokenIssuer,
+    AuthenticatedPrincipal,
+    IssuedAccessToken,
+)
 
 
 class InMemoryAccessTokenAdapter(AccessTokenIssuer, AccessTokenAuthenticator):
