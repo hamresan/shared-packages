@@ -1,4 +1,4 @@
-.PHONY: install-dev check lint format-check typecheck test
+.PHONY: install-dev check lint format-check typecheck test docker-test
 
 install-dev:
 	python -m pip install -e "../../notification"
@@ -18,3 +18,7 @@ typecheck:
 
 test:
 	python -m pytest
+
+docker-test:
+	docker build -f Dockerfile -t identity-notification-consumer-test ../..
+	docker run --rm identity-notification-consumer-test
