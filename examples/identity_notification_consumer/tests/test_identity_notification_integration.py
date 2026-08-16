@@ -1,8 +1,8 @@
 import httpx
 import pytest
+from identity import IdentityType, OtpPurpose, RequestOtpCommand, VerifyOtpCommand
 
 from consumer_app import build_consumer_application
-from identity import IdentityType, OtpPurpose, RequestOtpCommand, VerifyOtpCommand
 
 
 @pytest.mark.asyncio
