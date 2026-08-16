@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from identity.application.dto import RefreshSessionCommand, RequestOtpCommand, VerifyOtpCommand
@@ -6,6 +8,9 @@ from identity.application.errors import (
     IdentityNotRegisteredError,
     InvalidOtpError,
     InvalidRefreshTokenError,
+    OtpChallengeNotFoundError,
+    OtpResendNotAvailableError,
+    RegistrationNameRequiredError,
 )
 from identity.domain import IdentityType, OtpPurpose
 from tests.support.database import SqliteIdentityDatabase
@@ -61,6 +66,7 @@ async def test_registration_login_refresh_and_revoke_flow() -> None:
             RefreshSessionCommand(refresh_token=logged_in.refresh_token)
         )
         await module.session_revoker.execute(refreshed.refresh_token)
+        await module.session_revoker.execute(refreshed.refresh_token)
 
         assert registered.user_id == logged_in.user_id
         assert logged_in.session_id != refreshed.session_id
@@ -71,6 +77,10 @@ async def test_registration_login_refresh_and_revoke_flow() -> None:
         with pytest.raises(InvalidRefreshTokenError):
             await module.session_refresher.execute(
                 RefreshSessionCommand(refresh_token=refreshed.refresh_token)
+            )
+        with pytest.raises(InvalidRefreshTokenError):
+            await module.session_refresher.execute(
+                RefreshSessionCommand(refresh_token="unknown-refresh-token" * 3)
             )
     finally:
         await database.close()
@@ -100,11 +110,34 @@ async def test_identity_flow_enforces_registration_login_and_otp_rules() -> None
                 purpose=OtpPurpose.REGISTRATION,
             )
         )
+        with pytest.raises(OtpResendNotAvailableError):
+            await module.otp_requester.execute(
+                RequestOtpCommand(
+                    identity_type=IdentityType.EMAIL,
+                    destination="user@example.com",
+                    purpose=OtpPurpose.REGISTRATION,
+                )
+            )
+        with pytest.raises(RegistrationNameRequiredError):
+            await module.otp_verifier.execute(
+                VerifyOtpCommand(
+                    challenge_id=registration.challenge_id,
+                    code=latest_otp(sender),
+                )
+            )
         with pytest.raises(InvalidOtpError):
             await module.otp_verifier.execute(
                 VerifyOtpCommand(
                     challenge_id=registration.challenge_id,
                     code="000000",
+                    full_name="User",
+                )
+            )
+        with pytest.raises(OtpChallengeNotFoundError):
+            await module.otp_verifier.execute(
+                VerifyOtpCommand(
+                    challenge_id=uuid4(),
+                    code="123456",
                     full_name="User",
                 )
             )
