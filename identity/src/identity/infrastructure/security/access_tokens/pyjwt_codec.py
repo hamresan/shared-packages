@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import cast
 from uuid import UUID
 
 import jwt
@@ -27,11 +28,14 @@ class PyJwtHmacCodec:
 
     def verify(self, token: str) -> AccessTokenClaims:
         try:
-            payload = jwt.decode(token, self._secret, algorithms=[self._algorithm])
+            payload = cast(
+                dict[str, object],
+                jwt.decode(token, self._secret, algorithms=[self._algorithm]),
+            )
             user_id = UUID(str(payload["sub"]))
             session_id = UUID(str(payload["sid"]))
-            issued_at = datetime.fromtimestamp(int(payload["iat"]), tz=UTC)
-            expires_at = datetime.fromtimestamp(int(payload["exp"]), tz=UTC)
+            issued_at = datetime.fromtimestamp(int(str(payload["iat"])), tz=UTC)
+            expires_at = datetime.fromtimestamp(int(str(payload["exp"])), tz=UTC)
         except (InvalidTokenError, KeyError, TypeError, ValueError) as exc:
             raise JwtTokenError("Invalid access token") from exc
 
