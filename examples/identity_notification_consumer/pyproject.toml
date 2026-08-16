@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "identity-notification-consumer-example"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "hamresan-identity>=0.1.0,<1.0",
+  "hamresan-notification>=0.1.0,<1.0",
+  "sqlalchemy[asyncio]>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "aiosqlite>=0.20,<1.0",
+  "httpx>=0.27,<1.0",
+  "pyright>=1.1,<2.0",
+  "pytest>=8.0,<9.0",
+  "pytest-asyncio>=0.24,<1.0",
+  "ruff>=0.9,<1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/consumer_app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["src", "../../identity/src", "../../notification/src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
