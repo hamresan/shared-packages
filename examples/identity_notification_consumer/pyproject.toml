@@ -31,15 +31,6 @@ asyncio_mode = "auto"
 pythonpath = ["src", "../../identity/src", "../../notification/src"]
 testpaths = ["tests"]
 
-[tool.pyright]
-include = ["src", "tests"]
-extraPaths = ["src", "../../identity/src", "../../notification/src"]
-pythonVersion = "3.12"
-typeCheckingMode = "strict"
-executionEnvironments = [
-  { root = ".", extraPaths = ["src", "../../identity/src", "../../notification/src"] },
-]
-
 [tool.ruff]
 line-length = 100
 target-version = "py312"
