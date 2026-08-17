@@ -89,9 +89,7 @@ class StoreResponseMapper:
             base_currency_code=store.base_currency_code,
             currencies=[self._value_object_mapper.to_currency(item) for item in store.currencies],
             timezone=store.timezone,
-            working_schedule=self._value_object_mapper.to_working_schedule(
-                store.working_schedule
-            ),
+            working_schedule=self._value_object_mapper.to_working_schedule(store.working_schedule),
             setup_status=store.setup_status.value,
             availability_status=store.availability_status.value,
             moderation_status=store.moderation_status.value,
