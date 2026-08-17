@@ -14,6 +14,10 @@ def build_store(
         id=store_id or uuid4(),
         owner_user_id=owner_user_id or uuid4(),
         name="Test Store",
+        business_type="retail",
+        primary_language="en",
+        country_code="OM",
+        base_currency_code="OMR",
         created_at=now,
         updated_at=now,
     )
