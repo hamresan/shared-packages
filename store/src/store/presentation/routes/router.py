@@ -33,28 +33,40 @@ class StoreRouterFactory:
 
         router = APIRouter(prefix="/stores", tags=["stores"])
 
-        @router.post(
-            "",
-            response_model=StoreResponse,
-            status_code=status.HTTP_201_CREATED,
-        )
         async def create_store(
             request: CreateStoreRequest,
             actor: Annotated[AuthenticatedActor, Depends(actor_dependency)],
         ) -> StoreResponse:
             return await create_endpoint(request, actor)
 
-        @router.get("/me", response_model=StoreResponse)
         async def get_owned_store(
             actor: Annotated[AuthenticatedActor, Depends(actor_dependency)],
         ) -> StoreResponse:
             return await get_owned_endpoint(actor)
 
-        @router.get("/{store_id}", response_model=StoreResponse)
         async def get_store(
             store_id: UUID,
             _actor: Annotated[AuthenticatedActor, Depends(actor_dependency)],
         ) -> StoreResponse:
             return await get_store_endpoint(store_id)
 
+        router.add_api_route(
+            "",
+            create_store,
+            methods=["POST"],
+            response_model=StoreResponse,
+            status_code=status.HTTP_201_CREATED,
+        )
+        router.add_api_route(
+            "/me",
+            get_owned_store,
+            methods=["GET"],
+            response_model=StoreResponse,
+        )
+        router.add_api_route(
+            "/{store_id}",
+            get_store,
+            methods=["GET"],
+            response_model=StoreResponse,
+        )
         return router
