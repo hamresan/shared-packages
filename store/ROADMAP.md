@@ -15,56 +15,65 @@ backend/app/modules/store
 
 Do not modify Sellora as part of this work.
 
+## Current status
+
+Completed and merged:
+
+- Stage 0 — Source inventory.
+- Stage 1 — Package foundation.
+- Stage 2 — Core domain.
+- Stage 3 — Application contracts and Create/Read use cases.
+
+Stage 4 — SQLAlchemy persistence has been reported as tested and merged in the working flow. At the time this roadmap was updated, GitHub's remote `main` view had not yet exposed the expected `store.infrastructure` tree, so remote verification is still pending before treating the persistence tree as the source of truth for later stages.
+
+Current implementation branch:
+
+```text
+agent/add-store-fastapi-adapter
+```
+
+Current objective:
+
+```text
+Stage 5 — FastAPI adapter
+```
+
 ## Source observations
 
-The Sellora Store module currently owns store identity, owner reference, profile and business type, localization, languages, address, contacts, currencies and manual exchange rates, timezone and weekly working schedule, setup status, owner-controlled availability, administrative moderation, soft deletion/restoration, and readiness evaluation.
+The Sellora Store module owns store identity, owner reference, profile and business type, localization, languages, address, contacts, currencies and manual exchange rates, timezone and weekly working schedule, setup status, owner-controlled availability, administrative moderation, soft deletion/restoration, and readiness evaluation.
 
 It explicitly does not own authentication, catalog, channels/provider credentials, inventory, customers, carts/orders, payments, subscriptions, or messaging delivery.
 
-The source is already organized around Clean Architecture concepts with domain entities/value objects/enums, application contracts/services/policies/factories, infrastructure persistence/composition/time/channel adapters, and FastAPI presentation.
-
-A Sellora-specific coupling exists in its current public composition layer: Store imports Identity FastAPI authorization dependencies directly. The reusable package must remove that coupling and depend only on small public authentication/authorization contracts supplied by the host.
+The reusable package removes Sellora-specific composition coupling. In particular, Store must not import Identity FastAPI authorization dependencies directly.
 
 ## Package goals
 
-The package should provide a focused Store/Business domain that can be reused across products. The first reusable release should keep the minimum valuable behavior while preserving extension points for richer store management later.
-
-Primary goals:
-
 - Clean Architecture and SOLID throughout.
-- FastAPI presentation adapter, but no FastAPI-specific logic in domain/application layers.
+- FastAPI only in the presentation adapter.
 - Async SQLAlchemy persistence with a host-provided `AsyncSessionFactory`.
-- Tables owned by this package use a `store_` prefix.
-- Explicit public contracts and controlled package exports.
+- Package-owned tables use the `store_` prefix.
+- Explicit public contracts and controlled exports.
 - No direct dependency on Sellora.
 - No direct dependency on concrete Identity, Notification, Subscription, Catalog, Messaging, or Channel implementations.
-- Host-owned Alembic revision graph, following the same integration approach used by `hamresan-identity`.
-- Mirror test structure, Pyright strict mode, Ruff, pytest, branch coverage, and a minimum 85% coverage gate.
+- Host-owned Alembic revision graph.
+- Mirror test structure.
+- Ruff, Pyright strict, pytest and branch coverage >= 85%.
 - No hidden dependency construction inside services.
-- Services remain thin use-case orchestrators; mapping, validation, policies, persistence, authorization, time, and identifiers stay in dedicated components.
+- Thin use-case services; mapping, validation, policies, persistence, authorization, time and identifiers remain dedicated responsibilities.
 
 ## Naming decision
 
-Package directory and Python package name:
-
 ```text
-store/
-src/store/
+Directory: store/
+Python package: store
+Distribution: hamresan-store
 ```
 
-Distribution name:
+Use `Store` as the core domain name rather than `Business` for the initial reusable package.
 
-```text
-hamresan-store
-```
+## Core domain
 
-Use `Store` as the core domain name rather than `Business` in the first extraction because the Sellora source model and behavior are store-centric. If a future product needs a broader organization/business concept, that should be introduced deliberately rather than making the initial package ambiguous.
-
-## Initial domain scope
-
-### Store aggregate
-
-Target conceptual fields:
+Current Store aggregate includes the reusable store-owned state required for the first package release, including:
 
 ```text
 Store
@@ -84,217 +93,281 @@ Store
 - setup_status
 - availability_status
 - moderation_status
+- suspension fields
 - deleted_at
 - created_at
 - updated_at
 ```
 
-The exact representation must be reviewed against the current Sellora implementation before copying any code.
+Domain remains dependency-free: no SQLAlchemy, FastAPI, Pydantic, Identity or Sellora imports.
 
-### Core invariants to preserve
+### Core invariants
 
 - Store name is required and normalized.
 - Primary language is required.
 - Primary language must exist in supported languages.
-- Supported languages must be unique.
-- Country code is a validated ISO-style two-character code.
-- Currency codes are validated three-character codes.
-- Timezone, when present, is an IANA timezone identifier.
-- Owner-controlled availability is separate from system/admin moderation state.
-- Soft deletion is distinct from moderation/availability.
-- Cross-module readiness must be evaluated through contracts, not by reading another module's database.
+- Supported languages are unique.
+- Country code is normalized and validated as a two-character code.
+- Currency codes are normalized and validated as three-character codes.
+- Timezone, when present, is a valid IANA timezone identifier.
+- Availability is separate from moderation state.
+- Soft deletion is separate from availability/moderation.
+- Suspension reason `other` requires a description.
+
+## Application layer decisions
+
+The reusable application layer now uses explicit contracts for:
+
+```text
+StoreRepository
+StoreUnitOfWork
+StoreUnitOfWorkFactory
+Clock
+StoreIdentifierGenerator
+```
+
+Implemented first-use-case surface:
+
+```text
+CreateStoreCommand
+CreateStoreService
+GetStoreQuery
+GetStoreService
+GetOwnedStoreQuery
+GetOwnedStoreService
+```
+
+The create flow is deliberately split into independent responsibilities:
+
+```text
+CreateStoreService
+    -> CreateStoreCommandValidator
+    -> StoreOwnershipPolicy
+    -> StoreFactory
+    -> StoreRepository / StoreUnitOfWork
+```
+
+The service remains an orchestrator and does not perform persistence, validation or entity construction internally.
 
 ## Ownership model
 
-Do not hard-code Sellora's "one store per user" rule into an irreversible package design.
+The first release keeps one Store per owner as the default behavior, but this rule is not hard-coded into the service or persistence model.
 
-For the first release, support enforcing one store per owner as the default persistence/business policy because it matches the current source and immediate consumers. Keep the ownership check behind a dedicated policy/contract so a future multi-store plan does not require rewriting unrelated application services.
+It is represented through `StoreOwnershipPolicy`, allowing later multi-store support without rewriting unrelated use cases.
 
-The public create-store request must never accept a trusted owner ID from an arbitrary request body. The owner principal comes from a host-supplied authentication context/contract.
+The trusted owner ID must come from the authenticated host context. Public create-store request bodies must not be trusted to supply an arbitrary owner ID.
 
 ## Cross-package boundaries
 
 ### Identity
 
-`hamresan-store` must not import Identity presentation dependencies or concrete authentication code.
+Store must not import Identity presentation code or concrete authentication implementations.
 
-Define a small Store-owned contract for the authenticated actor, for example conceptually:
+For FastAPI integration, the host should provide a dependency or adapter that resolves an authenticated actor with the minimum Store-owned contract, conceptually:
 
 ```text
 AuthenticatedActor
-- user_id
+- user_id: UUID
 ```
 
-The host application adapts `hamresan-identity`'s authenticated principal to this contract in its composition root.
-
-Administrative authorization must also be host-supplied through a stable contract such as an `AdminAuthorizer`/`AdminPrincipalProvider`; Store must not own user roles or credentials.
+`hamresan-identity` can be adapted to this contract in the host composition root.
 
 ### Notification
 
-No Notification dependency is required for the initial Store extraction unless a concrete Store use case genuinely sends notifications. Do not add it preemptively.
+No Notification dependency is currently required by Store.
 
 ### Subscription
 
-Store may eventually need plan/capability checks, but the first package must not depend directly on a Subscription implementation. Future checks should use a small capability/entitlement contract.
+No direct Subscription dependency is allowed. Future plan/capability checks should use an entitlement/capability contract.
 
 ### Catalog / Messaging / Channels
 
-Readiness rules may need external state such as catalog readiness or communication-channel readiness. Represent these as explicit reader/checker contracts. Never access another module's repositories or tables directly.
+Future readiness checks must use explicit reader/checker contracts and must never read another module's persistence directly.
 
 ## Persistence design
 
-Use async SQLAlchemy with a host-provided session factory, following the Identity package approach.
-
-Conceptually:
+Target persistence architecture:
 
 ```text
-AsyncSessionFactory
-    ↓
-Store UnitOfWork / repositories
+Host AsyncSessionFactory
+        ↓
+SqlAlchemyStoreUnitOfWork
+        ↓
+SqlAlchemyStoreRepository
+        ↓
+SQLAlchemy model
+        ↕
+Store persistence mapper
+        ↕
+Store domain aggregate
 ```
 
-The package must not create a global engine or sessionmaker.
+Rules:
 
-Tables must use the Store prefix. Expected initial table naming should be reviewed from the source before implementation, but all package-owned tables must match:
+- Package never creates a global engine/sessionmaker.
+- Session lifecycle comes from the host.
+- Persistence logic stays outside services.
+- Domain/model conversion belongs to a mapper.
+- `owner_user_id` is an external UUID reference and must not create a database FK to Identity tables.
+- Store-owned tables use the `store_` prefix.
+- Extensible statuses/types are stored as strings rather than PostgreSQL enums.
+- Structured values may use JSON/JSONB persistence while remaining explicit typed domain objects.
+
+Expected main table naming:
 
 ```text
-store_*
+store_stores
 ```
 
-Prefer regular string columns for extensible statuses/types rather than PostgreSQL enums. Flexible structured data such as address, contacts, currencies, or weekly schedule may use JSON/JSONB in persistence while remaining explicit typed domain objects in application/domain code.
+Remote verification of the merged Stage 4 tree is still pending as noted in Current status.
 
 ## Migration integration
 
-Use the same host-owned Alembic strategy as Identity:
+Stage 6 will follow the same host-owned approach as Identity:
 
-- expose Store metadata through a public `store.migrations` API;
-- provide an `include_store_name` helper for Store-only autogenerate;
-- optionally expose an Alembic extra;
-- do not ship an independent revision graph with a package-level root revision;
-- the consuming application owns migration ordering and revision history.
+- expose Store metadata via public `store.migrations` API;
+- expose an `include_store_name` helper;
+- optionally expose a migrations extra;
+- do not ship an independent package revision root;
+- the consuming application owns Alembic revision history and ordering.
 
-## Public API target
+## FastAPI adapter design — current stage
 
-The exact surface will be finalized after reviewing source implementations. Expected public capabilities include:
-
-```text
-StoreModule / StoreModuleConfig
-StorePublicApi
-CreateStoreCommand / result
-StoreReader / OwnedStoreReader
-Store profile/settings update use cases
-Store availability use cases
-Store moderation use cases (optional in first cut after review)
-FastApiStoreAdapter
-store metadata/migration helpers
-```
-
-Only stable consumer-facing contracts should be exported from package `__init__.py` / public modules. Internal SQLAlchemy models, concrete mappers, repository internals, and framework-specific helpers must remain internal unless there is a real integration need.
-
-## Extraction strategy
-
-Do not copy the entire Sellora Store module blindly. Extract behavior in small verified stages.
-
-### Stage 0 — Source inventory
-
-Status: next.
-
-Read Sellora Store only. Produce an inventory of:
-
-- domain entities and value objects;
-- enums/statuses;
-- repository contracts;
-- application services/use cases;
-- policies and validators;
-- DTOs and mappers;
-- persistence models/repositories/UoW;
-- FastAPI schemas/routes/dependencies;
-- external dependencies and Sellora-specific imports;
-- existing tests and coverage-relevant behavior.
-
-Classify each item as:
+Stage 5 must add only presentation responsibilities:
 
 ```text
-REUSE
-ADAPT
-OMIT
-DEFER
+presentation/
+├── schemas/
+├── mappers/
+├── dependencies/
+└── routes/
 ```
 
-### Stage 1 — Package foundation
-
-Create:
+Target first HTTP capabilities:
 
 ```text
-store/
-├── pyproject.toml
-├── Makefile
-├── README.md
-├── src/store/
-└── tests/
+POST /stores
+GET  /stores/me
+GET  /stores/{store_id}
 ```
 
-Configure:
-
-- Python 3.12+
-- FastAPI
-- SQLAlchemy async
-- Pydantic where presentation schemas require it
-- Ruff
-- Pyright strict
-- pytest / pytest-asyncio
-- pytest-cov with branch coverage and 85% minimum
-- controlled public package exports
-
-Tests must mirror the source structure under `tests/`.
-
-### Stage 2 — Domain
-
-Extract/adapt core Store aggregate, value objects, enums and domain errors.
-
-Keep the domain dependency-free. No SQLAlchemy, FastAPI, Pydantic, Identity or Sellora imports inside domain objects.
-
-Add focused tests for invariants and state transitions.
-
-### Stage 3 — Application contracts and use cases
-
-Introduce explicit contracts for:
-
-- repositories / UoW;
-- authenticated actor / ownership resolution;
-- clock;
-- identifier generation if needed;
-- readiness readers/checkers when actually required.
-
-Extract thin use cases for create/read/update behavior. Separate validators, mappers, policies and factories from services.
-
-### Stage 4 — SQLAlchemy persistence
-
-Add package-owned SQLAlchemy models, mappers, repositories and UoW.
+Exact public paths may be adjusted during implementation, but responsibilities must remain separated.
 
 Requirements:
 
-- host-provided `AsyncSessionFactory`;
-- `store_` table prefix;
-- no persistence logic in services;
-- no domain construction hidden in repositories when a mapper/factory has independent responsibility;
-- SQLite-compatible integration tests where reasonable, plus PostgreSQL-specific behavior isolated when required.
+- Request/response schemas use Pydantic.
+- Request -> command and domain -> response conversions live in dedicated mappers.
+- Routes only translate HTTP input/output and invoke application services.
+- No repository or SQLAlchemy access from routes.
+- No Store creation logic inside routes.
+- No direct Identity imports.
+- Authentication is supplied by the host as a dependency/contract.
+- Owner ID is taken from the authenticated actor, not the request body.
+- Framework dependency call patterns must satisfy Ruff B008 and Pyright strict.
+- HTTP errors must be mapped at the presentation boundary rather than leaking persistence details.
+
+Administrative moderation routes remain deferred until the core public FastAPI contract is stable.
+
+## Extraction stages
+
+### Stage 0 — Source inventory
+
+Status: **DONE**
+
+Output:
+
+```text
+store/STAGE0_INVENTORY.md
+```
+
+Sellora source areas were classified as `REUSE / ADAPT / OMIT / DEFER`.
+
+### Stage 1 — Package foundation
+
+Status: **DONE**
+
+Completed:
+
+- Python 3.12+
+- package metadata
+- FastAPI / Pydantic / SQLAlchemy dependencies
+- Ruff
+- Pyright strict
+- pytest / pytest-asyncio
+- branch coverage >= 85%
+- Store CI
+- controlled package exports
+
+### Stage 2 — Domain
+
+Status: **DONE**
+
+Completed:
+
+- Store aggregate
+- Store enums
+- Store value objects
+- dedicated validators
+- domain behavior tests
+
+### Stage 3 — Application contracts and use cases
+
+Status: **DONE**
+
+Completed:
+
+- repository/UoW contracts
+- clock and identifier contracts
+- CreateStore use case
+- GetStore use case
+- GetOwnedStore use case
+- CreateStoreCommandValidator
+- StoreFactory
+- StoreOwnershipPolicy
+- mirror application tests and separate test support components
+
+### Stage 4 — SQLAlchemy persistence
+
+Status: **REPORTED TESTED/MERGED — REMOTE VERIFICATION PENDING**
+
+Expected completed behavior:
+
+- host-provided `AsyncSessionFactory`
+- `SqlAlchemyStoreRepository`
+- `SqlAlchemyStoreUnitOfWork`
+- dedicated persistence mapper
+- `store_*` table naming
+- no FK to Identity tables
+- async SQLite integration tests where practical
+
+Before Stage 5 relies on concrete persistence exports, verify these files/classes are visible on remote `main`.
 
 ### Stage 5 — FastAPI adapter
 
-Add request/response schemas, mappers, endpoint callables and router installer.
+Status: **NEXT / IN PROGRESS**
 
-Authentication and admin authorization come from host-supplied contracts/dependencies. Do not reproduce Sellora's direct import of Identity presentation code.
+Add:
 
-Avoid large all-purpose update endpoints. Preserve section-based updates where they provide clear domain boundaries.
+- authenticated actor contract/dependency boundary
+- request schemas
+- response schemas
+- presentation mappers
+- endpoint functions/router installer
+- FastAPI integration tests
+
+Keep Identity adaptation in the host composition root.
 
 ### Stage 6 — Alembic integration
 
-Expose `store.migrations` metadata/filter helpers and add real autogenerate tests, following the Identity package pattern.
+Status: **PENDING**
+
+Expose Store metadata/filter helpers and add real Alembic autogenerate tests.
 
 ### Stage 7 — Consumer integration example
 
-Create a small example that composes:
+Status: **PENDING**
+
+Create an example composing:
 
 ```text
 hamresan-identity
@@ -303,46 +376,33 @@ FastAPI
 async SQLAlchemy
 ```
 
-Only add Notification/Subscription if the Store package actually needs them by then.
+Add Docker testing without a fixed host port.
 
-Test the example locally and in Docker without assuming a fixed host port.
+Notification/Subscription should only be included if an actual Store use case requires them.
 
 ### Stage 8 — Documentation and release readiness
 
-Complete README with:
+Status: **PENDING**
 
-- installation;
-- database/session factory wiring;
-- Identity adapter composition;
-- FastAPI installation;
-- migrations;
-- public Python API;
-- table ownership;
-- examples;
-- quality commands.
+Complete README with installation, composition, session factory wiring, Identity adapter, FastAPI, migrations, public API, table ownership and examples.
 
-Run full lint, format, strict typecheck, tests, branch coverage and consumer integration CI before merge.
+Run the full quality gate before final merge/release.
 
 ## Test strategy
 
-Tests must mirror package layers and responsibilities. Example target structure:
+Tests mirror responsibilities:
 
 ```text
 tests/
 ├── domain/
 ├── application/
-│   ├── services/
-│   ├── policies/
-│   ├── validators/
-│   └── mappers/
 ├── infrastructure/
-│   └── persistence/
 ├── presentation/
 ├── migrations/
 └── support/
 ```
 
-Independent Fake/Builder/Factory/Test Helper responsibilities must live in separate support files, not inside test functions/classes.
+Independent Fakes, Builders, Factories and Test Helpers stay in separate support files rather than inside test files/functions.
 
 Quality gate:
 
@@ -354,36 +414,41 @@ Pytest: pass
 Branch coverage: >= 85%
 ```
 
-Do not raise coverage by excluding meaningful production branches. Add behavioral tests instead.
+Coverage should be increased through behavioral tests, not by excluding meaningful production branches.
 
 ## Decisions already made
 
-- Sellora is read-only during extraction.
-- Shared repository: `hamresan/shared-packages`.
-- Package name: `hamresan-store` / Python package `store` unless source inventory reveals a concrete naming conflict.
-- FastAPI is supported as a presentation adapter.
-- SQLAlchemy async persistence is supported.
+- Sellora remains read-only.
+- Shared repository is `hamresan/shared-packages`.
+- Package is `hamresan-store` / `store`.
+- FastAPI is a presentation adapter only.
+- SQLAlchemy persistence is async.
 - Database session factory is injected by the host.
-- Store-owned table names use the `store_` prefix.
+- Store-owned tables use the `store_` prefix.
+- `owner_user_id` is an external UUID reference, not a DB FK to Identity.
 - Clean Architecture, SOLID and explicit DI are mandatory.
-- No direct concrete dependency on Identity; authentication is adapted through a Store-owned contract.
-- No speculative dependency on Notification or Subscription.
+- One-store-per-owner is enforced through a replaceable policy.
+- No direct concrete Identity dependency.
+- No speculative Notification or Subscription dependency.
 - Alembic revision graph remains host-owned.
-- Tests mirror package structure with branch coverage >= 85%.
+- Tests mirror package structure and coverage must remain >= 85%.
 
-## Open questions to resolve during Stage 0
+## Deferred capabilities
 
-- Which existing Sellora Store services are sufficiently generic to reuse with only import/path changes?
-- Which readiness rules are Sellora-specific and should be deferred behind contracts?
-- Whether administrative moderation belongs in the first reusable release or should be a later optional capability.
-- Whether contacts/currencies/schedules remain embedded JSON-backed value objects or deserve separate tables in the reusable package.
-- Exact initial table layout and indexes.
-- Whether the one-store-per-owner rule should be a default policy/configuration option or a hard first-version invariant.
-- Which section update endpoints are essential for the first consumer.
+The following are intentionally not blocking the first reusable Store package:
+
+- admin moderation HTTP surface;
+- Sellora-specific readiness orchestration;
+- subscription/entitlement enforcement;
+- catalog/channel readiness integrations;
+- multi-store ownership mode;
+- broader Business/Organization aggregate beyond Store.
+
+They should be introduced through stable contracts when a real consumer needs them.
 
 ## Continuation checkpoint for a new chat/topic
 
-If this conversation becomes too long, continue from this file.
+If the conversation becomes too long, continue from this file.
 
 Use this context:
 
@@ -391,8 +456,13 @@ Use this context:
 Repository: hamresan/shared-packages
 Roadmap: store/ROADMAP.md
 Sellora reference (read-only): hamresan/sellora/backend/app/modules/store
-Current objective: build reusable hamresan-store package
-Next step: Stage 0 — inventory the current Sellora Store module and classify components as REUSE / ADAPT / OMIT / DEFER before implementing code.
+Package: hamresan-store
+Completed: Stage 0, Stage 1, Stage 2, Stage 3
+Stage 4: reported tested/merged; verify persistence tree on remote main before depending on it
+Current branch: agent/add-store-fastapi-adapter
+Current objective: Stage 5 — implement FastAPI adapter
+Next implementation: authenticated actor boundary + create/read Store schemas, mappers, routes and FastAPI tests
+After Stage 5: Stage 6 — host-owned Alembic integration
 ```
 
 Do not modify Sellora. Keep all implementation work in `shared-packages` on dedicated branches and PRs.
