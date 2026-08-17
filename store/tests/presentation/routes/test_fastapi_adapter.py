@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from store.presentation import build_fastapi_store_adapter
 from tests.support.presentation import (
@@ -10,7 +9,9 @@ from tests.support.presentation import (
     FakeOwnedStoreReader,
     FakeStoreCreator,
     FakeStoreReader,
+    StoreHttpTestClient,
     StorePresentationBuilder,
+    build_store_http_test_client,
 )
 
 
@@ -19,7 +20,7 @@ def build_client(
     store_creator: FakeStoreCreator,
     owned_store_reader: FakeOwnedStoreReader,
     store_reader: FakeStoreReader,
-) -> TestClient:
+) -> StoreHttpTestClient:
     app = FastAPI()
     adapter = build_fastapi_store_adapter(
         authenticated_actor_dependency=actor_dependency,
@@ -28,7 +29,7 @@ def build_client(
         store_reader=store_reader,
     )
     adapter.install(app)
-    return TestClient(app)
+    return build_store_http_test_client(app)
 
 
 def test_create_store_uses_authenticated_actor_owner_id() -> None:
