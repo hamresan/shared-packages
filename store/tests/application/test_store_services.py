@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -31,7 +31,7 @@ from tests.support import (
 
 def build_create_service(
     repository: FakeStoreRepository,
-    store_id,
+    store_id: UUID,
 ) -> tuple[CreateStoreService, FakeStoreUnitOfWork]:
     unit_of_work = FakeStoreUnitOfWork(repository)
     validator = CreateStoreCommandValidator(
