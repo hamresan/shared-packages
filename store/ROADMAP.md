@@ -15,24 +15,19 @@ Sellora must not be modified during this extraction.
 
 ## Current status
 
-Completed and merged:
+Implemented through:
 
 - Stage 0 — Source inventory
 - Stage 1 — Package foundation
 - Stage 2 — Core domain
 - Stage 3 — Application contracts and Create/Read use cases
 - Stage 4 — Async SQLAlchemy persistence
+- Stage 5 — FastAPI adapter
 
-Current implementation branch:
-
-```text
-agent/add-store-fastapi-adapter
-```
-
-Current objective:
+Next objective:
 
 ```text
-Stage 5 — FastAPI adapter
+Stage 6 — host-owned Alembic integration
 ```
 
 ## Core architectural decisions
@@ -93,6 +88,10 @@ StoreUnitOfWorkFactory
 Clock
 StoreIdentifierGenerator
 
+StoreCreator
+StoreReader
+OwnedStoreReader
+
 CreateStoreCommand
 CreateStoreService
 GetStoreQuery
@@ -119,7 +118,7 @@ Services remain thin orchestrators.
 
 ## Completed persistence layer
 
-Stage 4 is completed, tested and merged.
+Stage 4 uses a host-provided async session factory.
 
 Persistence architecture:
 
@@ -153,14 +152,14 @@ Persistence rules:
 
 Store must not import Identity presentation or concrete authentication code.
 
-Stage 5 should introduce a Store-owned authenticated actor abstraction, conceptually:
+Store owns the authenticated actor boundary:
 
 ```text
 AuthenticatedActor
 - user_id: UUID
 ```
 
-The host adapts `hamresan-identity`'s authenticated principal to this contract.
+The host adapts `hamresan-identity` or another authentication implementation to this contract in its composition root.
 
 ### Notification
 
@@ -176,16 +175,19 @@ Future readiness checks must use explicit contracts and never access another pac
 
 ## Stage 5 — FastAPI adapter
 
-Status: **IN PROGRESS**
+Status: **COMPLETED**
 
-Target presentation structure:
+Presentation structure:
 
 ```text
 src/store/presentation/
-├── schemas/
-├── mappers/
 ├── dependencies/
-└── routes/
+├── errors/
+├── mappers/
+├── routes/
+├── schemas/
+├── factory.py
+└── fastapi.py
 ```
 
 Initial HTTP capabilities:
@@ -196,27 +198,28 @@ GET  /stores/me
 GET  /stores/{store_id}
 ```
 
-Requirements:
+Implemented requirements:
 
 - Pydantic request/response schemas;
-- dedicated request -> command and domain -> response mappers;
-- routes only translate HTTP input/output and call application services;
+- dedicated request -> command/query and domain -> response mappers;
+- thin FastAPI routes;
 - no repository or SQLAlchemy access from routes;
 - no Store construction logic in routes;
 - no direct Identity imports;
-- owner ID comes from the authenticated actor, never from an arbitrary request body;
+- owner ID comes from `AuthenticatedActor`, never from request body;
+- extra create-request fields are rejected;
 - host-supplied authentication dependency;
-- Ruff B008-safe dependency wiring;
-- Pyright strict clean;
+- Store-owned `AuthenticatedActor` and authentication dependency types;
 - presentation-level error mapping;
-- FastAPI integration tests under `tests/presentation`;
-- separate Fake/Builder support components under `tests/support` where needed.
+- explicit application use-case contracts for presentation DI;
+- FastAPI tests under `tests/presentation`;
+- presentation Fake/Builder support components under dedicated `tests/support/presentation` files.
 
 Administrative moderation routes remain deferred until the core public HTTP contract is stable.
 
 ## Stage 6 — Alembic integration
 
-Status: **PENDING**
+Status: **NEXT**
 
 Follow the same host-owned strategy used by `hamresan-identity`:
 
@@ -283,11 +286,9 @@ Repository: hamresan/shared-packages
 Roadmap: store/ROADMAP.md
 Sellora reference: hamresan/sellora/backend/app/modules/store (read-only)
 Package: hamresan-store
-Completed and merged: Stage 0, Stage 1, Stage 2, Stage 3, Stage 4
-Current branch: agent/add-store-fastapi-adapter
-Current objective: Stage 5 — FastAPI adapter
-Next implementation: authenticated actor boundary + request/response schemas + presentation mappers + POST /stores + GET /stores/me + GET /stores/{store_id} + FastAPI tests
-After Stage 5: Stage 6 — host-owned Alembic integration
+Implemented: Stage 0 through Stage 5
+Next objective: Stage 6 — host-owned Alembic integration
+Stage 6 requirements: store.migrations metadata + include_store_name + optional Alembic extra + real autogenerate tests
 ```
 
 Do not modify Sellora. Keep implementation work in `shared-packages` on dedicated branches and PRs.
