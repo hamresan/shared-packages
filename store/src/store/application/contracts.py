@@ -1,4 +1,4 @@
-from collections.abc import AsyncContextManager
+from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -22,7 +22,7 @@ class StoreUnitOfWork(Protocol):
 
 
 class StoreUnitOfWorkFactory(Protocol):
-    def __call__(self) -> AsyncContextManager[StoreUnitOfWork]: ...
+    def __call__(self) -> AbstractAsyncContextManager[StoreUnitOfWork]: ...
 
 
 class StoreIdentifierGenerator(Protocol):
