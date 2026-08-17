@@ -23,11 +23,12 @@ Implemented through:
 - Stage 3 — Application contracts and Create/Read use cases
 - Stage 4 — Async SQLAlchemy persistence
 - Stage 5 — FastAPI adapter
+- Stage 6 — Host-owned Alembic integration
 
 Next objective:
 
 ```text
-Stage 6 — host-owned Alembic integration
+Stage 7 — Consumer integration example
 ```
 
 ## Core architectural decisions
@@ -125,26 +126,32 @@ Persistence architecture:
 ```text
 Host AsyncSessionFactory
         ↓
+build_sqlalchemy_store_unit_of_work_factory
+        ↓
 SqlAlchemyStoreUnitOfWork
+        ↓
+SqlAlchemyStoreRepositoryFactory
         ↓
 SqlAlchemyStoreRepository
         ↓
-SQLAlchemy model
-        ↕
-Store persistence mapper
-        ↕
-Store domain aggregate
+StorePersistenceMapper
+        ↓
+StoreModel / StoreBase metadata
 ```
 
 Persistence rules:
 
 - no global engine/sessionmaker inside the package;
 - no persistence logic in application services;
+- persistence composition is isolated in the SQLAlchemy infrastructure adapter;
 - mapping is handled by dedicated persistence mappers;
+- repository construction is handled by a dedicated repository factory;
 - `store_*` table naming;
 - no FK to `identity_users`;
 - structured Store data may be persisted as JSON-backed columns while remaining typed domain objects;
 - async integration tests are required.
+
+The reusable persistence implementation follows the real Sellora Store persistence shape as a read-only reference while removing Sellora-specific coupling: no Identity FK, no Sellora base model, and no Sellora module imports.
 
 ## Cross-package boundaries
 
@@ -219,19 +226,21 @@ Administrative moderation routes remain deferred until the core public HTTP cont
 
 ## Stage 6 — Alembic integration
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Follow the same host-owned strategy used by `hamresan-identity`:
+Implemented the same host-owned strategy used by `hamresan-identity`:
 
-- expose Store metadata via `store.migrations`;
-- expose `include_store_name` for Store-only autogenerate;
-- optionally provide a migrations extra;
-- do not ship a package-owned root revision graph;
-- add real Alembic autogenerate tests.
+- `store.migrations.store_metadata()` exposes Store-owned SQLAlchemy metadata;
+- `store.migrations.include_store_name()` filters Store-only reflection/autogenerate;
+- `hamresan-store[migrations]` provides the optional Alembic dependency;
+- the package does not ship a package-owned/root revision graph;
+- real Alembic `compare_metadata` tests verify `store_stores` autogeneration.
+
+Migration ordering, revision IDs, and the revision graph remain owned by the consuming application.
 
 ## Stage 7 — Consumer integration example
 
-Status: **PENDING**
+Status: **NEXT**
 
 Create a real consumer example composing:
 
@@ -240,9 +249,17 @@ hamresan-identity
 hamresan-store
 FastAPI
 async SQLAlchemy
+host-owned Alembic
 ```
 
-Add Docker verification without relying on a fixed host port.
+The example should demonstrate:
+
+- one host-owned async engine/sessionmaker;
+- Identity -> Store authenticated actor adaptation in the composition root;
+- Store application service/UoW composition;
+- FastAPI router installation;
+- host-owned Alembic wiring for Store metadata;
+- Docker verification without relying on a fixed host port.
 
 Notification/Subscription should only be added if a concrete Store use case requires them.
 
@@ -286,9 +303,9 @@ Repository: hamresan/shared-packages
 Roadmap: store/ROADMAP.md
 Sellora reference: hamresan/sellora/backend/app/modules/store (read-only)
 Package: hamresan-store
-Implemented: Stage 0 through Stage 5
-Next objective: Stage 6 — host-owned Alembic integration
-Stage 6 requirements: store.migrations metadata + include_store_name + optional Alembic extra + real autogenerate tests
+Implemented: Stage 0 through Stage 6
+Next objective: Stage 7 — consumer integration example
+Stage 7 requirements: real host app composing Identity + Store + FastAPI + async SQLAlchemy + host-owned Alembic + Docker verification
 ```
 
 Do not modify Sellora. Keep implementation work in `shared-packages` on dedicated branches and PRs.
