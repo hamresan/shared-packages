@@ -3,6 +3,10 @@ from tests.support.presentation.authentication import (
     FakeAuthenticatedActorDependency,
 )
 from tests.support.presentation.builders import StorePresentationBuilder
+from tests.support.presentation.http_client import (
+    StoreHttpTestClient,
+    build_store_http_test_client,
+)
 from tests.support.presentation.services import (
     FakeOwnedStoreReader,
     FakeStoreCreator,
@@ -15,5 +19,7 @@ __all__ = [
     "FakeOwnedStoreReader",
     "FakeStoreCreator",
     "FakeStoreReader",
+    "StoreHttpTestClient",
     "StorePresentationBuilder",
+    "build_store_http_test_client",
 ]
