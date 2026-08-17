@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from store.application.contracts import Clock, StoreIdentifierGenerator
 from store.application.dto import CreateStoreCommand
 from store.domain import Store, StoreCurrency
@@ -19,7 +21,9 @@ class StoreFactory:
             supported_languages=(command.primary_language,),
             country_code=command.country_code,
             base_currency_code=command.base_currency_code,
-            currencies=(StoreCurrency(code=command.base_currency_code, exchange_rate=1),),
+            currencies=(
+                StoreCurrency(code=command.base_currency_code, exchange_rate=Decimal("1")),
+            ),
             created_at=now,
             updated_at=now,
         )
