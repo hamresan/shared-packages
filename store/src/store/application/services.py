@@ -7,11 +7,12 @@ from store.application.dto import (
 )
 from store.application.factory import StoreFactory
 from store.application.policies import StoreOwnershipPolicy
+from store.application.use_cases import OwnedStoreReader, StoreCreator, StoreReader
 from store.application.validators import CreateStoreCommandValidator
 from store.domain import Store
 
 
-class CreateStoreService:
+class CreateStoreService(StoreCreator):
     def __init__(
         self,
         unit_of_work_factory: StoreUnitOfWorkFactory,
@@ -37,7 +38,7 @@ class CreateStoreService:
         return CreateStoreResult(store=store)
 
 
-class GetStoreService:
+class GetStoreService(StoreReader):
     def __init__(self, unit_of_work_factory: StoreUnitOfWorkFactory) -> None:
         self._unit_of_work_factory = unit_of_work_factory
 
@@ -46,7 +47,7 @@ class GetStoreService:
             return await unit_of_work.stores.get_by_id(query.store_id)
 
 
-class GetOwnedStoreService:
+class GetOwnedStoreService(OwnedStoreReader):
     def __init__(self, unit_of_work_factory: StoreUnitOfWorkFactory) -> None:
         self._unit_of_work_factory = unit_of_work_factory
 

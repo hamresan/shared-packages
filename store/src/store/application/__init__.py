@@ -14,6 +14,7 @@ from store.application.dto import (
 from store.application.factory import StoreFactory
 from store.application.policies import StoreOwnershipPolicy
 from store.application.services import CreateStoreService, GetOwnedStoreService, GetStoreService
+from store.application.use_cases import OwnedStoreReader, StoreCreator, StoreReader
 from store.application.validators import CreateStoreCommandValidator
 
 __all__ = [
@@ -26,9 +27,12 @@ __all__ = [
     "GetOwnedStoreService",
     "GetStoreQuery",
     "GetStoreService",
+    "OwnedStoreReader",
+    "StoreCreator",
     "StoreFactory",
     "StoreIdentifierGenerator",
     "StoreOwnershipPolicy",
+    "StoreReader",
     "StoreRepository",
     "StoreUnitOfWork",
     "StoreUnitOfWorkFactory",
