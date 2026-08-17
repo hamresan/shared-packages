@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from store.application.contracts import StoreRepository
 
 
@@ -5,7 +7,7 @@ class StoreOwnershipPolicy:
     async def ensure_owner_can_create(
         self,
         repository: StoreRepository,
-        owner_user_id,
+        owner_user_id: UUID,
     ) -> None:
         existing = await repository.get_by_owner_id(owner_user_id)
         if existing is not None:
