@@ -59,8 +59,11 @@ def include_consumer_name(
     type_: AlembicObjectType,
     parent_names: AlembicParentNames,
 ) -> bool:
-    return include_identity_name(name, type_, parent_names) or include_store_name(
+    package_parent_names: dict[str, str | None] = {
+        str(key): value for key, value in parent_names.items()
+    }
+    return include_identity_name(name, type_, package_parent_names) or include_store_name(
         name,
         type_,
-        parent_names,
+        package_parent_names,
     )
