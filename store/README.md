@@ -12,9 +12,30 @@ Implemented stages include:
 - Application contracts and Create/Read use cases.
 - Async SQLAlchemy persistence with a host-provided session factory.
 - FastAPI adapter for create and read operations.
+- Host-owned Alembic integration through package metadata/filter helpers.
 - Ruff, Pyright strict mode, Pytest, and branch coverage with an 85% minimum gate.
 
-The next roadmap stage is host-owned Alembic integration.
+The next roadmap stage is the real consumer integration example.
+
+## SQLAlchemy persistence
+
+The package owns SQLAlchemy models and mapping, but the consuming application owns the engine and session lifecycle.
+
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from store.infrastructure.persistence.sqlalchemy import (
+    build_sqlalchemy_store_unit_of_work_factory,
+)
+
+engine = create_async_engine(database_url)
+session_factory = async_sessionmaker(engine, expire_on_commit=False)
+store_uow_factory = build_sqlalchemy_store_unit_of_work_factory(session_factory)
+```
+
+The package never creates a global engine or sessionmaker. `owner_user_id` is stored as an external UUID reference and has no foreign key to Identity tables.
+
+Package-owned table names use the `store_` prefix. The current Store table is `store_stores`.
 
 ## FastAPI adapter
 
@@ -52,6 +73,29 @@ store_adapter.install(app)
 
 The Store package does not import `hamresan-identity`; the consumer owns that wiring.
 
+## Alembic integration
+
+Alembic revision history belongs to the consuming application. Install the optional migration dependency when the host uses Alembic:
+
+```bash
+pip install "hamresan-store[migrations]"
+```
+
+Use the public migration helpers in the host Alembic environment:
+
+```python
+from store.migrations import include_store_name, store_metadata
+
+context.configure(
+    connection=connection,
+    target_metadata=store_metadata(),
+    include_name=include_store_name,
+    include_schemas=True,
+)
+```
+
+`store_metadata()` exposes the SQLAlchemy metadata owned by this package. `include_store_name()` limits reflection/autogenerate to `store_*` tables and their child objects. The package intentionally does not ship its own root revision graph or decide migration ordering for the host application.
+
 ## Architecture rules
 
 - Domain code has no FastAPI, SQLAlchemy, Identity, or Sellora dependencies.
@@ -61,6 +105,7 @@ The Store package does not import `hamresan-identity`; the consumer owns that wi
 - Authentication is injected through the Store-owned `AuthenticatedActor` boundary.
 - No repository or SQLAlchemy access occurs in presentation routes.
 - SQLAlchemy session lifecycle is host-owned through an injected async session factory.
+- Persistence mapping, repository construction, and UoW composition are separate responsibilities.
 - Package-owned database tables use the `store_` prefix.
 - Alembic revision history remains owned by the consuming application.
 
