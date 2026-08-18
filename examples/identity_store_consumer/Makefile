@@ -10,7 +10,7 @@ format-check:
 	$(PYTHON) -m ruff format --check .
 
 typecheck:
-	$(PYTHON) -m pyright
+	$(PYTHON) -m pyright --project pyrightconfig.json
 
 test:
 	$(PYTHON) -m pytest
