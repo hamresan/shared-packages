@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from fastapi import FastAPI
+from identity import IdentityModule, IdentityModuleConfig
 from store.presentation import FastApiStoreAdapter
 
 from consumer_app.authentication import (
@@ -10,7 +11,6 @@ from consumer_app.authentication import (
 from consumer_app.database import ConsumerDatabase
 from consumer_app.notification import NullNotificationSender
 from consumer_app.store_runtime import build_store_adapter
-from identity import IdentityModule, IdentityModuleConfig
 
 
 @dataclass(frozen=True, slots=True)
