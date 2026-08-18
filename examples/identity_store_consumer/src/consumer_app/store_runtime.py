@@ -36,9 +36,7 @@ def build_store_adapter(
     database: ConsumerDatabase,
     authenticated_actor_dependency: AuthenticatedActorDependency,
 ) -> FastApiStoreAdapter:
-    unit_of_work_factory = build_sqlalchemy_store_unit_of_work_factory(
-        database.session_factory
-    )
+    unit_of_work_factory = build_sqlalchemy_store_unit_of_work_factory(database.session_factory)
     create_store = CreateStoreService(
         unit_of_work_factory=unit_of_work_factory,
         validator=CreateStoreCommandValidator(
