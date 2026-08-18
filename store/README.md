@@ -24,6 +24,200 @@ For local package development:
 make install-dev
 ```
 
+## Quickstart — using the package in a FastAPI application
+
+A typical host application uses `hamresan-store` in five steps:
+
+1. create the host-owned async SQLAlchemy session factory;
+2. compose the Store application services;
+3. adapt the host authentication result to `AuthenticatedActor`;
+4. build and install the FastAPI adapter;
+5. let the host own Alembic migrations.
+
+### 1. Create the database session factory
+
+The host owns the database engine and session lifecycle. Store only receives the session factory.
+
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from store.infrastructure.persistence import build_sqlalchemy_store_unit_of_work_factory
+
+engine = create_async_engine("postgresql+asyncpg://user:password@localhost/app")
+session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+store_uow_factory = build_sqlalchemy_store_unit_of_work_factory(session_factory)
+```
+
+Do not create a second Store-specific database engine when the application already owns one. The same host session infrastructure can be supplied to other reusable packages as well.
+
+### 2. Compose the Store services
+
+The Store package does not hide composition behind a service locator. The host explicitly provides replaceable dependencies such as the clock and identifier generator.
+
+```python
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
+
+from store import (
+    CountryCodeValidator,
+    CreateStoreService,
+    CurrencyCodeValidator,
+    GetOwnedStoreService,
+    GetStoreService,
+    LanguageSettingsValidator,
+    StoreNameValidator,
+)
+from store.application import (
+    Clock,
+    CreateStoreCommandValidator,
+    StoreFactory,
+    StoreIdentifierGenerator,
+    StoreOwnershipPolicy,
+)
+
+
+class SystemClock(Clock):
+    def now(self) -> datetime:
+        return datetime.now(UTC)
+
+
+class UuidStoreIdentifierGenerator(StoreIdentifierGenerator):
+    def new_store_id(self) -> UUID:
+        return uuid4()
+
+
+create_store_service = CreateStoreService(
+    unit_of_work_factory=store_uow_factory,
+    validator=CreateStoreCommandValidator(
+        name_validator=StoreNameValidator(),
+        language_validator=LanguageSettingsValidator(),
+        country_validator=CountryCodeValidator(),
+        currency_validator=CurrencyCodeValidator(),
+    ),
+    ownership_policy=StoreOwnershipPolicy(),
+    factory=StoreFactory(
+        identifier_generator=UuidStoreIdentifierGenerator(),
+        clock=SystemClock(),
+    ),
+)
+
+get_owned_store_service = GetOwnedStoreService(store_uow_factory)
+get_store_service = GetStoreService(store_uow_factory)
+```
+
+The default `StoreOwnershipPolicy` enforces the current one-store-per-owner rule. A future host can replace that policy without changing the HTTP or persistence layers.
+
+### 3. Adapt authentication to Store
+
+Store does not authenticate tokens itself and does not depend on `hamresan-identity`. The host authentication layer must return Store's small actor contract:
+
+```python
+from store import AuthenticatedActor
+
+
+async def require_store_actor() -> AuthenticatedActor:
+    principal = await authenticate_request_with_your_identity_layer()
+    return AuthenticatedActor(user_id=principal.user_id)
+```
+
+`authenticate_request_with_your_identity_layer()` represents the host application's existing authentication dependency. When using `hamresan-identity`, authenticate through its public API and map the resulting principal to `AuthenticatedActor` in the host composition root.
+
+The important boundary is:
+
+```text
+host authentication / hamresan-identity
+                ↓
+        AuthenticatedActor
+                ↓
+          hamresan-store
+```
+
+`owner_user_id` is therefore never trusted from an HTTP request body.
+
+### 4. Install the FastAPI adapter
+
+Once the use cases and authentication dependency are available, install Store on the host FastAPI application:
+
+```python
+from fastapi import FastAPI
+
+from store import build_fastapi_store_adapter
+
+app = FastAPI()
+
+store_adapter = build_fastapi_store_adapter(
+    authenticated_actor_dependency=require_store_actor,
+    store_creator=create_store_service,
+    owned_store_reader=get_owned_store_service,
+    store_reader=get_store_service,
+)
+
+store_adapter.install(app)
+```
+
+The application now exposes:
+
+```text
+POST /stores
+GET  /stores/me
+GET  /stores/{store_id}
+```
+
+### 5. Use the HTTP API
+
+Create a Store:
+
+```http
+POST /stores
+Authorization: Bearer <host-access-token>
+Content-Type: application/json
+
+{
+  "name": "Acme Store",
+  "business_type": "retail",
+  "primary_language": "en",
+  "country_code": "OM",
+  "base_currency_code": "OMR"
+}
+```
+
+Notice that `owner_user_id` is not part of the request. It is derived from `AuthenticatedActor`.
+
+Read the authenticated user's Store:
+
+```http
+GET /stores/me
+Authorization: Bearer <host-access-token>
+```
+
+Read a Store by ID:
+
+```http
+GET /stores/{store_id}
+Authorization: Bearer <host-access-token>
+```
+
+The create request rejects unknown fields, including attempts to inject a trusted owner ID.
+
+### 6. Add Store metadata to the host Alembic environment
+
+The host owns revision files and ordering. Store only exposes package metadata and an ownership filter:
+
+```python
+from alembic import context
+from store.migrations import include_store_name, store_metadata
+
+context.configure(
+    connection=connection,
+    target_metadata=store_metadata(),
+    include_name=include_store_name,
+    include_schemas=True,
+)
+```
+
+For an application combining Store with other reusable packages, compose their metadata/filter helpers in the host Alembic layer. See `examples/identity_store_consumer` for the complete Identity + Store example.
+
 ## Package boundaries
 
 The package owns:
