@@ -14,12 +14,19 @@ class StoreContactPersistenceMapper:
         ]
 
     def to_domain(self, records: list[dict[str, object]]) -> tuple[StoreContact, ...]:
-        return tuple(
-            StoreContact(
-                type=StoreContactType(str(record["type"])),
-                value=str(record["value"]),
-                label=record.get("label") if isinstance(record.get("label"), str) else None,
-                is_primary=bool(record.get("is_primary", False)),
+        contacts: list[StoreContact] = []
+
+        for record in records:
+            label_value = record.get("label")
+            label = label_value if isinstance(label_value, str) else None
+
+            contacts.append(
+                StoreContact(
+                    type=StoreContactType(str(record["type"])),
+                    value=str(record["value"]),
+                    label=label,
+                    is_primary=bool(record.get("is_primary", False)),
+                )
             )
-            for record in records
-        )
+
+        return tuple(contacts)
