@@ -1,6 +1,15 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from store import (
+    CountryCodeValidator,
+    CreateStoreService,
+    CurrencyCodeValidator,
+    GetOwnedStoreService,
+    GetStoreService,
+    LanguageSettingsValidator,
+    StoreNameValidator,
+)
 from store.application import (
     Clock,
     CreateStoreCommandValidator,
@@ -11,15 +20,6 @@ from store.application import (
 from store.infrastructure.persistence import build_sqlalchemy_store_unit_of_work_factory
 from store.presentation import FastApiStoreAdapter, build_fastapi_store_adapter
 from store.presentation.dependencies import AuthenticatedActorDependency
-from store import (
-    CountryCodeValidator,
-    CreateStoreService,
-    CurrencyCodeValidator,
-    GetOwnedStoreService,
-    GetStoreService,
-    LanguageSettingsValidator,
-    StoreNameValidator,
-)
 
 from consumer_app.database import ConsumerDatabase
 
