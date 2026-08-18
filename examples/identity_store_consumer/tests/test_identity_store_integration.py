@@ -4,7 +4,7 @@ from httpx import ASGITransport, AsyncClient
 from pydantic import BaseModel
 from store.presentation.schemas import StoreResponse
 
-from consumer_app import build_consumer_application
+from identity_store_consumer_app import build_consumer_application
 
 
 class CurrentUserResponse(BaseModel):
