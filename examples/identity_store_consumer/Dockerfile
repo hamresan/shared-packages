@@ -18,4 +18,4 @@ RUN python -m pip install --no-cache-dir -e "/workspace/notification" \
 
 WORKDIR /workspace/examples/identity_store_consumer
 
-CMD ["make", "check"]
+CMD ["sh", "-c", "python -m ruff check . && python -m ruff format --check . && python -m pyright --project pyrightconfig.json && python -m pytest"]
