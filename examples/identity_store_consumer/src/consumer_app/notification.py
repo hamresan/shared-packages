@@ -1,4 +1,8 @@
-from notification.public import NotificationReference, NotificationSender, SendNotification
+from notification.public import (
+    NotificationReference,
+    NotificationSender,
+    SendNotification,
+)
 
 
 class NullNotificationSender(NotificationSender):

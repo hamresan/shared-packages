@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from identity import (
     AccessTokenAuthenticator,
     AccessTokenIssuer,
