@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from consumer_app.database import consumer_metadata, include_consumer_name
+from identity_store_consumer_app.database import consumer_metadata, include_consumer_name
 
 config = context.config
 if config.config_file_name is not None:
