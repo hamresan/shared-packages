@@ -1,5 +1,6 @@
-from collections.abc import AsyncGenerator, Mapping
+from collections.abc import AsyncGenerator, MutableMapping
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from identity.migrations import identity_metadata, include_identity_name
 from sqlalchemy import MetaData
@@ -11,6 +12,20 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import StaticPool
 from store.migrations import include_store_name, store_metadata
+
+AlembicObjectType = Literal[
+    "schema",
+    "table",
+    "column",
+    "index",
+    "unique_constraint",
+    "foreign_key_constraint",
+    "check_constraint",
+]
+AlembicParentNames = MutableMapping[
+    Literal["schema_name", "table_name", "schema_qualified_table_name"],
+    str | None,
+]
 
 
 class ConsumerDatabase:
@@ -41,8 +56,8 @@ def consumer_metadata() -> tuple[MetaData, MetaData]:
 
 def include_consumer_name(
     name: str | None,
-    type_: str,
-    parent_names: Mapping[str, str | None],
+    type_: AlembicObjectType,
+    parent_names: AlembicParentNames,
 ) -> bool:
     return include_identity_name(name, type_, parent_names) or include_store_name(
         name,
