@@ -1,12 +1,6 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from store.application import Clock
-from store.infrastructure.persistence import build_sqlalchemy_store_unit_of_work_factory
-from store.presentation import FastApiStoreAdapter, build_fastapi_store_adapter
-from store.presentation.dependencies import AuthenticatedActorDependency
-
-from consumer_app.database import ConsumerDatabase
 from store import (
     CountryCodeValidator,
     CreateStoreCommandValidator,
@@ -20,6 +14,12 @@ from store import (
     StoreNameValidator,
     StoreOwnershipPolicy,
 )
+from store.application import Clock
+from store.infrastructure.persistence import build_sqlalchemy_store_unit_of_work_factory
+from store.presentation import FastApiStoreAdapter, build_fastapi_store_adapter
+from store.presentation.dependencies import AuthenticatedActorDependency
+
+from consumer_app.database import ConsumerDatabase
 
 
 class SystemClock(Clock):
