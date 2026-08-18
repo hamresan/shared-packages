@@ -25,12 +25,15 @@ Implemented through:
 - Stage 5 — FastAPI adapter
 - Stage 6 — Host-owned Alembic integration
 - Stage 7 — Consumer integration example
+- Stage 8 — Documentation and release readiness
 
-Next objective:
+Current objective:
 
 ```text
-Stage 8 — Documentation and release readiness
+Release-ready baseline complete for hamresan-store 0.1.x
 ```
+
+Future capabilities remain deferred until a real consumer requires them.
 
 ## Core architectural decisions
 
@@ -269,21 +272,38 @@ Notification is present only as the dependency required to compose Identity; Sto
 
 ## Stage 8 — Documentation and release readiness
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Complete README with:
+Release-readiness documentation now covers:
 
-- installation;
-- `AsyncSessionFactory` wiring;
-- Identity adapter composition;
-- FastAPI setup;
-- migrations;
-- public Python API;
-- table ownership;
-- examples;
-- quality commands.
+- package installation and migration extra;
+- host-owned `AsyncSessionFactory`/SQLAlchemy wiring;
+- application service composition;
+- Identity -> Store authenticated actor adaptation;
+- FastAPI installation and HTTP surface;
+- host-owned Alembic setup and multi-package composition;
+- public Python API boundaries;
+- `store_*` table ownership and external `owner_user_id` semantics;
+- the Identity + Store consumer example;
+- quality and release verification commands.
 
-Run the complete quality gate before final release readiness.
+Release gate:
+
+```text
+store/make check
+    -> Ruff
+    -> Ruff format --check
+    -> Pyright strict
+    -> pytest with branch coverage >= 85%
+
+examples/identity_store_consumer/make check
+    -> consumer lint/format/typecheck/integration tests
+
+examples/identity_store_consumer/make docker-test
+    -> clean-container consumer verification
+```
+
+The package baseline is ready for a `0.1.x` release after these gates pass on the release commit/PR.
 
 ## Deferred capabilities
 
@@ -307,9 +327,10 @@ Repository: hamresan/shared-packages
 Roadmap: store/ROADMAP.md
 Sellora reference: hamresan/sellora/backend/app/modules/store (read-only)
 Package: hamresan-store
-Implemented: Stage 0 through Stage 7
-Next objective: Stage 8 — documentation and release readiness
-Stage 8 requirements: complete README/public API/table ownership/examples/quality documentation and run the full release-readiness gate
+Implemented: Stage 0 through Stage 8
+Current state: release-ready baseline for hamresan-store 0.1.x
+Next work: deferred capabilities only when required by a real consumer
+Release verification: run Store quality gate plus Identity + Store consumer and Docker integration gates
 ```
 
-Do not modify Sellora. Keep implementation work in `shared-packages` on dedicated branches and PRs.
+Do not modify Sellora. Keep future implementation work in `shared-packages` on dedicated branches and PRs.
