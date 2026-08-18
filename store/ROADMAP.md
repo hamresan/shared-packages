@@ -24,11 +24,12 @@ Implemented through:
 - Stage 4 — Async SQLAlchemy persistence
 - Stage 5 — FastAPI adapter
 - Stage 6 — Host-owned Alembic integration
+- Stage 7 — Consumer integration example
 
 Next objective:
 
 ```text
-Stage 7 — Consumer integration example
+Stage 8 — Documentation and release readiness
 ```
 
 ## Core architectural decisions
@@ -240,9 +241,9 @@ Migration ordering, revision IDs, and the revision graph remain owned by the con
 
 ## Stage 7 — Consumer integration example
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Create a real consumer example composing:
+Added `examples/identity_store_consumer` as a real host composition example for:
 
 ```text
 hamresan-identity
@@ -252,20 +253,23 @@ async SQLAlchemy
 host-owned Alembic
 ```
 
-The example should demonstrate:
+The example demonstrates:
 
-- one host-owned async engine/sessionmaker;
-- Identity -> Store authenticated actor adaptation in the composition root;
-- Store application service/UoW composition;
-- FastAPI router installation;
-- host-owned Alembic wiring for Store metadata;
-- Docker verification without relying on a fixed host port.
+- one host-owned async engine/sessionmaker shared through injected session factories;
+- Identity -> Store authenticated actor adaptation in the host composition root;
+- Store application service/UoW composition without bypassing package contracts;
+- Identity and Store FastAPI adapters installed on one application;
+- host-owned Alembic metadata/filter wiring for both packages;
+- integration tests proving one Identity principal can create/read its Store;
+- real combined-metadata Alembic autogenerate tests;
+- Docker verification that runs the full example quality gate without publishing a fixed host port;
+- dedicated CI for the Identity + Store consumer example.
 
-Notification/Subscription should only be added if a concrete Store use case requires them.
+Notification is present only as the dependency required to compose Identity; Store does not depend on Notification or Subscription.
 
 ## Stage 8 — Documentation and release readiness
 
-Status: **PENDING**
+Status: **NEXT**
 
 Complete README with:
 
@@ -303,9 +307,9 @@ Repository: hamresan/shared-packages
 Roadmap: store/ROADMAP.md
 Sellora reference: hamresan/sellora/backend/app/modules/store (read-only)
 Package: hamresan-store
-Implemented: Stage 0 through Stage 6
-Next objective: Stage 7 — consumer integration example
-Stage 7 requirements: real host app composing Identity + Store + FastAPI + async SQLAlchemy + host-owned Alembic + Docker verification
+Implemented: Stage 0 through Stage 7
+Next objective: Stage 8 — documentation and release readiness
+Stage 8 requirements: complete README/public API/table ownership/examples/quality documentation and run the full release-readiness gate
 ```
 
 Do not modify Sellora. Keep implementation work in `shared-packages` on dedicated branches and PRs.

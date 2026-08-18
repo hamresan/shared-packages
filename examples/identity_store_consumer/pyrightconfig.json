@@ -1,0 +1,22 @@
+{
+  "include": ["src", "tests", "migrations"],
+  "extraPaths": [
+    "src",
+    "../../notification/src",
+    "../../identity/src",
+    "../../store/src"
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "strict",
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "src",
+        "../../notification/src",
+        "../../identity/src",
+        "../../store/src"
+      ]
+    }
+  ]
+}

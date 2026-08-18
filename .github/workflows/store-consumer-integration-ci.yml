@@ -1,0 +1,42 @@
+name: Store Consumer Integration CI
+
+on:
+  pull_request:
+    paths:
+      - "examples/identity_store_consumer/**"
+      - "identity/**"
+      - "notification/**"
+      - "store/**"
+      - ".github/workflows/store-consumer-integration-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "examples/identity_store_consumer/**"
+      - "identity/**"
+      - "notification/**"
+      - "store/**"
+      - ".github/workflows/store-consumer-integration-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install notification package
+        run: python -m pip install -e "./notification"
+      - name: Install identity package
+        run: python -m pip install -e "./identity"
+      - name: Install store package
+        run: python -m pip install -e "./store"
+      - name: Install consumer example
+        run: python -m pip install -e "./examples/identity_store_consumer[test]"
+      - name: Check Identity + Store consumer integration
+        working-directory: examples/identity_store_consumer
+        run: make check
+      - name: Check Identity + Store integration in Docker
+        working-directory: examples/identity_store_consumer
+        run: make docker-test
