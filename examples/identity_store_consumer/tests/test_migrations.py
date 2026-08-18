@@ -24,7 +24,11 @@ def test_host_alembic_autogenerate_discovers_both_packages() -> None:
     engine = create_engine("sqlite://")
     with engine.connect() as connection:
         migration_context = MigrationContext.configure(connection)
-        differences = compare_metadata(migration_context, consumer_metadata())
+        differences = [
+            difference
+            for metadata in consumer_metadata()
+            for difference in compare_metadata(migration_context, metadata)
+        ]
 
     added_tables = {
         cast(Table, difference[1]).name
