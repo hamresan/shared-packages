@@ -14,9 +14,11 @@ It demonstrates the boundaries expected from consuming services:
 
 ## Package boundaries
 
-`hamresan-store` does not import Identity. The host adapter in `consumer_app.authentication` depends on Identity's public `AccessTokenAuthenticator`, resolves an `AuthenticatedPrincipal`, and returns Store's `AuthenticatedActor`.
+`hamresan-store` does not import Identity. The host adapter in `identity_store_consumer_app.authentication` depends on Identity's public `AccessTokenAuthenticator`, resolves an `AuthenticatedPrincipal`, and returns Store's `AuthenticatedActor`.
 
 The database is also host-owned. `ConsumerDatabase` creates one engine/sessionmaker and supplies the same `session_factory` to both packages. Identity owns `identity_*` tables and Store owns `store_*` tables.
+
+The example application uses the unique Python package name `identity_store_consumer_app`. This intentionally avoids colliding with other consumer examples when the whole `examples` tree is collected by pytest or analyzed by Pyright.
 
 ## Alembic
 
@@ -33,6 +35,8 @@ make check
 ```
 
 The integration tests verify that one Identity principal can access `/identity/me`, create a Store through `POST /stores`, and read it through `GET /stores/me`. Alembic tests verify autogeneration sees both Identity and Store tables.
+
+Both consumer examples can also be collected together from the repository `examples` directory because `examples/pytest.ini` supplies their source roots without package-name collisions.
 
 Docker verification runs the same checks in a clean Python 3.12 image:
 
