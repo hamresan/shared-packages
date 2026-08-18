@@ -16,11 +16,7 @@ EXPECTED_TABLES = {
 
 
 def test_host_metadata_exposes_identity_and_store_tables() -> None:
-    table_names = {
-        table_name
-        for metadata in consumer_metadata()
-        for table_name in metadata.tables
-    }
+    table_names = {table_name for metadata in consumer_metadata() for table_name in metadata.tables}
     assert table_names == EXPECTED_TABLES
 
 
