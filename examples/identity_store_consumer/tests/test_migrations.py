@@ -4,7 +4,7 @@ from alembic.autogenerate.api import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import Table, create_engine
 
-from consumer_app.database import consumer_metadata, include_consumer_name
+from identity_store_consumer_app.database import consumer_metadata, include_consumer_name
 
 EXPECTED_TABLES = {
     "identity_users",
