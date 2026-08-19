@@ -101,20 +101,20 @@ subscription/
 
 ## Stage 0 — Foundation and documentation
 
-Status: **IN PROGRESS**
+Status: **COMPLETED**
 
-Goals:
+Completed:
 
-- create `subscription/` package directory;
-- define `hamresan-subscription` packaging metadata;
-- create controlled Python package root;
-- create clean source layer/package skeleton;
-- create mirrored test skeleton;
-- configure Ruff, Ruff format, Pyright strict, pytest, and coverage >= 85%;
-- document package usage scenarios in README;
-- record architectural decisions in this roadmap.
+- created `subscription/` package directory;
+- defined `hamresan-subscription` packaging metadata;
+- created controlled Python package root;
+- created clean source layer/package skeleton;
+- created mirrored test skeleton;
+- configured Ruff, Ruff format, Pyright strict, pytest, and coverage >= 85%;
+- documented package usage scenarios in README;
+- recorded architectural decisions in this roadmap.
 
-No production business behavior should be implemented in this stage.
+No production business behavior was implemented in this stage.
 
 ## Stage 1 — Core domain primitives
 
@@ -386,8 +386,8 @@ Repository: hamresan/shared-packages
 Package folder: subscription
 Distribution: hamresan-subscription
 Import: subscription
-Current objective: Stage 0 — foundation and documentation
-Next implementation objective after Stage 0: Stage 1 — core domain primitives
+Implemented: Stage 0 — foundation and documentation
+Next objective: Stage 1 — core domain primitives
 Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; paid/manual/promotional/etc. subscription sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
