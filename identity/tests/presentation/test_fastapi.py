@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import cast
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from identity.presentation.fastapi import FastApiIdentityAdapter
+from identity.presentation.request_metadata import RequestMetadata
 from tests.support.authentication import FakeAccessTokenAuthenticator
 from tests.support.http_client import JsonHttpClient
 from tests.support.http_services import (
@@ -12,33 +14,55 @@ from tests.support.http_services import (
     FakeSessionRefresher,
     FakeSessionRevoker,
 )
+from tests.support.request_metadata import FixedRequestMetadataResolver
 
 
-def build_client() -> tuple[JsonHttpClient, FakeOtpRequester, FakeSessionRevoker]:
+@dataclass(frozen=True, slots=True)
+class HttpTestContext:
+    client: JsonHttpClient
+    otp_requester: FakeOtpRequester
+    otp_verifier: FakeOtpVerifier
+    session_refresher: FakeSessionRefresher
+    session_revoker: FakeSessionRevoker
+
+
+def build_client() -> HttpTestContext:
     app = FastAPI()
     otp_requester = FakeOtpRequester()
+    otp_verifier = FakeOtpVerifier()
+    session_refresher = FakeSessionRefresher()
     session_revoker = FakeSessionRevoker()
+    resolver = FixedRequestMetadataResolver(
+        RequestMetadata(ip_address="203.0.113.8", device_info="trusted-test-agent")
+    )
     FastApiIdentityAdapter(
         access_token_authenticator=FakeAccessTokenAuthenticator(),
         otp_requester=otp_requester,
-        otp_verifier=FakeOtpVerifier(),
-        session_refresher=FakeSessionRefresher(),
+        otp_verifier=otp_verifier,
+        session_refresher=session_refresher,
         session_revoker=session_revoker,
+        request_metadata_resolver=resolver,
     ).install(app)
-    return cast(JsonHttpClient, TestClient(app)), otp_requester, session_revoker
+    return HttpTestContext(
+        client=cast(JsonHttpClient, TestClient(app)),
+        otp_requester=otp_requester,
+        otp_verifier=otp_verifier,
+        session_refresher=session_refresher,
+        session_revoker=session_revoker,
+    )
 
 
 def test_me_requires_bearer_token() -> None:
-    client, _, _ = build_client()
-    response = client.get("/identity/me")
+    context = build_client()
+    response = context.client.get("/identity/me")
 
     assert response.status_code == 401
     assert response.json() == {"detail": "Not authenticated"}
 
 
 def test_me_rejects_invalid_bearer_token() -> None:
-    client, _, _ = build_client()
-    response = client.get(
+    context = build_client()
+    response = context.client.get(
         "/identity/me",
         headers={"Authorization": "Bearer invalid-token"},
     )
@@ -48,8 +72,8 @@ def test_me_rejects_invalid_bearer_token() -> None:
 
 
 def test_me_returns_authenticated_identity() -> None:
-    client, _, _ = build_client()
-    response = client.get(
+    context = build_client()
+    response = context.client.get(
         "/identity/me",
         headers={"Authorization": "Bearer valid-token"},
     )
@@ -59,8 +83,8 @@ def test_me_returns_authenticated_identity() -> None:
 
 
 def test_request_otp_maps_http_request_to_application_command() -> None:
-    client, requester, _ = build_client()
-    response = client.post(
+    context = build_client()
+    response = context.client.post(
         "/identity/otp/request",
         json={
             "identity_type": "mobile",
@@ -71,14 +95,14 @@ def test_request_otp_maps_http_request_to_application_command() -> None:
     )
 
     assert response.status_code == 202
-    assert requester.command is not None
-    assert requester.command.destination == "+96890000000"
-    assert response.json()["challenge_id"] == str(requester.challenge_id)
+    assert context.otp_requester.command is not None
+    assert context.otp_requester.command.destination == "+96890000000"
+    assert response.json()["challenge_id"] == str(context.otp_requester.challenge_id)
 
 
 def test_request_otp_rejects_unsupported_public_purpose() -> None:
-    client, requester, _ = build_client()
-    response = client.post(
+    context = build_client()
+    response = context.client.post(
         "/identity/otp/request",
         json={
             "identity_type": "mobile",
@@ -89,36 +113,46 @@ def test_request_otp_rejects_unsupported_public_purpose() -> None:
     )
 
     assert response.status_code == 422
-    assert requester.command is None
+    assert context.otp_requester.command is None
 
 
-def test_verify_and_refresh_return_auth_session_payloads() -> None:
-    client, requester, _ = build_client()
-    verify_response = client.post(
+def test_verify_and_refresh_use_resolved_request_metadata() -> None:
+    context = build_client()
+    verify_response = context.client.post(
         "/identity/otp/verify",
         json={
-            "challenge_id": str(requester.challenge_id),
+            "challenge_id": str(context.otp_requester.challenge_id),
             "code": "123456",
             "full_name": "Mehran",
+            "ip_address": "198.51.100.99",
+            "device_info": "forged-client-device",
         },
     )
-    refresh_response = client.post(
+    refresh_response = context.client.post(
         "/identity/sessions/refresh",
-        json={"refresh_token": "r" * 48},
+        json={
+            "refresh_token": "r" * 48,
+            "ip_address": "198.51.100.99",
+            "device_info": "forged-client-device",
+        },
     )
 
     assert verify_response.status_code == 200
-    assert verify_response.json()["access_token"] == "access-token"
     assert refresh_response.status_code == 200
-    assert refresh_response.json()["refresh_token"] == "r" * 48
+    assert context.otp_verifier.command is not None
+    assert context.otp_verifier.command.ip_address == "203.0.113.8"
+    assert context.otp_verifier.command.device_info == "trusted-test-agent"
+    assert context.session_refresher.command is not None
+    assert context.session_refresher.command.ip_address == "203.0.113.8"
+    assert context.session_refresher.command.device_info == "trusted-test-agent"
 
 
 def test_revoke_returns_no_content() -> None:
-    client, _, revoker = build_client()
-    response = client.post(
+    context = build_client()
+    response = context.client.post(
         "/identity/sessions/revoke",
         json={"refresh_token": "r" * 48},
     )
 
     assert response.status_code == 204
-    assert revoker.refresh_token == "r" * 48
+    assert context.session_revoker.refresh_token == "r" * 48
