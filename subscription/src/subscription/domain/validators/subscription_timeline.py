@@ -1,6 +1,8 @@
 from subscription.domain.entities.subscription import Subscription
 from subscription.domain.validators.timestamp_order import TimestampOrderValidator
-from subscription.domain.validators.timezone_aware_datetime import TimezoneAwareDatetimeValidator
+from subscription.domain.validators.timezone_aware_datetime import (
+    TimezoneAwareDatetimeValidator,
+)
 
 
 class SubscriptionTimelineValidator:
@@ -46,7 +48,9 @@ class SubscriptionTimelineValidator:
         )
 
         lifecycle_origin = subscription.started_at or subscription.created_at
-        lifecycle_origin_name = "started_at" if subscription.started_at is not None else "created_at"
+        lifecycle_origin_name = (
+            "started_at" if subscription.started_at is not None else "created_at"
+        )
         self._timestamp_order_validator.ensure_not_before(
             subscription.cancelled_at,
             lifecycle_origin,
