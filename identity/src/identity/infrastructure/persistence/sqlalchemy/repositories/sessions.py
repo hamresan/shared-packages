@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity.application.contracts.repositories import SessionRepository
@@ -49,6 +49,25 @@ class SqlAlchemySessionRepository(SessionRepository):
             .values(revoked_at=revoked_at)
         )
         await self._session.execute(statement)
+
+    async def delete_retained_before(self, cutoff: datetime, limit: int) -> int:
+        ids_statement = (
+            select(SessionModel.id)
+            .where(
+                or_(
+                    SessionModel.expires_at <= cutoff,
+                    SessionModel.revoked_at <= cutoff,
+                )
+            )
+            .order_by(SessionModel.created_at)
+            .limit(limit)
+        )
+        ids = list((await self._session.scalars(ids_statement)).all())
+        if not ids:
+            return 0
+
+        await self._session.execute(delete(SessionModel).where(SessionModel.id.in_(ids)))
+        return len(ids)
 
     async def add(self, session: Session) -> None:
         self._session.add(self._mapper.to_model(session))
