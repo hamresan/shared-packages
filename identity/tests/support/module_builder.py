@@ -3,6 +3,8 @@ from tests.support.authentication import FakeAccessTokenAuthenticator
 from tests.support.database import SqliteIdentityDatabase
 from tests.support.integrations import FakeAccessTokenIssuer, FakeNotificationSender
 
+TEST_SIGNING_SECRET = b"identity-test-signing-secret-32b!!"
+
 
 class IdentityTestModuleBuilder:
     def build(
@@ -16,6 +18,6 @@ class IdentityTestModuleBuilder:
                 notification_sender=notification_sender,
                 access_token_issuer=FakeAccessTokenIssuer(),
                 access_token_authenticator=FakeAccessTokenAuthenticator(),
-                signing_secret=b"identity-test-secret",
+                signing_secret=TEST_SIGNING_SECRET,
             )
         )
