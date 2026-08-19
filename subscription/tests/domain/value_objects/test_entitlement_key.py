@@ -11,7 +11,9 @@ def test_entitlement_key_accepts_canonical_dotted_identifiers(key: str) -> None:
     assert EntitlementKey(key).value == key
 
 
-@pytest.mark.parametrize("key", ["", ".analytics", "Analytics.advanced", "team..max", "team members"])
+@pytest.mark.parametrize(
+    "key", ["", ".analytics", "Analytics.advanced", "team..max", "team members"]
+)
 def test_entitlement_key_rejects_invalid_identifiers(key: str) -> None:
     with pytest.raises(ValueError, match="entitlement key"):
         EntitlementKey(key)

@@ -15,6 +15,4 @@ class EntitlementKey:
                 f"entitlement key must not exceed {_MAX_ENTITLEMENT_KEY_LENGTH} characters"
             )
         if not _ENTITLEMENT_KEY_PATTERN.fullmatch(self.value):
-            raise ValueError(
-                "entitlement key must be a canonical lowercase dotted identifier"
-            )
+            raise ValueError("entitlement key must be a canonical lowercase dotted identifier")
