@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import desc, select
+from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity.application.contracts.repositories import OtpChallengeRepository
@@ -34,6 +34,21 @@ class SqlAlchemyOtpChallengeRepository(OtpChallengeRepository):
     async def get(self, challenge_id: UUID) -> OtpChallenge | None:
         model = await self._session.get(OtpChallengeModel, challenge_id)
         return self._mapper.to_domain(model) if model is not None else None
+
+    async def get_for_update(self, challenge_id: UUID) -> OtpChallenge | None:
+        statement = (
+            select(OtpChallengeModel).where(OtpChallengeModel.id == challenge_id).with_for_update()
+        )
+        model = await self._session.scalar(statement)
+        return self._mapper.to_domain(model) if model is not None else None
+
+    async def increment_attempts(self, challenge_id: UUID) -> None:
+        statement = (
+            update(OtpChallengeModel)
+            .where(OtpChallengeModel.id == challenge_id)
+            .values(attempts_count=OtpChallengeModel.attempts_count + 1)
+        )
+        await self._session.execute(statement)
 
     async def add(self, challenge: OtpChallenge) -> None:
         self._session.add(self._mapper.to_model(challenge))
