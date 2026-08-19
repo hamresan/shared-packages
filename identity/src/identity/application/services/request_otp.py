@@ -42,10 +42,10 @@ class RequestOtpService:
         now = self._clock.now()
         destination = self._normalizer.normalize(command.identity_type, command.destination)
         await self._rate_limit_policy.ensure_request_allowed(destination, now)
+        self._purpose_policy.validate(command.purpose)
 
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
-            self._purpose_policy.validate(command.purpose, identity)
             latest = await uow.otp_challenges.get_latest_active(
                 destination,
                 command.purpose,
