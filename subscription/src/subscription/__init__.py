@@ -1,6 +1,7 @@
 """Reusable subscription management package."""
 
 from subscription.domain import (
+    ActiveBaseSubscriptionPolicy,
     BooleanEntitlementValue,
     DecimalEntitlementValue,
     EntitlementKey,
@@ -15,10 +16,16 @@ from subscription.domain import (
     PlanStatusTransitionPolicy,
     StringEntitlementValue,
     SubjectReference,
+    Subscription,
+    SubscriptionDefinitionPolicy,
+    SubscriptionLifecycleService,
     SubscriptionSource,
     SubscriptionStatus,
+    SubscriptionStatusTransitionPolicy,
     SubscriptionType,
+    SubscriptionValidityPolicy,
     TimeCondition,
+    TimezoneAwareDatetimeValidator,
     TrialCompletionMode,
     TrialEvaluationPolicy,
     TrialPolicy,
@@ -31,6 +38,7 @@ from subscription.domain import (
 )
 
 __all__ = [
+    "ActiveBaseSubscriptionPolicy",
     "BooleanEntitlementValue",
     "DecimalEntitlementValue",
     "EntitlementKey",
@@ -45,10 +53,16 @@ __all__ = [
     "PlanStatusTransitionPolicy",
     "StringEntitlementValue",
     "SubjectReference",
+    "Subscription",
+    "SubscriptionDefinitionPolicy",
+    "SubscriptionLifecycleService",
     "SubscriptionSource",
     "SubscriptionStatus",
+    "SubscriptionStatusTransitionPolicy",
     "SubscriptionType",
+    "SubscriptionValidityPolicy",
     "TimeCondition",
+    "TimezoneAwareDatetimeValidator",
     "TrialCompletionMode",
     "TrialEvaluationPolicy",
     "TrialPolicy",

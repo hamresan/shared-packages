@@ -162,48 +162,67 @@ TrialCompletionMode: ANY | ALL
 UsagePeriod
 ```
 
-Supported scenarios include:
-
-```text
-14-day trial
-100-conversation trial
-14 days OR 100 conversations, whichever happens first
-50 conversations per week
-ALL-mode combined conditions
-```
+Supported scenarios include 14-day trials, usage-only trials, combined time/usage trials, weekly usage limits, and `ALL` completion mode.
 
 Rules and boundaries:
 
 - the package does not know what a usage metric means;
-- consumers define canonical metric keys such as `conversations`, `api_calls`, or `storage.bytes`;
+- consumers define canonical metric keys;
 - `UsageRecord` represents an immutable usage event;
 - `UsageCounter` represents aggregate consumption for one metric and period;
-- `UsageCondition` identifies a metric, limit, and period;
-- weekly/trial/monthly counters remain distinct even when they use the same metric;
-- `TrialEvaluationPolicy` is a pure decision component and performs no persistence, clock, or external-service calls;
+- `TrialEvaluationPolicy` is pure and performs no persistence, clock, or external-service calls;
 - missing counters are treated as zero usage;
 - `ANY` completes when the first configured condition is met;
 - `ALL` completes only when every configured condition is met.
 
 ## Stage 4 — Subscription lifecycle domain
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Implement `Subscription` and lifecycle rules for:
+Implemented and tested:
 
-- creation and activation;
-- validity evaluation;
-- expiration;
+```text
+Subscription
+SubscriptionDefinitionPolicy
+SubscriptionStatusTransitionPolicy
+SubscriptionValidityPolicy
+ActiveBaseSubscriptionPolicy
+TimezoneAwareDatetimeValidator
+SubscriptionLifecycleService
+```
+
+Lifecycle behavior includes:
+
+- pending subscription creation snapshots;
+- trial start;
+- activation;
 - cancellation;
-- renewal/extension;
-- trial state;
+- expiration;
+- extension;
+- renewal of active subscriptions;
+- reactivation of expired subscriptions through renewal;
+- validity evaluation;
 - source tracking;
 - base/add-on classification;
 - lifecycle timestamps.
 
-Cross-subscription rules such as one active BASE per subject must be enforced through dedicated policies/application workflows using repository contracts rather than repository access inside entities.
+Rules and boundaries:
+
+- `Subscription` is an immutable domain snapshot;
+- lifecycle mutations are applied by `SubscriptionLifecycleService` and return a new snapshot;
+- lifecycle services receive policies/validators through explicit dependency injection;
+- timestamps must be timezone-aware and ordering invariants are validated explicitly;
+- cancelled subscriptions are terminal;
+- expired subscriptions may be renewed back to active;
+- trial completion remains the responsibility of `TrialEvaluationPolicy` and is supplied to validity evaluation as a fact;
+- a `TRIALING` BASE subscription occupies the same subject-level BASE slot as an `ACTIVE` BASE subscription;
+- `ActiveBaseSubscriptionPolicy` is pure and does not query repositories;
+- the future application layer must load current subscriptions and pass them to the policy;
+- no entity or domain service depends on persistence, Identity, Store, WordPress, FastAPI, or payment implementations.
 
 ## Stage 5 — Application contracts and use cases
+
+Status: **NEXT**
 
 Add explicit contracts and use cases for:
 
@@ -214,9 +233,9 @@ Entitlement Evaluation
 Usage Metering
 ```
 
-Likely boundaries include repositories, Unit of Work, Clock, IdentifierGenerator, Plan workflows, Subscription lifecycle workflows, entitlement checks, usage recording, and trial evaluation.
+Expected boundaries include repositories, Unit of Work, Clock, IdentifierGenerator, Plan workflows, Subscription lifecycle workflows, entitlement checks, usage recording, and trial evaluation.
 
-Exact abstractions must follow the implemented domain rather than speculative design.
+Stage 5 must orchestrate the Stage 1–4 domain through explicit contracts. Repository lookups, uniqueness checks, active-BASE checks, current usage loading, and transaction boundaries belong here rather than inside entities or domain services.
 
 ## Stage 6 — Async SQLAlchemy persistence
 
@@ -299,8 +318,8 @@ To make GitHub technically block merging when this job fails, the repository's `
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2, 3
-Next objective: Stage 4 — subscription lifecycle domain
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
+Implemented: Stages 0, 1, 2, 3, 4
+Next objective: Stage 5 — application contracts and use cases
+Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
