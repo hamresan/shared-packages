@@ -9,7 +9,6 @@ from identity.application.errors import (
     InvalidOtpError,
     InvalidRefreshTokenError,
     OtpChallengeNotFoundError,
-    OtpResendNotAvailableError,
     RegistrationNameRequiredError,
 )
 from identity.domain import IdentityType, OtpPurpose
@@ -110,14 +109,15 @@ async def test_identity_flow_enforces_registration_login_and_otp_rules() -> None
                 purpose=OtpPurpose.REGISTRATION,
             )
         )
-        with pytest.raises(OtpResendNotAvailableError):
-            await module.otp_requester.execute(
-                RequestOtpCommand(
-                    identity_type=IdentityType.EMAIL,
-                    destination="user@example.com",
-                    purpose=OtpPurpose.REGISTRATION,
-                )
+        repeated_registration = await module.otp_requester.execute(
+            RequestOtpCommand(
+                identity_type=IdentityType.EMAIL,
+                destination="user@example.com",
+                purpose=OtpPurpose.REGISTRATION,
             )
+        )
+        assert repeated_registration.challenge_id == registration.challenge_id
+
         with pytest.raises(RegistrationNameRequiredError):
             await module.otp_verifier.execute(
                 VerifyOtpCommand(
