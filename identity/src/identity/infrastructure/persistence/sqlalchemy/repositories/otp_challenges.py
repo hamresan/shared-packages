@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import desc, select, update
+from sqlalchemy import delete, desc, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity.application.contracts.repositories import OtpChallengeRepository
@@ -53,6 +53,27 @@ class SqlAlchemyOtpChallengeRepository(OtpChallengeRepository):
             .values(attempts_count=OtpChallengeModel.attempts_count + 1)
         )
         await self._session.execute(statement)
+
+    async def delete_retained_before(self, cutoff: datetime, limit: int) -> int:
+        ids_statement = (
+            select(OtpChallengeModel.id)
+            .where(
+                or_(
+                    OtpChallengeModel.expires_at <= cutoff,
+                    OtpChallengeModel.consumed_at <= cutoff,
+                )
+            )
+            .order_by(OtpChallengeModel.created_at)
+            .limit(limit)
+        )
+        ids = list((await self._session.scalars(ids_statement)).all())
+        if not ids:
+            return 0
+
+        await self._session.execute(
+            delete(OtpChallengeModel).where(OtpChallengeModel.id.in_(ids))
+        )
+        return len(ids)
 
     async def add(self, challenge: OtpChallenge) -> None:
         self._session.add(self._mapper.to_model(challenge))
