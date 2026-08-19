@@ -1,6 +1,12 @@
 """Subscription domain layer."""
 
-from subscription.domain.entities import Plan, PlanEntitlement, TrialPolicy, UsageRecord
+from subscription.domain.entities import (
+    Plan,
+    PlanEntitlement,
+    Subscription,
+    TrialPolicy,
+    UsageRecord,
+)
 from subscription.domain.enums import (
     EntitlementValueType,
     PlanStatus,
@@ -11,9 +17,20 @@ from subscription.domain.enums import (
     UsagePeriod,
 )
 from subscription.domain.policies import (
+    ActiveBaseSubscriptionPolicy,
     PlanDefinitionPolicy,
     PlanStatusTransitionPolicy,
+    SubscriptionStatusTransitionPolicy,
+    SubscriptionValidityPolicy,
     TrialEvaluationPolicy,
+)
+from subscription.domain.services import SubscriptionLifecycleService
+from subscription.domain.validators import (
+    SubscriptionDefinitionValidator,
+    SubscriptionStateValidator,
+    SubscriptionTimelineValidator,
+    TimestampOrderValidator,
+    TimezoneAwareDatetimeValidator,
 )
 from subscription.domain.value_objects import (
     BooleanEntitlementValue,
@@ -32,6 +49,7 @@ from subscription.domain.value_objects import (
 )
 
 __all__ = [
+    "ActiveBaseSubscriptionPolicy",
     "BooleanEntitlementValue",
     "DecimalEntitlementValue",
     "EntitlementKey",
@@ -46,10 +64,19 @@ __all__ = [
     "PlanStatusTransitionPolicy",
     "StringEntitlementValue",
     "SubjectReference",
+    "Subscription",
+    "SubscriptionDefinitionValidator",
+    "SubscriptionLifecycleService",
     "SubscriptionSource",
+    "SubscriptionStateValidator",
     "SubscriptionStatus",
+    "SubscriptionStatusTransitionPolicy",
+    "SubscriptionTimelineValidator",
     "SubscriptionType",
+    "SubscriptionValidityPolicy",
     "TimeCondition",
+    "TimestampOrderValidator",
+    "TimezoneAwareDatetimeValidator",
     "TrialCompletionMode",
     "TrialEvaluationPolicy",
     "TrialPolicy",
