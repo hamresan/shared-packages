@@ -1,21 +1,10 @@
-from identity.application.errors import (
-    IdentityAlreadyRegisteredError,
-    IdentityNotRegisteredError,
-    UnsupportedOtpPurposeError,
-)
-from identity.domain import OtpPurpose, UserIdentity
+from identity.application.errors import UnsupportedOtpPurposeError
+from identity.domain import OtpPurpose
 
 
 class OtpPurposePolicy:
-    def validate(self, purpose: OtpPurpose, identity: UserIdentity | None) -> None:
-        if purpose is OtpPurpose.REGISTRATION:
-            if identity is not None:
-                raise IdentityAlreadyRegisteredError("Identity is already registered")
-            return
-
-        if purpose is OtpPurpose.LOGIN:
-            if identity is None:
-                raise IdentityNotRegisteredError("Identity is not registered")
+    def validate(self, purpose: OtpPurpose) -> None:
+        if purpose in (OtpPurpose.REGISTRATION, OtpPurpose.LOGIN):
             return
 
         raise UnsupportedOtpPurposeError(f"OTP purpose is not supported: {purpose.value}")

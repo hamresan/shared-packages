@@ -5,6 +5,13 @@ from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.domain import OtpPurpose
 
 
+def test_policy_allows_public_authentication_purposes_without_account_state() -> None:
+    policy = OtpPurposePolicy()
+
+    policy.validate(OtpPurpose.REGISTRATION)
+    policy.validate(OtpPurpose.LOGIN)
+
+
 @pytest.mark.parametrize(
     "purpose",
     [
@@ -18,4 +25,4 @@ def test_policy_rejects_unimplemented_purposes(purpose: OtpPurpose) -> None:
     policy = OtpPurposePolicy()
 
     with pytest.raises(UnsupportedOtpPurposeError):
-        policy.validate(purpose, identity=None)
+        policy.validate(purpose)
