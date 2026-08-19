@@ -14,6 +14,16 @@ class RequestMetadataResolver(Protocol):
     def resolve(self, request: Request) -> RequestMetadata: ...
 
 
+class ForwardedForParser:
+    def parse(self, value: str | None, trusted_proxy_hops: int) -> str | None:
+        if not value:
+            return None
+        addresses = [part.strip() for part in value.split(",") if part.strip()]
+        if len(addresses) < trusted_proxy_hops:
+            return None
+        return addresses[-trusted_proxy_hops]
+
+
 class DirectRequestMetadataResolver(RequestMetadataResolver):
     def resolve(self, request: Request) -> RequestMetadata:
         return RequestMetadata(
@@ -23,14 +33,21 @@ class DirectRequestMetadataResolver(RequestMetadataResolver):
 
 
 class TrustedProxyRequestMetadataResolver(RequestMetadataResolver):
-    def __init__(self, trusted_proxy_hops: int = 1) -> None:
+    def __init__(
+        self,
+        trusted_proxy_hops: int = 1,
+        forwarded_for_parser: ForwardedForParser | None = None,
+    ) -> None:
         if trusted_proxy_hops < 1:
             raise ValueError("trusted_proxy_hops must be at least 1")
         self._trusted_proxy_hops = trusted_proxy_hops
+        self._forwarded_for_parser = forwarded_for_parser or ForwardedForParser()
 
     def resolve(self, request: Request) -> RequestMetadata:
-        forwarded_for = request.headers.get("x-forwarded-for")
-        ip_address = self._resolve_forwarded_ip(forwarded_for)
+        ip_address = self._forwarded_for_parser.parse(
+            request.headers.get("x-forwarded-for"),
+            self._trusted_proxy_hops,
+        )
         if ip_address is None and request.client is not None:
             ip_address = request.client.host
         return RequestMetadata(
@@ -38,17 +55,10 @@ class TrustedProxyRequestMetadataResolver(RequestMetadataResolver):
             device_info=request.headers.get("user-agent"),
         )
 
-    def _resolve_forwarded_ip(self, forwarded_for: str | None) -> str | None:
-        if not forwarded_for:
-            return None
-        addresses = [part.strip() for part in forwarded_for.split(",") if part.strip()]
-        if len(addresses) < self._trusted_proxy_hops:
-            return None
-        return addresses[-self._trusted_proxy_hops]
-
 
 __all__ = [
     "DirectRequestMetadataResolver",
+    "ForwardedForParser",
     "RequestMetadata",
     "RequestMetadataResolver",
     "TrustedProxyRequestMetadataResolver",
