@@ -12,9 +12,7 @@ _REQUIRED_FIELDS_BY_STATUS: dict[SubscriptionStatus, tuple[RequiredField, ...]] 
         ("trial_policy", lambda subscription: subscription.trial_policy),
         ("trial_started_at", lambda subscription: subscription.trial_started_at),
     ),
-    SubscriptionStatus.ACTIVE: (
-        ("started_at", lambda subscription: subscription.started_at),
-    ),
+    SubscriptionStatus.ACTIVE: (("started_at", lambda subscription: subscription.started_at),),
     SubscriptionStatus.CANCELLED: (
         ("cancelled_at", lambda subscription: subscription.cancelled_at),
     ),
