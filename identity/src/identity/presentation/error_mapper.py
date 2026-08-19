@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from identity.application.errors import (
     IdentityAlreadyRegisteredError,
     IdentityNotRegisteredError,
+    IdentityRateLimitExceededError,
     InactiveUserError,
     InvalidOtpError,
     InvalidRefreshTokenError,
@@ -17,6 +18,12 @@ from identity.application.errors import (
 
 class IdentityHttpErrorMapper:
     def to_http_exception(self, error: Exception) -> HTTPException:
+        if isinstance(error, IdentityRateLimitExceededError):
+            return HTTPException(
+                status.HTTP_429_TOO_MANY_REQUESTS,
+                str(error),
+                headers={"Retry-After": str(error.retry_after_seconds)},
+            )
         if isinstance(error, OtpResendNotAvailableError):
             return HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(error))
         if isinstance(error, (IdentityAlreadyRegisteredError, IdentityNotRegisteredError)):
