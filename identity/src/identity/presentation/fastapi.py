@@ -1,12 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Response, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from identity.application.errors import IdentityError
 from identity.presentation.error_mapper import IdentityHttpErrorMapper
 from identity.presentation.mappers import IdentityRequestMapper, IdentityResponseMapper
+from identity.presentation.request_metadata import (
+    DirectRequestMetadataResolver,
+    RequestMetadataResolver,
+)
 from identity.presentation.schemas import (
     AuthSessionResponse,
     RefreshSessionRequest,
@@ -71,10 +75,14 @@ class VerifyOtpEndpoint:
     request_mapper: IdentityRequestMapper
     response_mapper: IdentityResponseMapper
     error_mapper: IdentityHttpErrorMapper
+    metadata_resolver: RequestMetadataResolver
 
-    async def __call__(self, request: VerifyOtpRequest) -> AuthSessionResponse:
+    async def __call__(self, payload: VerifyOtpRequest, request: Request) -> AuthSessionResponse:
+        metadata = self.metadata_resolver.resolve(request)
         try:
-            result = await self.service.execute(self.request_mapper.to_verify_otp_command(request))
+            result = await self.service.execute(
+                self.request_mapper.to_verify_otp_command(payload, metadata)
+            )
         except IdentityError as error:
             raise self.error_mapper.to_http_exception(error) from error
         return self.response_mapper.from_auth_session_result(result)
@@ -86,11 +94,13 @@ class RefreshSessionEndpoint:
     request_mapper: IdentityRequestMapper
     response_mapper: IdentityResponseMapper
     error_mapper: IdentityHttpErrorMapper
+    metadata_resolver: RequestMetadataResolver
 
-    async def __call__(self, request: RefreshSessionRequest) -> AuthSessionResponse:
+    async def __call__(self, payload: RefreshSessionRequest, request: Request) -> AuthSessionResponse:
+        metadata = self.metadata_resolver.resolve(request)
         try:
             result = await self.service.execute(
-                self.request_mapper.to_refresh_session_command(request)
+                self.request_mapper.to_refresh_session_command(payload, metadata)
             )
         except IdentityError as error:
             raise self.error_mapper.to_http_exception(error) from error
@@ -117,6 +127,9 @@ class FastApiIdentityAdapter:
     otp_verifier: OtpVerifier
     session_refresher: SessionRefresher
     session_revoker: SessionRevoker
+    request_metadata_resolver: RequestMetadataResolver = field(
+        default_factory=DirectRequestMetadataResolver
+    )
 
     def router(self) -> APIRouter:
         request_mapper = IdentityRequestMapper()
@@ -150,6 +163,7 @@ class FastApiIdentityAdapter:
                 request_mapper,
                 response_mapper,
                 error_mapper,
+                self.request_metadata_resolver,
             ),
             methods=["POST"],
             response_model=AuthSessionResponse,
@@ -161,6 +175,7 @@ class FastApiIdentityAdapter:
                 request_mapper,
                 response_mapper,
                 error_mapper,
+                self.request_metadata_resolver,
             ),
             methods=["POST"],
             response_model=AuthSessionResponse,
