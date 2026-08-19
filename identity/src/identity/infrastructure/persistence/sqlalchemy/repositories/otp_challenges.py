@@ -70,9 +70,7 @@ class SqlAlchemyOtpChallengeRepository(OtpChallengeRepository):
         if not ids:
             return 0
 
-        await self._session.execute(
-            delete(OtpChallengeModel).where(OtpChallengeModel.id.in_(ids))
-        )
+        await self._session.execute(delete(OtpChallengeModel).where(OtpChallengeModel.id.in_(ids)))
         return len(ids)
 
     async def add(self, challenge: OtpChallenge) -> None:
