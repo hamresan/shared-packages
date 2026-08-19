@@ -5,6 +5,10 @@ class IdentityError(Exception):
     """Base application error for identity flows."""
 
 
+class InvalidIdentityValueError(IdentityError):
+    pass
+
+
 class OtpResendNotAvailableError(IdentityError):
     pass
 
