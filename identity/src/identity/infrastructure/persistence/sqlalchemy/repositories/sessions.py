@@ -42,14 +42,13 @@ class SqlAlchemySessionRepository(SessionRepository):
         )
         await self._session.execute(statement)
 
-    async def revoke_all_by_user_id(self, user_id: UUID, revoked_at: datetime) -> int:
+    async def revoke_all_by_user_id(self, user_id: UUID, revoked_at: datetime) -> None:
         statement = (
             update(SessionModel)
             .where(SessionModel.user_id == user_id, SessionModel.revoked_at.is_(None))
             .values(revoked_at=revoked_at)
         )
-        result = await self._session.execute(statement)
-        return result.rowcount or 0
+        await self._session.execute(statement)
 
     async def add(self, session: Session) -> None:
         self._session.add(self._mapper.to_model(session))
