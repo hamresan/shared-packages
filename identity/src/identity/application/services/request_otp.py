@@ -11,6 +11,7 @@ from identity.application.dto import RequestOtpCommand, RequestOtpResult
 from identity.application.errors import OtpResendNotAvailableError
 from identity.application.factories.entities import OtpChallengeFactory
 from identity.application.policies.otp_purpose import OtpPurposePolicy
+from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.domain import IdentityType
 
 
@@ -26,6 +27,7 @@ class RequestOtpService:
         hasher: SecretHasher,
         challenge_factory: OtpChallengeFactory,
         purpose_policy: OtpPurposePolicy,
+        rate_limit_policy: OtpRateLimitPolicy,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._notification_sender = notification_sender
@@ -35,10 +37,12 @@ class RequestOtpService:
         self._hasher = hasher
         self._challenge_factory = challenge_factory
         self._purpose_policy = purpose_policy
+        self._rate_limit_policy = rate_limit_policy
 
     async def execute(self, command: RequestOtpCommand) -> RequestOtpResult:
         now = self._clock.now()
         destination = self._normalizer.normalize(command.identity_type, command.destination)
+        await self._rate_limit_policy.ensure_request_allowed(destination, now)
 
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
