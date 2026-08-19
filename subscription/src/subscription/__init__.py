@@ -18,9 +18,16 @@ from subscription.domain import (
     SubscriptionSource,
     SubscriptionStatus,
     SubscriptionType,
+    TimeCondition,
     TrialCompletionMode,
+    TrialEvaluationPolicy,
+    TrialPolicy,
     UnlimitedEntitlementValue,
+    UsageCondition,
+    UsageCounter,
+    UsageMetric,
     UsagePeriod,
+    UsageRecord,
 )
 
 __all__ = [
@@ -41,7 +48,14 @@ __all__ = [
     "SubscriptionSource",
     "SubscriptionStatus",
     "SubscriptionType",
+    "TimeCondition",
     "TrialCompletionMode",
+    "TrialEvaluationPolicy",
+    "TrialPolicy",
     "UnlimitedEntitlementValue",
+    "UsageCondition",
+    "UsageCounter",
+    "UsageMetric",
     "UsagePeriod",
+    "UsageRecord",
 ]
