@@ -31,6 +31,10 @@ from identity.infrastructure.security.token_generators import (
     SecureRefreshTokenGenerator,
 )
 from identity.presentation.fastapi import FastApiIdentityAdapter
+from identity.presentation.request_metadata import (
+    DirectRequestMetadataResolver,
+    RequestMetadataResolver,
+)
 from identity.public import AccessTokenAuthenticator, IdentityPublicApi
 
 
@@ -47,6 +51,7 @@ class IdentityModuleConfig:
     session_ttl: timedelta = timedelta(days=30)
     session_absolute_ttl: timedelta = timedelta(days=90)
     rate_limiter: RateLimiter | None = None
+    request_metadata_resolver: RequestMetadataResolver | None = None
     otp_request_burst_limit: int = 5
     otp_request_burst_window: timedelta = timedelta(minutes=15)
     otp_request_daily_limit: int = 20
@@ -133,6 +138,9 @@ class IdentityModule:
             otp_verifier=self.otp_verifier,
             session_refresher=self.session_refresher,
             session_revoker=self.session_revoker,
+            request_metadata_resolver=(
+                config.request_metadata_resolver or DirectRequestMetadataResolver()
+            ),
         )
 
     @property
