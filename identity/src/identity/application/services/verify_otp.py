@@ -6,11 +6,17 @@ from identity.application.contracts.security import (
     RefreshTokenGenerator,
     SecretHasher,
 )
+from identity.application.contracts.security_events import (
+    SecurityEvent,
+    SecurityEventName,
+    SecurityEventSink,
+)
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, VerifyOtpCommand
 from identity.application.errors import (
     IdentityAlreadyRegisteredError,
     IdentityNotRegisteredError,
+    IdentityRateLimitExceededError,
     InvalidOtpError,
     OtpAttemptsExceededError,
     OtpChallengeNotFoundError,
@@ -37,6 +43,7 @@ class VerifyOtpService:
         session_factory: SessionFactory,
         user_status_policy: UserStatusPolicy,
         rate_limit_policy: OtpRateLimitPolicy,
+        security_event_sink: SecurityEventSink,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
@@ -47,10 +54,21 @@ class VerifyOtpService:
         self._session_factory = session_factory
         self._user_status_policy = user_status_policy
         self._rate_limit_policy = rate_limit_policy
+        self._security_event_sink = security_event_sink
 
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
         now = self._clock.now()
-        await self._rate_limit_policy.ensure_verification_allowed(command.challenge_id, now)
+        try:
+            await self._rate_limit_policy.ensure_verification_allowed(command.challenge_id, now)
+        except IdentityRateLimitExceededError:
+            await self._security_event_sink.emit(
+                SecurityEvent(
+                    name=SecurityEventName.OTP_VERIFY_RATE_LIMITED,
+                    occurred_at=now,
+                    challenge_id=command.challenge_id,
+                )
+            )
+            raise
 
         async with self._unit_of_work_factory() as uow:
             challenge = await uow.otp_challenges.get_for_update(command.challenge_id)
@@ -59,10 +77,26 @@ class VerifyOtpService:
             if challenge.expires_at <= now:
                 raise OtpExpiredError("OTP challenge has expired")
             if challenge.attempts_count >= challenge.max_attempts:
+                await self._security_event_sink.emit(
+                    SecurityEvent(
+                        name=SecurityEventName.OTP_ATTEMPTS_EXCEEDED,
+                        occurred_at=now,
+                        user_id=challenge.user_id,
+                        challenge_id=challenge.id,
+                    )
+                )
                 raise OtpAttemptsExceededError("OTP attempts exceeded")
             if not self._hasher.verify(command.code, challenge.code_hash):
                 await uow.otp_challenges.increment_attempts(challenge.id)
                 await uow.commit()
+                await self._security_event_sink.emit(
+                    SecurityEvent(
+                        name=SecurityEventName.OTP_ATTEMPT_FAILED,
+                        occurred_at=now,
+                        user_id=challenge.user_id,
+                        challenge_id=challenge.id,
+                    )
+                )
                 raise InvalidOtpError("OTP code is invalid")
 
             if challenge.purpose is OtpPurpose.REGISTRATION:
