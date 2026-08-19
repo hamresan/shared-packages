@@ -12,9 +12,11 @@ from identity.application.factories.entities import (
     SessionFactory,
     UserRegistrationFactory,
 )
+from identity.application.policies.data_retention import DataRetentionPolicy
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
+from identity.application.services.cleanup_retained_data import CleanupRetainedIdentityDataService
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
 from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
@@ -53,6 +55,9 @@ class IdentityModuleConfig:
     otp_max_attempts: int = 5
     session_ttl: timedelta = timedelta(days=30)
     session_absolute_ttl: timedelta = timedelta(days=90)
+    otp_challenge_retention: timedelta = timedelta(days=7)
+    session_retention: timedelta = timedelta(days=30)
+    retention_cleanup_batch_size: int = 500
     rate_limiter: RateLimiter | None = None
     security_event_sink: SecurityEventSink | None = None
     request_metadata_resolver: RequestMetadataResolver | None = None
@@ -139,6 +144,15 @@ class IdentityModule:
             clock=clock,
             security_event_sink=security_event_sink,
         )
+        self.data_retention_cleaner = CleanupRetainedIdentityDataService(
+            unit_of_work_factory=self._unit_of_work_factory,
+            clock=clock,
+            retention_policy=DataRetentionPolicy(
+                otp_challenge_retention=config.otp_challenge_retention,
+                session_retention=config.session_retention,
+            ),
+            batch_size=config.retention_cleanup_batch_size,
+        )
         self.public_api = IdentityPublicApi(
             access_token_authenticator=config.access_token_authenticator,
             otp_requester=self.otp_requester,
@@ -146,6 +160,7 @@ class IdentityModule:
             session_refresher=self.session_refresher,
             session_revoker=self.session_revoker,
             session_bulk_revoker=self.session_bulk_revoker,
+            data_retention_cleaner=self.data_retention_cleaner,
         )
         self.fastapi = FastApiIdentityAdapter(
             access_token_authenticator=config.access_token_authenticator,
