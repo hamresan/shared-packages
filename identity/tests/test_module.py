@@ -1,5 +1,6 @@
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
+from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
 from identity.application.services.revoke_session import RevokeSessionService
 from identity.application.services.verify_otp import VerifyOtpService
 from identity.infrastructure.persistence.sqlalchemy import SqlAlchemyIdentityUnitOfWork
@@ -20,5 +21,7 @@ def test_identity_module_wires_authentication_components() -> None:
     assert isinstance(module.otp_verifier, VerifyOtpService)
     assert isinstance(module.session_refresher, RefreshSessionService)
     assert isinstance(module.session_revoker, RevokeSessionService)
+    assert isinstance(module.session_bulk_revoker, RevokeAllSessionsService)
     assert module.public_api.otp_requester is module.otp_requester
+    assert module.public_api.session_bulk_revoker is module.session_bulk_revoker
     assert isinstance(module.fastapi, FastApiIdentityAdapter)
