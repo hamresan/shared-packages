@@ -26,8 +26,6 @@ class VerifyOtpRequest(BaseModel):
     challenge_id: UUID
     code: str = Field(min_length=4, max_length=12)
     full_name: str | None = Field(default=None, max_length=160)
-    device_info: str | None = Field(default=None, max_length=512)
-    ip_address: str | None = Field(default=None, max_length=64)
 
 
 class AuthSessionResponse(BaseModel):
@@ -41,8 +39,6 @@ class AuthSessionResponse(BaseModel):
 
 class RefreshSessionRequest(BaseModel):
     refresh_token: str = Field(min_length=32)
-    device_info: str | None = Field(default=None, max_length=512)
-    ip_address: str | None = Field(default=None, max_length=64)
 
 
 class RevokeSessionRequest(BaseModel):
