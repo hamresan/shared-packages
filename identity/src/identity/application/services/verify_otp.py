@@ -17,6 +17,7 @@ from identity.application.errors import (
     UnsupportedOtpPurposeError,
 )
 from identity.application.factories.entities import SessionFactory, UserRegistrationFactory
+from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.domain import OtpPurpose
 
@@ -33,6 +34,7 @@ class VerifyOtpService:
         registration_factory: UserRegistrationFactory,
         session_factory: SessionFactory,
         user_status_policy: UserStatusPolicy,
+        rate_limit_policy: OtpRateLimitPolicy,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
@@ -42,9 +44,12 @@ class VerifyOtpService:
         self._registration_factory = registration_factory
         self._session_factory = session_factory
         self._user_status_policy = user_status_policy
+        self._rate_limit_policy = rate_limit_policy
 
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
         now = self._clock.now()
+        await self._rate_limit_policy.ensure_verification_allowed(command.challenge_id, now)
+
         async with self._unit_of_work_factory() as uow:
             challenge = await uow.otp_challenges.get_for_update(command.challenge_id)
             if challenge is None or challenge.consumed_at is not None:
