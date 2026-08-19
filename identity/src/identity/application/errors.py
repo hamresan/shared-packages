@@ -44,3 +44,7 @@ class InactiveUserError(IdentityError):
 
 class InvalidRefreshTokenError(IdentityError):
     pass
+
+
+class RefreshTokenReuseError(InvalidRefreshTokenError):
+    pass
