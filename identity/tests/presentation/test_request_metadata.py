@@ -11,10 +11,11 @@ def test_direct_resolver_ignores_forwarded_for_header() -> None:
     app = FastAPI()
     resolver = DirectRequestMetadataResolver()
 
-    @app.get("/")
-    async def endpoint(request: Request) -> dict[str, str | None]:
+    async def resolve_metadata(request: Request) -> dict[str, str | None]:
         metadata = resolver.resolve(request)
         return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    app.add_api_route("/", resolve_metadata, methods=["GET"])
 
     client = TestClient(app)
     response = client.get(
@@ -34,10 +35,11 @@ def test_trusted_proxy_resolver_uses_configured_forwarded_hop() -> None:
     app = FastAPI()
     resolver = TrustedProxyRequestMetadataResolver(trusted_proxy_hops=2)
 
-    @app.get("/")
-    async def endpoint(request: Request) -> dict[str, str | None]:
+    async def resolve_metadata(request: Request) -> dict[str, str | None]:
         metadata = resolver.resolve(request)
         return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    app.add_api_route("/", resolve_metadata, methods=["GET"])
 
     client = TestClient(app)
     response = client.get(
