@@ -1,4 +1,5 @@
 from identity.infrastructure.persistence.sqlalchemy.session_reader import SqlAlchemySessionReader
+from identity.infrastructure.persistence.sqlalchemy.user_reader import SqlAlchemyUserReader
 from identity.infrastructure.security.access_tokens.jwt_access_token_authenticator import (
     JwtAccessTokenAuthenticator,
 )
@@ -16,4 +17,5 @@ __all__ = [
     "JwtTokenError",
     "PyJwtHmacCodec",
     "SqlAlchemySessionReader",
+    "SqlAlchemyUserReader",
 ]
