@@ -9,3 +9,4 @@ def test_subscription_package_exports_public_domain_api() -> None:
     assert "Subscription" in subscription.__all__
     assert "SubscriptionLifecycleService" in subscription.__all__
     assert "SubscriptionValidityPolicy" in subscription.__all__
+    assert "SubscriptionDefinitionValidator" in subscription.__all__
