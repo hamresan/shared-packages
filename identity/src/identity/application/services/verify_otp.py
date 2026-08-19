@@ -9,6 +9,8 @@ from identity.application.contracts.security import (
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, VerifyOtpCommand
 from identity.application.errors import (
+    IdentityAlreadyRegisteredError,
+    IdentityNotRegisteredError,
     InvalidOtpError,
     OtpAttemptsExceededError,
     OtpChallengeNotFoundError,
@@ -64,6 +66,8 @@ class VerifyOtpService:
                 raise InvalidOtpError("OTP code is invalid")
 
             if challenge.purpose is OtpPurpose.REGISTRATION:
+                if challenge.user_id is not None:
+                    raise IdentityAlreadyRegisteredError("Identity is already registered")
                 if not command.full_name or not command.full_name.strip():
                     raise RegistrationNameRequiredError("Full name is required for registration")
                 user, identity = self._registration_factory.create(
@@ -76,7 +80,7 @@ class VerifyOtpService:
                 await uow.identities.add(identity)
             elif challenge.purpose is OtpPurpose.LOGIN:
                 if challenge.user_id is None:
-                    raise OtpChallengeNotFoundError("OTP challenge has no user")
+                    raise IdentityNotRegisteredError("Identity is not registered")
                 user = await uow.users.get(challenge.user_id)
                 if user is None:
                     raise OtpChallengeNotFoundError("OTP challenge user was not found")
