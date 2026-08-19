@@ -1,0 +1,1 @@
+"""Subscription application service tests."""
