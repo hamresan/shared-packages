@@ -76,6 +76,22 @@ def test_request_otp_maps_http_request_to_application_command() -> None:
     assert response.json()["challenge_id"] == str(requester.challenge_id)
 
 
+def test_request_otp_rejects_unsupported_public_purpose() -> None:
+    client, requester, _ = build_client()
+    response = client.post(
+        "/identity/otp/request",
+        json={
+            "identity_type": "mobile",
+            "destination": "+96890000000",
+            "purpose": "account_recovery",
+            "locale": "en",
+        },
+    )
+
+    assert response.status_code == 422
+    assert requester.command is None
+
+
 def test_verify_and_refresh_return_auth_session_payloads() -> None:
     client, requester, _ = build_client()
     verify_response = client.post(
