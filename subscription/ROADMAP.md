@@ -55,6 +55,7 @@ subscription/
 │   │   ├── enums/
 │   │   ├── value_objects/
 │   │   ├── policies/
+│   │   ├── validators/
 │   │   └── services/
 │   ├── application/
 │   │   ├── contracts/
@@ -73,6 +74,8 @@ subscription/
 │   └── migrations/
 ├── tests/
 │   ├── domain/
+│   │   ├── policies/
+│   │   └── validators/
 │   ├── application/
 │   ├── infrastructure/
 │   ├── presentation/
@@ -183,10 +186,13 @@ Implemented and tested:
 
 ```text
 Subscription
-SubscriptionDefinitionPolicy
 SubscriptionStatusTransitionPolicy
 SubscriptionValidityPolicy
 ActiveBaseSubscriptionPolicy
+SubscriptionDefinitionValidator
+SubscriptionTimelineValidator
+SubscriptionStateValidator
+TimestampOrderValidator
 TimezoneAwareDatetimeValidator
 SubscriptionLifecycleService
 ```
@@ -210,8 +216,10 @@ Rules and boundaries:
 
 - `Subscription` is an immutable domain snapshot;
 - lifecycle mutations are applied by `SubscriptionLifecycleService` and return a new snapshot;
+- validation is kept under `domain/validators`, not mixed into decision policies;
+- `SubscriptionDefinitionValidator` composes focused timeline and state validators;
+- timestamp timezone and ordering rules are handled by dedicated validators;
 - lifecycle services receive policies/validators through explicit dependency injection;
-- timestamps must be timezone-aware and ordering invariants are validated explicitly;
 - cancelled subscriptions are terminal;
 - expired subscriptions may be renewed back to active;
 - trial completion remains the responsibility of `TrialEvaluationPolicy` and is supplied to validity evaluation as a fact;
