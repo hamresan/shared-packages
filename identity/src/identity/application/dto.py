@@ -44,3 +44,9 @@ class RefreshSessionCommand:
     refresh_token: str
     device_info: str | None = None
     ip_address: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DataRetentionCleanupResult:
+    deleted_otp_challenges: int
+    deleted_sessions: int

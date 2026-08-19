@@ -6,6 +6,7 @@ from uuid import UUID
 from identity.application.contracts.security import AccessTokenIssuer, IssuedAccessToken
 from identity.application.dto import (
     AuthSessionResult,
+    DataRetentionCleanupResult,
     RefreshSessionCommand,
     RequestOtpCommand,
     RequestOtpResult,
@@ -13,6 +14,7 @@ from identity.application.dto import (
 )
 from identity.domain import IdentityType, OtpPurpose
 from identity.public.services import (
+    IdentityDataRetentionCleaner,
     OtpRequester,
     OtpVerifier,
     SessionBulkRevoker,
@@ -43,6 +45,7 @@ class IdentityPublicApi:
     session_refresher: SessionRefresher
     session_revoker: SessionRevoker
     session_bulk_revoker: SessionBulkRevoker
+    data_retention_cleaner: IdentityDataRetentionCleaner
 
 
 __all__ = [
@@ -50,6 +53,8 @@ __all__ = [
     "AccessTokenIssuer",
     "AuthSessionResult",
     "AuthenticatedPrincipal",
+    "DataRetentionCleanupResult",
+    "IdentityDataRetentionCleaner",
     "IdentityPublicApi",
     "IdentityType",
     "IssuedAccessToken",
