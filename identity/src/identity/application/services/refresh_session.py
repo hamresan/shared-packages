@@ -8,7 +8,7 @@ from identity.application.contracts.security import (
 )
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, RefreshSessionCommand
-from identity.application.errors import InvalidRefreshTokenError
+from identity.application.errors import InvalidRefreshTokenError, RefreshTokenReuseError
 from identity.application.factories.entities import SessionFactory
 
 
@@ -34,8 +34,15 @@ class RefreshSessionService:
         now = self._clock.now()
         current_hash = self._hasher.hash(command.refresh_token)
         async with self._unit_of_work_factory() as uow:
-            current = await uow.sessions.get_by_refresh_token_hash(current_hash)
-            if current is None or current.revoked_at is not None or current.expires_at <= now:
+            current = await uow.sessions.get_for_update_by_refresh_token_hash(current_hash)
+            if current is None or current.expires_at <= now:
+                raise InvalidRefreshTokenError("Refresh token is invalid")
+
+            if current.revoked_at is not None:
+                if current.replaced_by_session_id is not None:
+                    await uow.sessions.revoke_family(current.family_id, now)
+                    await uow.commit()
+                    raise RefreshTokenReuseError("Refresh token reuse detected")
                 raise InvalidRefreshTokenError("Refresh token is invalid")
 
             refresh_token = self._refresh_token_generator.generate()
