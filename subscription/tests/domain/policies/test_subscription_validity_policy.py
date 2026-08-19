@@ -1,6 +1,10 @@
 from datetime import UTC, datetime, timedelta
 
-from subscription import SubscriptionStatus, SubscriptionValidityPolicy, TimezoneAwareDatetimeValidator
+from subscription import (
+    SubscriptionStatus,
+    SubscriptionValidityPolicy,
+    TimezoneAwareDatetimeValidator,
+)
 from tests.support.domain.subscription_builder import SubscriptionBuilder
 
 

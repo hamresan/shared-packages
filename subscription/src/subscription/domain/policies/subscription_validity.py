@@ -31,6 +31,4 @@ class SubscriptionValidityPolicy:
             return False
         if subscription.expires_at is not None and at >= subscription.expires_at:
             return False
-        if subscription.status is SubscriptionStatus.TRIALING and trial_completed:
-            return False
-        return True
+        return not (subscription.status is SubscriptionStatus.TRIALING and trial_completed)

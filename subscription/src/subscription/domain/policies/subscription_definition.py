@@ -29,9 +29,12 @@ class SubscriptionDefinitionPolicy:
             and subscription.started_at < subscription.created_at
         ):
             raise ValueError("started_at must not be before created_at")
-        if subscription.expires_at is not None and subscription.started_at is not None:
-            if subscription.expires_at <= subscription.started_at:
-                raise ValueError("expires_at must be after started_at")
+        if (
+            subscription.expires_at is not None
+            and subscription.started_at is not None
+            and subscription.expires_at <= subscription.started_at
+        ):
+            raise ValueError("expires_at must be after started_at")
         if subscription.trial_started_at is not None:
             if subscription.trial_policy is None:
                 raise ValueError("trial_started_at requires trial_policy")
@@ -62,9 +65,10 @@ class SubscriptionDefinitionPolicy:
         if subscription.status in started_statuses and subscription.started_at is None:
             raise ValueError(f"{subscription.status} subscription requires started_at")
 
-        if subscription.status is SubscriptionStatus.TRIALING:
-            if subscription.trial_policy is None or subscription.trial_started_at is None:
-                raise ValueError("trialing subscription requires trial_policy and trial_started_at")
+        if subscription.status is SubscriptionStatus.TRIALING and (
+            subscription.trial_policy is None or subscription.trial_started_at is None
+        ):
+            raise ValueError("trialing subscription requires trial_policy and trial_started_at")
 
         if (
             subscription.status is SubscriptionStatus.CANCELLED
@@ -72,8 +76,5 @@ class SubscriptionDefinitionPolicy:
         ):
             raise ValueError("cancelled subscription requires cancelled_at")
 
-        if (
-            subscription.status is SubscriptionStatus.EXPIRED
-            and subscription.expired_at is None
-        ):
+        if subscription.status is SubscriptionStatus.EXPIRED and subscription.expired_at is None:
             raise ValueError("expired subscription requires expired_at")
