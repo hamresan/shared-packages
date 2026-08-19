@@ -34,5 +34,9 @@ class IdentityNotRegisteredError(IdentityError):
     pass
 
 
+class UnsupportedOtpPurposeError(IdentityError):
+    pass
+
+
 class InvalidRefreshTokenError(IdentityError):
     pass
