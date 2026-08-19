@@ -17,6 +17,7 @@ from identity.application.errors import (
     UnsupportedOtpPurposeError,
 )
 from identity.application.factories.entities import SessionFactory, UserRegistrationFactory
+from identity.application.policies.user_status import UserStatusPolicy
 from identity.domain import OtpPurpose
 
 
@@ -31,6 +32,7 @@ class VerifyOtpService:
         access_token_issuer: AccessTokenIssuer,
         registration_factory: UserRegistrationFactory,
         session_factory: SessionFactory,
+        user_status_policy: UserStatusPolicy,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
@@ -39,6 +41,7 @@ class VerifyOtpService:
         self._access_token_issuer = access_token_issuer
         self._registration_factory = registration_factory
         self._session_factory = session_factory
+        self._user_status_policy = user_status_policy
 
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
         now = self._clock.now()
@@ -72,6 +75,7 @@ class VerifyOtpService:
                 user = await uow.users.get(challenge.user_id)
                 if user is None:
                     raise OtpChallengeNotFoundError("OTP challenge user was not found")
+                self._user_status_policy.ensure_active(user)
             else:
                 raise UnsupportedOtpPurposeError(
                     f"OTP purpose is not supported: {challenge.purpose.value}"
