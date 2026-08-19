@@ -26,12 +26,20 @@ class FakeOtpRequester:
 
 
 class FakeOtpVerifier:
+    def __init__(self) -> None:
+        self.command: VerifyOtpCommand | None = None
+
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
+        self.command = command
         return build_auth_result()
 
 
 class FakeSessionRefresher:
+    def __init__(self) -> None:
+        self.command: RefreshSessionCommand | None = None
+
     async def execute(self, command: RefreshSessionCommand) -> AuthSessionResult:
+        self.command = command
         return build_auth_result()
 
 
