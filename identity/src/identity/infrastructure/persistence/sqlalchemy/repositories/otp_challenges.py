@@ -37,9 +37,7 @@ class SqlAlchemyOtpChallengeRepository(OtpChallengeRepository):
 
     async def get_for_update(self, challenge_id: UUID) -> OtpChallenge | None:
         statement = (
-            select(OtpChallengeModel)
-            .where(OtpChallengeModel.id == challenge_id)
-            .with_for_update()
+            select(OtpChallengeModel).where(OtpChallengeModel.id == challenge_id).with_for_update()
         )
         model = await self._session.scalar(statement)
         return self._mapper.to_domain(model) if model is not None else None
