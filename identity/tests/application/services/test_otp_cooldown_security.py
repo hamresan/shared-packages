@@ -1,5 +1,6 @@
 import pytest
 
+from identity import IdentityModule
 from identity.application.dto import RequestOtpCommand, VerifyOtpCommand
 from identity.domain import IdentityType, OtpPurpose
 from tests.support.database import SqliteIdentityDatabase
@@ -15,7 +16,7 @@ def latest_otp(sender: FakeNotificationSender) -> str:
 
 async def register_user(
     *,
-    module: object,
+    module: IdentityModule,
     sender: FakeNotificationSender,
     destination: str,
 ) -> None:
