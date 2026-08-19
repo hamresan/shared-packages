@@ -5,6 +5,7 @@ from identity.application.errors import (
     IdentityNotRegisteredError,
     IdentityRateLimitExceededError,
     InactiveUserError,
+    InvalidIdentityValueError,
     InvalidOtpError,
     InvalidRefreshTokenError,
     OtpAttemptsExceededError,
@@ -30,7 +31,14 @@ class IdentityHttpErrorMapper:
             return HTTPException(status.HTTP_409_CONFLICT, str(error))
         if isinstance(error, InactiveUserError):
             return HTTPException(status.HTTP_403_FORBIDDEN, str(error))
-        if isinstance(error, (RegistrationNameRequiredError, UnsupportedOtpPurposeError)):
+        if isinstance(
+            error,
+            (
+                InvalidIdentityValueError,
+                RegistrationNameRequiredError,
+                UnsupportedOtpPurposeError,
+            ),
+        ):
             return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error))
         if isinstance(error, OtpChallengeNotFoundError):
             return HTTPException(status.HTTP_404_NOT_FOUND, str(error))
