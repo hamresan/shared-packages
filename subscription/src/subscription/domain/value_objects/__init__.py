@@ -11,6 +11,9 @@ from subscription.domain.value_objects.entitlement_values import (
 )
 from subscription.domain.value_objects.plan_code import PlanCode
 from subscription.domain.value_objects.subject_reference import SubjectReference
+from subscription.domain.value_objects.trial_conditions import TimeCondition, UsageCondition
+from subscription.domain.value_objects.usage_counter import UsageCounter
+from subscription.domain.value_objects.usage_metric import UsageMetric
 
 __all__ = [
     "BooleanEntitlementValue",
@@ -21,5 +24,9 @@ __all__ = [
     "PlanCode",
     "StringEntitlementValue",
     "SubjectReference",
+    "TimeCondition",
     "UnlimitedEntitlementValue",
+    "UsageCondition",
+    "UsageCounter",
+    "UsageMetric",
 ]

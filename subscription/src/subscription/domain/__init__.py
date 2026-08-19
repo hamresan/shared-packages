@@ -1,6 +1,6 @@
 """Subscription domain layer."""
 
-from subscription.domain.entities import Plan, PlanEntitlement
+from subscription.domain.entities import Plan, PlanEntitlement, TrialPolicy, UsageRecord
 from subscription.domain.enums import (
     EntitlementValueType,
     PlanStatus,
@@ -10,7 +10,11 @@ from subscription.domain.enums import (
     TrialCompletionMode,
     UsagePeriod,
 )
-from subscription.domain.policies import PlanDefinitionPolicy, PlanStatusTransitionPolicy
+from subscription.domain.policies import (
+    PlanDefinitionPolicy,
+    PlanStatusTransitionPolicy,
+    TrialEvaluationPolicy,
+)
 from subscription.domain.value_objects import (
     BooleanEntitlementValue,
     DecimalEntitlementValue,
@@ -20,7 +24,11 @@ from subscription.domain.value_objects import (
     PlanCode,
     StringEntitlementValue,
     SubjectReference,
+    TimeCondition,
     UnlimitedEntitlementValue,
+    UsageCondition,
+    UsageCounter,
+    UsageMetric,
 )
 
 __all__ = [
@@ -41,7 +49,14 @@ __all__ = [
     "SubscriptionSource",
     "SubscriptionStatus",
     "SubscriptionType",
+    "TimeCondition",
     "TrialCompletionMode",
+    "TrialEvaluationPolicy",
+    "TrialPolicy",
     "UnlimitedEntitlementValue",
+    "UsageCondition",
+    "UsageCounter",
+    "UsageMetric",
     "UsagePeriod",
+    "UsageRecord",
 ]
