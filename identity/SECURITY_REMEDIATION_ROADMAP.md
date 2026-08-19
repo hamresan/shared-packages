@@ -15,7 +15,6 @@ This roadmap tracks remediation of the August 2026 security audit for the passwo
 
 - **Closed**: production behavior and regression tests are implemented.
 - **Mostly closed**: the primary issue is fixed but one follow-up remains.
-- **Pending merge**: implementation exists in a reviewed/tested PR but is not yet on `main`.
 - **Planned**: finding remains open.
 - **Accepted tradeoff**: documented behavior that is not currently treated as a security defect.
 
@@ -117,15 +116,15 @@ Status: **Closed**
 
 ### P4.1 — Identity normalization and validation — M-5
 
-Status: **Pending merge — PR #33**
+Status: **Closed**
 
-Implemented on the pending branch:
-- Unicode NFKC normalization.
-- Canonical international mobile normalization with `00` to `+` conversion.
-- Unicode decimal digit conversion to ASCII digits.
-- E.164-style format enforcement without unsafe default-region guessing.
-- Email case folding plus malformed/whitespace/control-character rejection.
+- Unicode NFKC normalization is applied before canonicalization.
+- Mobile identities use canonical international form with `00` to `+` conversion.
+- Unicode decimal digits are converted to ASCII digits.
+- E.164-style format is enforced without unsafe default-region guessing.
+- Email identities are case-folded and malformed/whitespace/control-character inputs are rejected.
 - Canonical values feed uniqueness and abuse-control keys.
+- Regression tests cover equivalent phone representations and malformed identity input.
 
 ### P4.2 — Secret requirements — M-4
 
