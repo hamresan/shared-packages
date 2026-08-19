@@ -19,7 +19,7 @@ class SubscriptionBuilder:
         self._subscription_type = SubscriptionType.BASE
         self._source = SubscriptionSource.MANUAL
         self._status = SubscriptionStatus.PENDING
-        self._created_at = datetime(2026, 8, 19, 8, 0, tzinfo=UTC)
+        self._created_at = datetime(2026, 7, 1, 8, 0, tzinfo=UTC)
         self._started_at: datetime | None = None
         self._expires_at: datetime | None = None
         self._trial_policy: TrialPolicy | None = None
