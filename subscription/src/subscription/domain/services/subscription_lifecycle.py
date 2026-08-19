@@ -3,11 +3,11 @@ from datetime import datetime
 
 from subscription.domain.entities.subscription import Subscription
 from subscription.domain.enums.subscription import SubscriptionStatus
-from subscription.domain.policies.subscription_definition import SubscriptionDefinitionPolicy
 from subscription.domain.policies.subscription_status_transition import (
     SubscriptionStatusTransitionPolicy,
 )
-from subscription.domain.policies.timezone_aware_datetime import TimezoneAwareDatetimeValidator
+from subscription.domain.validators.subscription_definition import SubscriptionDefinitionValidator
+from subscription.domain.validators.timezone_aware_datetime import TimezoneAwareDatetimeValidator
 
 
 class SubscriptionLifecycleService:
@@ -16,11 +16,11 @@ class SubscriptionLifecycleService:
     def __init__(
         self,
         transition_policy: SubscriptionStatusTransitionPolicy,
-        definition_policy: SubscriptionDefinitionPolicy,
+        definition_validator: SubscriptionDefinitionValidator,
         datetime_validator: TimezoneAwareDatetimeValidator,
     ) -> None:
         self._transition_policy = transition_policy
-        self._definition_policy = definition_policy
+        self._definition_validator = definition_validator
         self._datetime_validator = datetime_validator
 
     def start_trial(self, subscription: Subscription, at: datetime) -> Subscription:
@@ -37,7 +37,7 @@ class SubscriptionLifecycleService:
             cancelled_at=None,
             expired_at=None,
         )
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
 
     def activate(
@@ -48,8 +48,7 @@ class SubscriptionLifecycleService:
         expires_at: datetime | None = None,
     ) -> Subscription:
         self._datetime_validator.validate(at, "at")
-        if expires_at is not None:
-            self._datetime_validator.validate(expires_at, "expires_at")
+        self._datetime_validator.validate_optional(expires_at, "expires_at")
         self._transition_policy.ensure_allowed(subscription.status, SubscriptionStatus.ACTIVE)
 
         result = replace(
@@ -60,7 +59,7 @@ class SubscriptionLifecycleService:
             cancelled_at=None,
             expired_at=None,
         )
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
 
     def cancel(self, subscription: Subscription, at: datetime) -> Subscription:
@@ -72,7 +71,7 @@ class SubscriptionLifecycleService:
             status=SubscriptionStatus.CANCELLED,
             cancelled_at=at,
         )
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
 
     def expire(self, subscription: Subscription, at: datetime) -> Subscription:
@@ -84,7 +83,7 @@ class SubscriptionLifecycleService:
             status=SubscriptionStatus.EXPIRED,
             expired_at=at,
         )
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
 
     def extend(self, subscription: Subscription, new_expires_at: datetime) -> Subscription:
@@ -95,7 +94,7 @@ class SubscriptionLifecycleService:
             raise ValueError("new_expires_at must be after the current expires_at")
 
         result = replace(subscription, expires_at=new_expires_at)
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
 
     def renew(
@@ -121,5 +120,5 @@ class SubscriptionLifecycleService:
             expired_at=None,
             cancelled_at=None,
         )
-        self._definition_policy.validate(result)
+        self._definition_validator.validate(result)
         return result
