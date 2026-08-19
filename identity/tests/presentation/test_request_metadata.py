@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
@@ -5,6 +7,7 @@ from identity.presentation.request_metadata import (
     DirectRequestMetadataResolver,
     TrustedProxyRequestMetadataResolver,
 )
+from tests.support.http_client import JsonHttpClient
 
 
 def test_direct_resolver_ignores_forwarded_for_header() -> None:
@@ -17,7 +20,7 @@ def test_direct_resolver_ignores_forwarded_for_header() -> None:
 
     app.add_api_route("/", resolve_metadata, methods=["GET"])
 
-    client = TestClient(app)
+    client = cast(JsonHttpClient, TestClient(app))
     response = client.get(
         "/",
         headers={
@@ -41,7 +44,7 @@ def test_trusted_proxy_resolver_uses_configured_forwarded_hop() -> None:
 
     app.add_api_route("/", resolve_metadata, methods=["GET"])
 
-    client = TestClient(app)
+    client = cast(JsonHttpClient, TestClient(app))
     response = client.get(
         "/",
         headers={
