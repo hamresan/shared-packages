@@ -38,9 +38,7 @@ class MobileIdentityNormalizer:
         if normalized.startswith("00"):
             normalized = f"+{normalized[2:]}"
         if not _E164_PATTERN.fullmatch(normalized):
-            raise InvalidIdentityValueError(
-                "Mobile number must use international E.164 format"
-            )
+            raise InvalidIdentityValueError("Mobile number must use international E.164 format")
         return normalized
 
 
