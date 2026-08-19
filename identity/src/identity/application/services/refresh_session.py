@@ -6,6 +6,11 @@ from identity.application.contracts.security import (
     RefreshTokenGenerator,
     SecretHasher,
 )
+from identity.application.contracts.security_events import (
+    SecurityEvent,
+    SecurityEventName,
+    SecurityEventSink,
+)
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, RefreshSessionCommand
 from identity.application.errors import InvalidRefreshTokenError, RefreshTokenReuseError
@@ -22,6 +27,7 @@ class RefreshSessionService:
         refresh_token_generator: RefreshTokenGenerator,
         access_token_issuer: AccessTokenIssuer,
         session_factory: SessionFactory,
+        security_event_sink: SecurityEventSink,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
@@ -29,6 +35,7 @@ class RefreshSessionService:
         self._refresh_token_generator = refresh_token_generator
         self._access_token_issuer = access_token_issuer
         self._session_factory = session_factory
+        self._security_event_sink = security_event_sink
 
     async def execute(self, command: RefreshSessionCommand) -> AuthSessionResult:
         now = self._clock.now()
@@ -42,6 +49,15 @@ class RefreshSessionService:
                 if current.replaced_by_session_id is not None:
                     await uow.sessions.revoke_family(current.family_id, now)
                     await uow.commit()
+                    await self._security_event_sink.emit(
+                        SecurityEvent(
+                            name=SecurityEventName.REFRESH_REUSE_DETECTED,
+                            occurred_at=now,
+                            user_id=current.user_id,
+                            session_id=current.id,
+                            family_id=current.family_id,
+                        )
+                    )
                     raise RefreshTokenReuseError("Refresh token reuse detected")
                 raise InvalidRefreshTokenError("Refresh token is invalid")
 
