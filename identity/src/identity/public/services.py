@@ -3,6 +3,7 @@ from uuid import UUID
 
 from identity.application.dto import (
     AuthSessionResult,
+    DataRetentionCleanupResult,
     RefreshSessionCommand,
     RequestOtpCommand,
     RequestOtpResult,
@@ -28,3 +29,7 @@ class SessionRevoker(Protocol):
 
 class SessionBulkRevoker(Protocol):
     async def execute(self, user_id: UUID) -> None: ...
+
+
+class IdentityDataRetentionCleaner(Protocol):
+    async def execute(self) -> DataRetentionCleanupResult: ...
