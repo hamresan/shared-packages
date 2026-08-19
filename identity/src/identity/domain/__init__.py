@@ -74,6 +74,7 @@ class Session:
     parent_session_id: UUID | None
     replaced_by_session_id: UUID | None
     expires_at: datetime
+    family_expires_at: datetime
     revoked_at: datetime | None
     device_info: str | None
     ip_address: str | None

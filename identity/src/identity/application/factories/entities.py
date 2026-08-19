@@ -84,8 +84,9 @@ class UserRegistrationFactory:
 
 
 class SessionFactory:
-    def __init__(self, ttl: timedelta) -> None:
+    def __init__(self, ttl: timedelta, absolute_ttl: timedelta) -> None:
         self._ttl = ttl
+        self._absolute_ttl = absolute_ttl
 
     def create(
         self,
@@ -97,7 +98,9 @@ class SessionFactory:
         ip_address: str | None,
         family_id: UUID | None = None,
         parent_session_id: UUID | None = None,
+        family_expires_at: datetime | None = None,
     ) -> Session:
+        absolute_expiration = family_expires_at or now + self._absolute_ttl
         return Session(
             id=uuid4(),
             user_id=user_id,
@@ -105,7 +108,8 @@ class SessionFactory:
             family_id=family_id or uuid4(),
             parent_session_id=parent_session_id,
             replaced_by_session_id=None,
-            expires_at=now + self._ttl,
+            expires_at=min(now + self._ttl, absolute_expiration),
+            family_expires_at=absolute_expiration,
             revoked_at=None,
             device_info=device_info,
             ip_address=ip_address,

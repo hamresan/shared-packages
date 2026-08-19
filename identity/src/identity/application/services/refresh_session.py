@@ -35,7 +35,7 @@ class RefreshSessionService:
         current_hash = self._hasher.hash(command.refresh_token)
         async with self._unit_of_work_factory() as uow:
             current = await uow.sessions.get_for_update_by_refresh_token_hash(current_hash)
-            if current is None or current.expires_at <= now:
+            if current is None or current.expires_at <= now or current.family_expires_at <= now:
                 raise InvalidRefreshTokenError("Refresh token is invalid")
 
             if current.revoked_at is not None:
@@ -54,6 +54,7 @@ class RefreshSessionService:
                 ip_address=command.ip_address or current.ip_address,
                 family_id=current.family_id,
                 parent_session_id=current.id,
+                family_expires_at=current.family_expires_at,
             )
             access_token = await self._access_token_issuer.issue(
                 replacement.user_id,

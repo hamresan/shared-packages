@@ -68,6 +68,7 @@ def build_session(
     now: datetime,
     revoked_at: datetime | None = None,
     expires_at: datetime | None = None,
+    family_expires_at: datetime | None = None,
 ) -> Session:
     return Session(
         id=session_id,
@@ -77,6 +78,7 @@ def build_session(
         parent_session_id=None,
         replaced_by_session_id=None,
         expires_at=expires_at or now + timedelta(days=1),
+        family_expires_at=family_expires_at or now + timedelta(days=90),
         revoked_at=revoked_at,
         device_info=None,
         ip_address=None,
