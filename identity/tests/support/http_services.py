@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from identity.application.dto import (
     AuthSessionResult,
@@ -49,6 +49,14 @@ class FakeSessionRevoker:
 
     async def execute(self, refresh_token: str) -> None:
         self.refresh_token = refresh_token
+
+
+class FakeSessionBulkRevoker:
+    def __init__(self) -> None:
+        self.user_id: UUID | None = None
+
+    async def execute(self, user_id: UUID) -> None:
+        self.user_id = user_id
 
 
 def build_auth_result() -> AuthSessionResult:
