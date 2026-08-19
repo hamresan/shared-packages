@@ -1,3 +1,4 @@
+from identity.application.policies.user_status import UserStatusPolicy
 from identity.infrastructure.persistence.sqlalchemy.session_reader import SqlAlchemySessionReader
 from identity.infrastructure.persistence.sqlalchemy.user_reader import SqlAlchemyUserReader
 from identity.infrastructure.security.access_tokens.jwt_access_token_authenticator import (
@@ -18,4 +19,5 @@ __all__ = [
     "PyJwtHmacCodec",
     "SqlAlchemySessionReader",
     "SqlAlchemyUserReader",
+    "UserStatusPolicy",
 ]
