@@ -3,11 +3,15 @@ import hmac
 
 from identity.application.contracts.security import SecretHasher
 
+MINIMUM_HMAC_SECRET_BYTES = 32
+
 
 class HmacSha256SecretHasher(SecretHasher):
     def __init__(self, secret: bytes) -> None:
-        if not secret:
-            raise ValueError("Secret must not be empty")
+        if len(secret) < MINIMUM_HMAC_SECRET_BYTES:
+            raise ValueError(
+                f"Secret must be at least {MINIMUM_HMAC_SECRET_BYTES} bytes"
+            )
         self._secret = secret
 
     def hash(self, value: str) -> str:
