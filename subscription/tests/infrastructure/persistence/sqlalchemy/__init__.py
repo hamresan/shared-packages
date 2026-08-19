@@ -1,0 +1,1 @@
+"""Subscription SQLAlchemy persistence tests."""
