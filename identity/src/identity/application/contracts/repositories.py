@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -46,7 +47,7 @@ class SessionRepository(Protocol):
         refresh_token_hash: str,
     ) -> Session | None: ...
 
-    async def revoke_family(self, family_id: UUID, revoked_at: object) -> None: ...
+    async def revoke_family(self, family_id: UUID, revoked_at: datetime) -> None: ...
 
     async def add(self, session: Session) -> None: ...
 
