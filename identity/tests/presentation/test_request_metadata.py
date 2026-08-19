@@ -1,0 +1,53 @@
+from fastapi import FastAPI, Request
+from fastapi.testclient import TestClient
+
+from identity.presentation.request_metadata import (
+    DirectRequestMetadataResolver,
+    TrustedProxyRequestMetadataResolver,
+)
+
+
+def test_direct_resolver_ignores_forwarded_for_header() -> None:
+    app = FastAPI()
+    resolver = DirectRequestMetadataResolver()
+
+    @app.get("/")
+    async def endpoint(request: Request) -> dict[str, str | None]:
+        metadata = resolver.resolve(request)
+        return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    client = TestClient(app)
+    response = client.get(
+        "/",
+        headers={
+            "x-forwarded-for": "198.51.100.99",
+            "user-agent": "metadata-test-agent",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ip"] != "198.51.100.99"
+    assert response.json()["device"] == "metadata-test-agent"
+
+
+def test_trusted_proxy_resolver_uses_configured_forwarded_hop() -> None:
+    app = FastAPI()
+    resolver = TrustedProxyRequestMetadataResolver(trusted_proxy_hops=2)
+
+    @app.get("/")
+    async def endpoint(request: Request) -> dict[str, str | None]:
+        metadata = resolver.resolve(request)
+        return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    client = TestClient(app)
+    response = client.get(
+        "/",
+        headers={
+            "x-forwarded-for": "203.0.113.7, 10.0.0.10",
+            "user-agent": "metadata-test-agent",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ip"] == "203.0.113.7"
+    assert response.json()["device"] == "metadata-test-agent"
