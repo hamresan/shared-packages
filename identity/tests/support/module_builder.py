@@ -1,4 +1,5 @@
 from identity import IdentityModule, IdentityModuleConfig
+from identity.application.contracts.security_events import SecurityEventSink
 from tests.support.authentication import FakeAccessTokenAuthenticator
 from tests.support.database import SqliteIdentityDatabase
 from tests.support.integrations import FakeAccessTokenIssuer, FakeNotificationSender
@@ -11,6 +12,7 @@ class IdentityTestModuleBuilder:
         self,
         database: SqliteIdentityDatabase,
         notification_sender: FakeNotificationSender,
+        security_event_sink: SecurityEventSink | None = None,
     ) -> IdentityModule:
         return IdentityModule(
             IdentityModuleConfig(
@@ -19,5 +21,6 @@ class IdentityTestModuleBuilder:
                 access_token_issuer=FakeAccessTokenIssuer(),
                 access_token_authenticator=FakeAccessTokenAuthenticator(),
                 signing_secret=TEST_SIGNING_SECRET,
+                security_event_sink=security_event_sink,
             )
         )

@@ -6,8 +6,14 @@ from identity.application.contracts.security import (
     OtpCodeGenerator,
     SecretHasher,
 )
+from identity.application.contracts.security_events import (
+    SecurityEvent,
+    SecurityEventName,
+    SecurityEventSink,
+)
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import RequestOtpCommand, RequestOtpResult
+from identity.application.errors import IdentityRateLimitExceededError
 from identity.application.factories.entities import OtpChallengeFactory
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
@@ -27,6 +33,7 @@ class RequestOtpService:
         challenge_factory: OtpChallengeFactory,
         purpose_policy: OtpPurposePolicy,
         rate_limit_policy: OtpRateLimitPolicy,
+        security_event_sink: SecurityEventSink,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._notification_sender = notification_sender
@@ -37,11 +44,22 @@ class RequestOtpService:
         self._challenge_factory = challenge_factory
         self._purpose_policy = purpose_policy
         self._rate_limit_policy = rate_limit_policy
+        self._security_event_sink = security_event_sink
 
     async def execute(self, command: RequestOtpCommand) -> RequestOtpResult:
         now = self._clock.now()
         destination = self._normalizer.normalize(command.identity_type, command.destination)
-        await self._rate_limit_policy.ensure_request_allowed(destination, now)
+        try:
+            await self._rate_limit_policy.ensure_request_allowed(destination, now)
+        except IdentityRateLimitExceededError:
+            await self._security_event_sink.emit(
+                SecurityEvent(
+                    name=SecurityEventName.OTP_REQUEST_RATE_LIMITED,
+                    occurred_at=now,
+                    subject_fingerprint=self._hasher.hash(destination),
+                )
+            )
+            raise
         self._purpose_policy.validate(command.purpose)
 
         async with self._unit_of_work_factory() as uow:
@@ -82,10 +100,7 @@ class RequestOtpService:
                 recipient=destination,
                 template_key="identity.otp",
                 locale=command.locale,
-                variables={
-                    "otp": code,
-                    "purpose": command.purpose.value,
-                },
+                variables={"otp": code, "purpose": command.purpose.value},
             )
         )
         return RequestOtpResult(
