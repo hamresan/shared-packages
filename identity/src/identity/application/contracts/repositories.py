@@ -22,10 +22,11 @@ class UserIdentityRepository(Protocol):
 
 
 class OtpChallengeRepository(Protocol):
-    async def get_latest(
+    async def get_latest_active(
         self,
         destination: str,
         purpose: OtpPurpose,
+        now: datetime,
     ) -> OtpChallenge | None: ...
 
     async def get(self, challenge_id: UUID) -> OtpChallenge | None: ...

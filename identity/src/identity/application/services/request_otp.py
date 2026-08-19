@@ -8,7 +8,6 @@ from identity.application.contracts.security import (
 )
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import RequestOtpCommand, RequestOtpResult
-from identity.application.errors import OtpResendNotAvailableError
 from identity.application.factories.entities import OtpChallengeFactory
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
@@ -47,9 +46,17 @@ class RequestOtpService:
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
             self._purpose_policy.validate(command.purpose, identity)
-            latest = await uow.otp_challenges.get_latest(destination, command.purpose)
+            latest = await uow.otp_challenges.get_latest_active(
+                destination,
+                command.purpose,
+                now,
+            )
             if latest is not None and latest.resend_available_at > now:
-                raise OtpResendNotAvailableError("OTP resend is not available yet")
+                return RequestOtpResult(
+                    challenge_id=latest.id,
+                    expires_at=latest.expires_at,
+                    resend_available_at=latest.resend_available_at,
+                )
 
             code = self._code_generator.generate()
             challenge = self._challenge_factory.create(
