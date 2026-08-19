@@ -9,13 +9,18 @@ from identity.access_tokens import (
     JwtTokenError,
     PyJwtHmacCodec,
 )
+from identity.application.errors import InactiveUserError
+from identity.application.policies.user_status import UserStatusPolicy
+from identity.domain import UserStatus
 from identity.infrastructure.security.access_tokens.contracts import AccessTokenClaims
 from tests.support.access_tokens import (
     FakeSessionReader,
     FakeTokenCodec,
+    FakeUserReader,
     FixedClock,
     build_claims,
     build_session,
+    build_user,
     utc_now,
 )
 
@@ -67,15 +72,18 @@ async def test_issuer_uses_signer_and_ttl() -> None:
 
 
 @pytest.mark.asyncio
-async def test_authenticator_returns_principal_for_active_session() -> None:
+async def test_authenticator_returns_principal_for_active_user_and_session() -> None:
     now = utc_now()
     user_id = uuid4()
     session_id = uuid4()
     claims = build_claims(user_id=user_id, session_id=session_id, now=now)
     session = build_session(user_id=user_id, session_id=session_id, now=now)
+    user = build_user(user_id=user_id, now=now)
     authenticator = JwtAccessTokenAuthenticator(
         FakeTokenCodec(claims),
         FakeSessionReader(session),
+        FakeUserReader(user),
+        UserStatusPolicy(),
         FixedClock(now),
     )
 
@@ -110,8 +118,31 @@ async def test_authenticator_rejects_invalid_session_or_token(failure: str) -> N
     authenticator = JwtAccessTokenAuthenticator(
         FakeTokenCodec(claims),
         FakeSessionReader(session),
+        FakeUserReader(build_user(user_id=user_id, now=now)),
+        UserStatusPolicy(),
         FixedClock(now),
     )
 
     with pytest.raises(ValueError):
+        await authenticator.authenticate("token")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [UserStatus.PENDING, UserStatus.SUSPENDED, UserStatus.DISABLED])
+async def test_authenticator_rejects_non_active_user(status: UserStatus) -> None:
+    now = utc_now()
+    user_id = uuid4()
+    session_id = uuid4()
+    claims = build_claims(user_id=user_id, session_id=session_id, now=now)
+    session = build_session(user_id=user_id, session_id=session_id, now=now)
+    user = build_user(user_id=user_id, now=now, status=status)
+    authenticator = JwtAccessTokenAuthenticator(
+        FakeTokenCodec(claims),
+        FakeSessionReader(session),
+        FakeUserReader(user),
+        UserStatusPolicy(),
+        FixedClock(now),
+    )
+
+    with pytest.raises(InactiveUserError):
         await authenticator.authenticate("token")
