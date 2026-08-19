@@ -11,6 +11,7 @@ from tests.support.http_client import JsonHttpClient
 from tests.support.http_services import (
     FakeOtpRequester,
     FakeOtpVerifier,
+    FakeSessionBulkRevoker,
     FakeSessionRefresher,
     FakeSessionRevoker,
 )
@@ -24,6 +25,7 @@ class HttpTestContext:
     otp_verifier: FakeOtpVerifier
     session_refresher: FakeSessionRefresher
     session_revoker: FakeSessionRevoker
+    session_bulk_revoker: FakeSessionBulkRevoker
 
 
 def build_client() -> HttpTestContext:
@@ -32,6 +34,7 @@ def build_client() -> HttpTestContext:
     otp_verifier = FakeOtpVerifier()
     session_refresher = FakeSessionRefresher()
     session_revoker = FakeSessionRevoker()
+    session_bulk_revoker = FakeSessionBulkRevoker()
     resolver = FixedRequestMetadataResolver(
         RequestMetadata(ip_address="203.0.113.8", device_info="trusted-test-agent")
     )
@@ -41,6 +44,7 @@ def build_client() -> HttpTestContext:
         otp_verifier=otp_verifier,
         session_refresher=session_refresher,
         session_revoker=session_revoker,
+        session_bulk_revoker=session_bulk_revoker,
         request_metadata_resolver=resolver,
     ).install(app)
     return HttpTestContext(
@@ -49,6 +53,7 @@ def build_client() -> HttpTestContext:
         otp_verifier=otp_verifier,
         session_refresher=session_refresher,
         session_revoker=session_revoker,
+        session_bulk_revoker=session_bulk_revoker,
     )
 
 
@@ -156,3 +161,24 @@ def test_revoke_returns_no_content() -> None:
 
     assert response.status_code == 204
     assert context.session_revoker.refresh_token == "r" * 48
+
+
+def test_revoke_all_requires_authentication() -> None:
+    context = build_client()
+
+    response = context.client.post("/identity/sessions/revoke-all")
+
+    assert response.status_code == 401
+    assert context.session_bulk_revoker.user_id is None
+
+
+def test_revoke_all_uses_authenticated_user() -> None:
+    context = build_client()
+
+    response = context.client.post(
+        "/identity/sessions/revoke-all",
+        headers={"Authorization": "Bearer valid-token"},
+    )
+
+    assert response.status_code == 204
+    assert context.session_bulk_revoker.user_id is not None

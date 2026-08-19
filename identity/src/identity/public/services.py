@@ -1,4 +1,5 @@
 from typing import Protocol
+from uuid import UUID
 
 from identity.application.dto import (
     AuthSessionResult,
@@ -23,3 +24,7 @@ class SessionRefresher(Protocol):
 
 class SessionRevoker(Protocol):
     async def execute(self, refresh_token: str) -> None: ...
+
+
+class SessionBulkRevoker(Protocol):
+    async def execute(self, user_id: UUID) -> None: ...

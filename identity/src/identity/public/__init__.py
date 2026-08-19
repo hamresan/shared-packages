@@ -12,7 +12,13 @@ from identity.application.dto import (
     VerifyOtpCommand,
 )
 from identity.domain import IdentityType, OtpPurpose
-from identity.public.services import OtpRequester, OtpVerifier, SessionRefresher, SessionRevoker
+from identity.public.services import (
+    OtpRequester,
+    OtpVerifier,
+    SessionBulkRevoker,
+    SessionRefresher,
+    SessionRevoker,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +42,7 @@ class IdentityPublicApi:
     otp_verifier: OtpVerifier
     session_refresher: SessionRefresher
     session_revoker: SessionRevoker
+    session_bulk_revoker: SessionBulkRevoker
 
 
 __all__ = [
@@ -52,6 +59,7 @@ __all__ = [
     "RefreshSessionCommand",
     "RequestOtpCommand",
     "RequestOtpResult",
+    "SessionBulkRevoker",
     "SessionRefresher",
     "SessionRevoker",
     "VerifyOtpCommand",

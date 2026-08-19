@@ -17,6 +17,7 @@ from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
+from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
 from identity.application.services.revoke_session import RevokeSessionService
 from identity.application.services.verify_otp import VerifyOtpService
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
@@ -133,12 +134,18 @@ class IdentityModule:
             hasher=hasher,
             security_event_sink=security_event_sink,
         )
+        self.session_bulk_revoker = RevokeAllSessionsService(
+            unit_of_work_factory=self._unit_of_work_factory,
+            clock=clock,
+            security_event_sink=security_event_sink,
+        )
         self.public_api = IdentityPublicApi(
             access_token_authenticator=config.access_token_authenticator,
             otp_requester=self.otp_requester,
             otp_verifier=self.otp_verifier,
             session_refresher=self.session_refresher,
             session_revoker=self.session_revoker,
+            session_bulk_revoker=self.session_bulk_revoker,
         )
         self.fastapi = FastApiIdentityAdapter(
             access_token_authenticator=config.access_token_authenticator,
@@ -146,6 +153,7 @@ class IdentityModule:
             otp_verifier=self.otp_verifier,
             session_refresher=self.session_refresher,
             session_revoker=self.session_revoker,
+            session_bulk_revoker=self.session_bulk_revoker,
             request_metadata_resolver=(
                 config.request_metadata_resolver or DirectRequestMetadataResolver()
             ),

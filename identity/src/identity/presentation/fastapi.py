@@ -24,6 +24,7 @@ from identity.public import (
     AuthenticatedPrincipal,
     OtpRequester,
     OtpVerifier,
+    SessionBulkRevoker,
     SessionRefresher,
     SessionRevoker,
 )
@@ -52,6 +53,15 @@ class AuthenticatedUserDependency:
 class CurrentUserEndpoint:
     async def __call__(self, principal: AuthenticatedPrincipal) -> dict[str, str]:
         return {"user_id": str(principal.user_id), "session_id": str(principal.session_id)}
+
+
+@dataclass(frozen=True, slots=True)
+class RevokeAllSessionsEndpoint:
+    service: SessionBulkRevoker
+
+    async def __call__(self, principal: AuthenticatedPrincipal) -> Response:
+        await self.service.execute(principal.user_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +139,7 @@ class FastApiIdentityAdapter:
     otp_verifier: OtpVerifier
     session_refresher: SessionRefresher
     session_revoker: SessionRevoker
+    session_bulk_revoker: SessionBulkRevoker
     request_metadata_resolver: RequestMetadataResolver = field(
         default_factory=DirectRequestMetadataResolver
     )
@@ -139,11 +150,17 @@ class FastApiIdentityAdapter:
         error_mapper = IdentityHttpErrorMapper()
         authenticated_user = AuthenticatedUserDependency(self.access_token_authenticator)
         current_user = CurrentUserEndpoint()
+        revoke_all_sessions = RevokeAllSessionsEndpoint(self.session_bulk_revoker)
 
         async def authenticated_current_user(
             principal: Annotated[AuthenticatedPrincipal, Depends(authenticated_user)],
         ) -> dict[str, str]:
             return await current_user(principal)
+
+        async def authenticated_revoke_all_sessions(
+            principal: Annotated[AuthenticatedPrincipal, Depends(authenticated_user)],
+        ) -> Response:
+            return await revoke_all_sessions(principal)
 
         router = APIRouter(prefix="/identity", tags=["identity"])
         router.add_api_route(
@@ -185,6 +202,12 @@ class FastApiIdentityAdapter:
         router.add_api_route(
             "/sessions/revoke",
             RevokeSessionEndpoint(self.session_revoker, error_mapper),
+            methods=["POST"],
+            status_code=status.HTTP_204_NO_CONTENT,
+        )
+        router.add_api_route(
+            "/sessions/revoke-all",
+            authenticated_revoke_all_sessions,
             methods=["POST"],
             status_code=status.HTTP_204_NO_CONTENT,
         )
