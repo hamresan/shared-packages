@@ -88,15 +88,7 @@ subscription/
 
 Status: **COMPLETED**
 
-Completed:
-
-- package folder and packaging metadata;
-- controlled package root;
-- clean source skeleton;
-- mirrored test skeleton;
-- Ruff, Ruff format, Pyright strict, pytest, and branch coverage >= 85%;
-- README usage scenarios;
-- initial architectural roadmap.
+Completed package foundation, mirrored tests, README, packaging metadata, Ruff, Ruff format, Pyright strict, pytest, and branch coverage >= 85%.
 
 ## Stage 1 — Core domain primitives
 
@@ -120,7 +112,7 @@ StringEntitlementValue
 UnlimitedEntitlementValue
 ```
 
-Decisions:
+Key decisions:
 
 - `SubjectReference` uses generic `subject_type + subject_id`.
 - `subject_type` must already be canonical lowercase; no hidden normalization occurs in the domain.
@@ -145,50 +137,71 @@ PlanStatusTransitionPolicy
 Rules:
 
 - plan code is a stable canonical identifier;
-- uniqueness of plan code across persisted plans belongs to the repository/application workflow, not the entity;
+- plan-code uniqueness across persisted plans belongs to repository/application workflows;
 - plan type is `BASE` or `ADDON`;
-- entitlement keys are canonical dotted identifiers;
-- duplicate entitlement keys inside one Plan are rejected;
-- plan names/descriptions are validated by a dedicated policy;
-- valid plan status transitions are explicit;
+- duplicate entitlement keys inside a Plan are rejected;
+- plan lifecycle transitions are explicit;
 - retired plans cannot return to active/inactive state;
-- typed entitlement values remain strongly typed and framework-independent;
 - pricing/payment concerns remain outside the Plan domain.
 
 ## Stage 3 — Trial and usage domain
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Implement trial policies and usage concepts separately from Subscription orchestration.
-
-Expected concepts:
+Implemented and tested:
 
 ```text
-TrialPolicy
+UsageMetric
+UsageRecord
+UsageCounter
 TimeCondition
 UsageCondition
+TrialPolicy
+TrialEvaluationPolicy
 TrialCompletionMode: ANY | ALL
-UsageMetric
-UsageRecord / UsageCounter
 UsagePeriod
 ```
 
-Required scenarios:
+Supported scenarios include:
 
 ```text
 14-day trial
 100-conversation trial
 14 days OR 100 conversations, whichever happens first
 50 conversations per week
+ALL-mode combined conditions
 ```
 
-The package must not know what a metric means. Consumers provide metric keys and record usage.
+Rules and boundaries:
+
+- the package does not know what a usage metric means;
+- consumers define canonical metric keys such as `conversations`, `api_calls`, or `storage.bytes`;
+- `UsageRecord` represents an immutable usage event;
+- `UsageCounter` represents aggregate consumption for one metric and period;
+- `UsageCondition` identifies a metric, limit, and period;
+- weekly/trial/monthly counters remain distinct even when they use the same metric;
+- `TrialEvaluationPolicy` is a pure decision component and performs no persistence, clock, or external-service calls;
+- missing counters are treated as zero usage;
+- `ANY` completes when the first configured condition is met;
+- `ALL` completes only when every configured condition is met.
 
 ## Stage 4 — Subscription lifecycle domain
 
-Implement `Subscription` and lifecycle rules for activation, validity, expiration, cancellation, renewal/extension, trial state, source tracking, base/add-on classification, and lifecycle timestamps.
+Status: **NEXT**
 
-Cross-subscription rules such as one active BASE per subject must be enforced through policies/application workflows using repository contracts rather than repository access inside entities.
+Implement `Subscription` and lifecycle rules for:
+
+- creation and activation;
+- validity evaluation;
+- expiration;
+- cancellation;
+- renewal/extension;
+- trial state;
+- source tracking;
+- base/add-on classification;
+- lifecycle timestamps.
+
+Cross-subscription rules such as one active BASE per subject must be enforced through dedicated policies/application workflows using repository contracts rather than repository access inside entities.
 
 ## Stage 5 — Application contracts and use cases
 
@@ -201,7 +214,7 @@ Entitlement Evaluation
 Usage Metering
 ```
 
-Likely contracts/use cases include repositories, Unit of Work, Clock, IdentifierGenerator, Plan CRUD workflows, Subscription create/activate/read/cancel/renew workflows, entitlement checks, usage recording, and trial evaluation.
+Likely boundaries include repositories, Unit of Work, Clock, IdentifierGenerator, Plan workflows, Subscription lifecycle workflows, entitlement checks, usage recording, and trial evaluation.
 
 Exact abstractions must follow the implemented domain rather than speculative design.
 
@@ -250,18 +263,7 @@ Authentication/authorization remains host-provided. Routes stay thin and mapping
 
 ## Stage 9 — Consumer integration examples
 
-Add at least one real host example showing:
-
-- plan definition;
-- base subscription assignment;
-- add-on grants;
-- usage recording;
-- typed entitlement checks;
-- time/usage combined trial;
-- manual grant without payment;
-- paid activation/renewal after an external payment event;
-- optional composition with another reusable package;
-- host-owned SQLAlchemy and Alembic wiring.
+Add a real host example covering plan definition, base/add-on subscriptions, usage recording, typed entitlement checks, combined trials, manual grants, paid activation/renewal after an external payment event, optional composition with other reusable packages, and host-owned SQLAlchemy/Alembic wiring.
 
 ## Stage 10 — Documentation and release readiness
 
@@ -292,13 +294,13 @@ make check
 
 This validates Ruff, Ruff format, Pyright strict, pytest, and branch coverage >= 85% before the change is considered merge-ready.
 
-To make GitHub technically block merging when this job fails, the repository's `main` branch/ruleset must mark the `Subscription CI / check` status check as required. The workflow itself runs automatically, while branch protection/ruleset controls whether GitHub disables the Merge button.
+To make GitHub technically block merging when this job fails, the repository's `main` branch/ruleset must mark the `Subscription CI / check` status check as required.
 
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2
-Next objective: Stage 3 — trial and usage domain
+Implemented: Stages 0, 1, 2, 3
+Next objective: Stage 4 — subscription lifecycle domain
 Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
