@@ -1,3 +1,5 @@
+"""Subscription domain enums."""
+
 from subscription.domain.enums.entitlement import EntitlementValueType
 from subscription.domain.enums.plan import PlanStatus
 from subscription.domain.enums.subscription import (

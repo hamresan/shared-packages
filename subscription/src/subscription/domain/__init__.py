@@ -1,3 +1,5 @@
+"""Subscription domain layer."""
+
 from subscription.domain.enums import (
     EntitlementValueType,
     PlanStatus,

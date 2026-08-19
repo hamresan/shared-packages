@@ -1,3 +1,5 @@
+"""Subscription domain value objects."""
+
 from subscription.domain.value_objects.entitlement_values import (
     BooleanEntitlementValue,
     DecimalEntitlementValue,
