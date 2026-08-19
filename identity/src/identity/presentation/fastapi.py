@@ -96,7 +96,9 @@ class RefreshSessionEndpoint:
     error_mapper: IdentityHttpErrorMapper
     metadata_resolver: RequestMetadataResolver
 
-    async def __call__(self, payload: RefreshSessionRequest, request: Request) -> AuthSessionResponse:
+    async def __call__(
+        self, payload: RefreshSessionRequest, request: Request
+    ) -> AuthSessionResponse:
         metadata = self.metadata_resolver.resolve(request)
         try:
             result = await self.service.execute(
