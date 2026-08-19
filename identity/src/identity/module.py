@@ -4,6 +4,7 @@ from datetime import timedelta
 from notification.public import NotificationSender
 
 from identity.application.contracts.database import AsyncSessionFactory
+from identity.application.contracts.rate_limiting import RateLimiter, RateLimitRule
 from identity.application.contracts.security import AccessTokenIssuer
 from identity.application.factories.entities import (
     OtpChallengeFactory,
@@ -11,6 +12,7 @@ from identity.application.factories.entities import (
     UserRegistrationFactory,
 )
 from identity.application.policies.otp_purpose import OtpPurposePolicy
+from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
@@ -21,6 +23,7 @@ from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWorkFactory,
 )
 from identity.infrastructure.security.hmac_hasher import HmacSha256SecretHasher
+from identity.infrastructure.security.in_memory_rate_limiter import InMemoryRateLimiter
 from identity.infrastructure.security.normalizer import DefaultIdentityNormalizer
 from identity.infrastructure.security.system_clock import SystemClock
 from identity.infrastructure.security.token_generators import (
@@ -43,6 +46,13 @@ class IdentityModuleConfig:
     otp_max_attempts: int = 5
     session_ttl: timedelta = timedelta(days=30)
     session_absolute_ttl: timedelta = timedelta(days=90)
+    rate_limiter: RateLimiter | None = None
+    otp_request_burst_limit: int = 5
+    otp_request_burst_window: timedelta = timedelta(minutes=15)
+    otp_request_daily_limit: int = 20
+    otp_request_daily_window: timedelta = timedelta(days=1)
+    otp_verify_limit: int = 10
+    otp_verify_window: timedelta = timedelta(minutes=1)
 
 
 class IdentityModule:
@@ -54,6 +64,22 @@ class IdentityModule:
         refresh_token_generator = SecureRefreshTokenGenerator()
         session_factory = SessionFactory(config.session_ttl, config.session_absolute_ttl)
         user_status_policy = UserStatusPolicy()
+        rate_limiter = config.rate_limiter or InMemoryRateLimiter()
+        rate_limit_policy = OtpRateLimitPolicy(
+            rate_limiter=rate_limiter,
+            request_burst_rule=RateLimitRule(
+                limit=config.otp_request_burst_limit,
+                window=config.otp_request_burst_window,
+            ),
+            request_daily_rule=RateLimitRule(
+                limit=config.otp_request_daily_limit,
+                window=config.otp_request_daily_window,
+            ),
+            verify_rule=RateLimitRule(
+                limit=config.otp_verify_limit,
+                window=config.otp_verify_window,
+            ),
+        )
 
         self.otp_requester = RequestOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -68,6 +94,7 @@ class IdentityModule:
                 max_attempts=config.otp_max_attempts,
             ),
             purpose_policy=OtpPurposePolicy(),
+            rate_limit_policy=rate_limit_policy,
         )
         self.otp_verifier = VerifyOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -78,6 +105,7 @@ class IdentityModule:
             registration_factory=UserRegistrationFactory(),
             session_factory=session_factory,
             user_status_policy=user_status_policy,
+            rate_limit_policy=rate_limit_policy,
         )
         self.session_refresher = RefreshSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
