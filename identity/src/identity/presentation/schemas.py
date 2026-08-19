@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -6,10 +7,13 @@ from pydantic import BaseModel, Field
 from identity.domain import IdentityType, OtpPurpose
 
 
+SupportedOtpPurpose = Literal[OtpPurpose.REGISTRATION, OtpPurpose.LOGIN]
+
+
 class RequestOtpRequest(BaseModel):
     identity_type: IdentityType
     destination: str = Field(min_length=3, max_length=320)
-    purpose: OtpPurpose
+    purpose: SupportedOtpPurpose
     locale: str = Field(default="en", min_length=2, max_length=16)
 
 
