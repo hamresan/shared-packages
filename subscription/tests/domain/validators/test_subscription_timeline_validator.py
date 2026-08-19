@@ -19,10 +19,7 @@ def test_timeline_validator_rejects_start_before_creation() -> None:
     created_at = datetime(2026, 8, 19, 9, 0, tzinfo=UTC)
     started_at = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
     subscription = (
-        SubscriptionBuilder()
-        .with_created_at(created_at)
-        .with_started_at(started_at)
-        .build()
+        SubscriptionBuilder().with_created_at(created_at).with_started_at(started_at).build()
     )
 
     with pytest.raises(ValueError, match="started_at"):
@@ -32,10 +29,7 @@ def test_timeline_validator_rejects_start_before_creation() -> None:
 def test_timeline_validator_rejects_expiration_not_after_start() -> None:
     started_at = datetime(2026, 8, 19, 9, 0, tzinfo=UTC)
     subscription = (
-        SubscriptionBuilder()
-        .with_started_at(started_at)
-        .with_expires_at(started_at)
-        .build()
+        SubscriptionBuilder().with_started_at(started_at).with_expires_at(started_at).build()
     )
 
     with pytest.raises(ValueError, match="expires_at"):
