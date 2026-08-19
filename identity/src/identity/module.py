@@ -42,6 +42,7 @@ class IdentityModuleConfig:
     otp_resend_delay: timedelta = timedelta(seconds=60)
     otp_max_attempts: int = 5
     session_ttl: timedelta = timedelta(days=30)
+    session_absolute_ttl: timedelta = timedelta(days=90)
 
 
 class IdentityModule:
@@ -51,7 +52,7 @@ class IdentityModule:
         clock = SystemClock()
         hasher = HmacSha256SecretHasher(config.signing_secret)
         refresh_token_generator = SecureRefreshTokenGenerator()
-        session_factory = SessionFactory(config.session_ttl)
+        session_factory = SessionFactory(config.session_ttl, config.session_absolute_ttl)
         user_status_policy = UserStatusPolicy()
 
         self.otp_requester = RequestOtpService(
