@@ -2,9 +2,11 @@ from datetime import datetime
 
 from subscription.domain.entities.subscription import Subscription
 from subscription.domain.enums.subscription import SubscriptionStatus
-from subscription.domain.policies.timezone_aware_datetime import (
+from subscription.domain.validators.timezone_aware_datetime import (
     TimezoneAwareDatetimeValidator,
 )
+
+_USABLE_STATUSES = frozenset({SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING})
 
 
 class SubscriptionValidityPolicy:
@@ -22,13 +24,15 @@ class SubscriptionValidityPolicy:
     ) -> bool:
         self._datetime_validator.validate(at, "at")
 
-        if subscription.status not in {
-            SubscriptionStatus.ACTIVE,
-            SubscriptionStatus.TRIALING,
-        }:
-            return False
-        if subscription.started_at is None or at < subscription.started_at:
-            return False
-        if subscription.expires_at is not None and at >= subscription.expires_at:
-            return False
-        return not (subscription.status is SubscriptionStatus.TRIALING and trial_completed)
+        has_started = subscription.started_at is not None and at >= subscription.started_at
+        is_within_expiration = subscription.expires_at is None or at < subscription.expires_at
+        trial_is_available = not (
+            subscription.status is SubscriptionStatus.TRIALING and trial_completed
+        )
+
+        return (
+            subscription.status in _USABLE_STATUSES
+            and has_started
+            and is_within_expiration
+            and trial_is_available
+        )
