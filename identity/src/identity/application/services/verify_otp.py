@@ -42,7 +42,7 @@ class VerifyOtpService:
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
         now = self._clock.now()
         async with self._unit_of_work_factory() as uow:
-            challenge = await uow.otp_challenges.get(command.challenge_id)
+            challenge = await uow.otp_challenges.get_for_update(command.challenge_id)
             if challenge is None or challenge.consumed_at is not None:
                 raise OtpChallengeNotFoundError("OTP challenge was not found")
             if challenge.expires_at <= now:
@@ -50,9 +50,7 @@ class VerifyOtpService:
             if challenge.attempts_count >= challenge.max_attempts:
                 raise OtpAttemptsExceededError("OTP attempts exceeded")
             if not self._hasher.verify(command.code, challenge.code_hash):
-                await uow.otp_challenges.save(
-                    replace(challenge, attempts_count=challenge.attempts_count + 1)
-                )
+                await uow.otp_challenges.increment_attempts(challenge.id)
                 await uow.commit()
                 raise InvalidOtpError("OTP code is invalid")
 
