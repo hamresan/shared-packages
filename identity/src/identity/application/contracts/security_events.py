@@ -12,6 +12,7 @@ class SecurityEventName(StrEnum):
     OTP_ATTEMPTS_EXCEEDED = "otp.attempts_exceeded"
     REFRESH_REUSE_DETECTED = "refresh.reuse_detected"
     SESSION_REVOKED = "session.revoked"
+    SESSIONS_REVOKED_ALL = "session.revoked_all"
 
 
 @dataclass(frozen=True, slots=True)
