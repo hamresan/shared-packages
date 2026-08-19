@@ -1,6 +1,11 @@
 import pytest
 
-from subscription import BooleanEntitlementValue, EntitlementKey, PlanDefinitionPolicy, PlanEntitlement
+from subscription import (
+    BooleanEntitlementValue,
+    EntitlementKey,
+    PlanDefinitionPolicy,
+    PlanEntitlement,
+)
 from tests.support.domain.plan_builder import PlanBuilder
 
 
@@ -20,8 +25,14 @@ def test_plan_definition_policy_rejects_untrimmed_description() -> None:
 
 
 def test_plan_definition_policy_rejects_duplicate_entitlement_keys() -> None:
-    first = PlanEntitlement(EntitlementKey("analytics.advanced"), BooleanEntitlementValue(True))
-    second = PlanEntitlement(EntitlementKey("analytics.advanced"), BooleanEntitlementValue(False))
+    first = PlanEntitlement(
+        EntitlementKey("analytics.advanced"),
+        BooleanEntitlementValue(True),
+    )
+    second = PlanEntitlement(
+        EntitlementKey("analytics.advanced"),
+        BooleanEntitlementValue(False),
+    )
 
     with pytest.raises(ValueError, match="unique"):
         PlanDefinitionPolicy().validate(PlanBuilder().with_entitlements(first, second).build())
