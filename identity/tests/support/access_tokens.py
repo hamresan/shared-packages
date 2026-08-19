@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from identity.domain import Session
+from identity.domain import Session, User, UserStatus
 from identity.infrastructure.security.access_tokens.contracts import AccessTokenClaims
 
 
@@ -23,6 +23,16 @@ class FakeSessionReader:
         return self._session
 
 
+class FakeUserReader:
+    def __init__(self, user: User | None) -> None:
+        self._user = user
+
+    async def get_by_id(self, user_id: UUID) -> User | None:
+        if self._user is None or self._user.id != user_id:
+            return None
+        return self._user
+
+
 class FakeTokenCodec:
     def __init__(self, claims: AccessTokenClaims) -> None:
         self.claims = claims
@@ -34,6 +44,21 @@ class FakeTokenCodec:
 
     def verify(self, token: str) -> AccessTokenClaims:
         return self.claims
+
+
+def build_user(
+    *,
+    user_id: UUID,
+    now: datetime,
+    status: UserStatus = UserStatus.ACTIVE,
+) -> User:
+    return User(
+        id=user_id,
+        full_name="Access Token Test User",
+        status=status,
+        created_at=now,
+        updated_at=now,
+    )
 
 
 def build_session(

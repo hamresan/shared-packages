@@ -15,7 +15,7 @@ OTP delivery is delegated through the public `NotificationSender` contract from 
 - Secure OTP and refresh-token generation.
 - Session creation, refresh-token rotation, and revocation.
 - Access-token issuer and authenticator contracts.
-- Production JWT access-token issuer/authenticator with database-backed session validation.
+- Production JWT access-token issuer/authenticator with database-backed session and active-user validation.
 - Async SQLAlchemy persistence with host-provided session factory.
 - Public Alembic integration helpers for host-owned migration histories.
 - FastAPI routes for OTP, sessions, and the current authenticated identity.
@@ -153,12 +153,16 @@ from identity.access_tokens import (
     JwtAccessTokenIssuer,
     PyJwtHmacCodec,
     SqlAlchemySessionReader,
+    SqlAlchemyUserReader,
+    UserStatusPolicy,
 )
 from identity.infrastructure.security.system_clock import SystemClock
 
 clock = SystemClock()
 codec = PyJwtHmacCodec(secret=jwt_signing_secret)
 session_reader = SqlAlchemySessionReader(identity_session_factory)
+user_reader = SqlAlchemyUserReader(identity_session_factory)
+user_status_policy = UserStatusPolicy()
 
 access_token_issuer = JwtAccessTokenIssuer(
     signer=codec,
@@ -169,6 +173,8 @@ access_token_issuer = JwtAccessTokenIssuer(
 access_token_authenticator = JwtAccessTokenAuthenticator(
     verifier=codec,
     session_reader=session_reader,
+    user_reader=user_reader,
+    user_status_policy=user_status_policy,
     clock=clock,
 )
 ```
@@ -177,9 +183,9 @@ For the default HS256 algorithm, `jwt_signing_secret` must be at least 32 bytes 
 
 The JWT contains only the canonical token claims needed by Identity: user ID (`sub`), session ID (`sid`), issued-at time, and expiration time. Access tokens are not stored in the database.
 
-Authentication verifies the JWT signature and structure first, then reads the referenced session through the `SessionReader` contract and rejects the token if the token is expired or if the session is missing, revoked, expired, or belongs to another user. Expiration is evaluated by `JwtAccessTokenAuthenticator` through its injected `Clock`, which keeps authentication deterministic and independently testable.
+Authentication verifies the JWT signature and structure first, then reads the referenced session through the `SessionReader` contract and the referenced user through the `UserReader` contract. The token is rejected if it is expired, if the session is missing, revoked, expired, or belongs to another user, or if the user is missing or is not `ACTIVE`. This makes `PENDING`, `SUSPENDED`, and `DISABLED` status changes effective for existing access tokens without embedding mutable account state into the JWT.
 
-The concrete SQLAlchemy reader is isolated behind `SessionReader`, so the authenticator itself does not depend on SQLAlchemy.
+The concrete SQLAlchemy readers are isolated behind `SessionReader` and `UserReader`, so the authenticator itself does not depend on SQLAlchemy.
 
 Refresh tokens remain hash-backed session credentials in the database and continue to use the existing rotation/revocation flow.
 
@@ -260,4 +266,4 @@ contracts / domain
 SQLAlchemy, JWT/security implementations, NotificationSender
 ```
 
-Application services orchestrate workflows only. Persistence stays in repositories/readers, entity/schema conversion stays in mappers, security behavior stays in dedicated security components, entity construction stays in factories, and OTP eligibility rules stay in policies.
+Application services orchestrate workflows only. Persistence stays in repositories/readers, entity/schema conversion stays in mappers, security behavior stays in dedicated security components and policies, entity construction stays in factories, and OTP eligibility rules stay in policies.

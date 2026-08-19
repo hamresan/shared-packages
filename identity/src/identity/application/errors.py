@@ -38,5 +38,9 @@ class UnsupportedOtpPurposeError(IdentityError):
     pass
 
 
+class InactiveUserError(IdentityError):
+    pass
+
+
 class InvalidRefreshTokenError(IdentityError):
     pass
