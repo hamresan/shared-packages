@@ -1,0 +1,1 @@
+"""Subscription persistence adapters."""

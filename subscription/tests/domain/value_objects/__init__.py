@@ -1,0 +1,1 @@
+"""Subscription value object tests."""
