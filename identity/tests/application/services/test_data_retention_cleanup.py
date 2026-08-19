@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import func, select
 
-from identity import IdentityModuleConfig
+from identity import IdentityModule, IdentityModuleConfig
 from identity.domain import IdentityType, OtpPurpose, UserStatus
 from identity.infrastructure.persistence.sqlalchemy.models import (
     OtpChallengeModel,
@@ -15,7 +15,6 @@ from tests.support.authentication import FakeAccessTokenAuthenticator
 from tests.support.database import SqliteIdentityDatabase
 from tests.support.integrations import FakeAccessTokenIssuer, FakeNotificationSender
 from tests.support.module_builder import TEST_SIGNING_SECRET
-from identity import IdentityModule
 
 
 @pytest.mark.asyncio
@@ -134,7 +133,9 @@ async def test_cleanup_deletes_only_old_records_in_bounded_batches() -> None:
         assert second.deleted_sessions == 1
 
         async with database.session_factory() as session:
-            challenge_count = await session.scalar(select(func.count()).select_from(OtpChallengeModel))
+            challenge_count = await session.scalar(
+                select(func.count()).select_from(OtpChallengeModel)
+            )
             session_count = await session.scalar(select(func.count()).select_from(SessionModel))
 
         assert challenge_count == 1
