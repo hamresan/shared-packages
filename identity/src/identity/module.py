@@ -11,6 +11,7 @@ from identity.application.factories.entities import (
     UserRegistrationFactory,
 )
 from identity.application.policies.otp_purpose import OtpPurposePolicy
+from identity.application.policies.user_status import UserStatusPolicy
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
 from identity.application.services.revoke_session import RevokeSessionService
@@ -51,6 +52,7 @@ class IdentityModule:
         hasher = HmacSha256SecretHasher(config.signing_secret)
         refresh_token_generator = SecureRefreshTokenGenerator()
         session_factory = SessionFactory(config.session_ttl)
+        user_status_policy = UserStatusPolicy()
 
         self.otp_requester = RequestOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -74,6 +76,7 @@ class IdentityModule:
             access_token_issuer=config.access_token_issuer,
             registration_factory=UserRegistrationFactory(),
             session_factory=session_factory,
+            user_status_policy=user_status_policy,
         )
         self.session_refresher = RefreshSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
