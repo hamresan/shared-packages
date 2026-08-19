@@ -5,6 +5,7 @@ from identity.application.dto import (
     RequestOtpResult,
     VerifyOtpCommand,
 )
+from identity.presentation.request_metadata import RequestMetadata
 from identity.presentation.schemas import (
     AuthSessionResponse,
     RefreshSessionRequest,
@@ -23,23 +24,28 @@ class IdentityRequestMapper:
             locale=request.locale,
         )
 
-    def to_verify_otp_command(self, request: VerifyOtpRequest) -> VerifyOtpCommand:
+    def to_verify_otp_command(
+        self,
+        request: VerifyOtpRequest,
+        metadata: RequestMetadata,
+    ) -> VerifyOtpCommand:
         return VerifyOtpCommand(
             challenge_id=request.challenge_id,
             code=request.code,
             full_name=request.full_name,
-            device_info=request.device_info,
-            ip_address=request.ip_address,
+            device_info=metadata.device_info,
+            ip_address=metadata.ip_address,
         )
 
     def to_refresh_session_command(
         self,
         request: RefreshSessionRequest,
+        metadata: RequestMetadata,
     ) -> RefreshSessionCommand:
         return RefreshSessionCommand(
             refresh_token=request.refresh_token,
-            device_info=request.device_info,
-            ip_address=request.ip_address,
+            device_info=metadata.device_info,
+            ip_address=metadata.ip_address,
         )
 
 
