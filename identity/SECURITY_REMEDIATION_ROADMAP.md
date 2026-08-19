@@ -1,6 +1,6 @@
 # Identity Security Remediation Roadmap
 
-This roadmap addresses the findings from the August 2026 security audit of the passwordless OTP authentication flow.
+This roadmap tracks remediation of the August 2026 security audit for the passwordless OTP authentication flow.
 
 ## Principles
 
@@ -8,122 +8,225 @@ This roadmap addresses the findings from the August 2026 security audit of the p
 - Put concurrency guarantees at the persistence boundary behind repository contracts.
 - Prefer default-deny security policies.
 - Keep provider- and deployment-specific controls behind explicit abstractions.
-- Add tests for every security invariant before considering a finding closed.
+- Add regression tests for every security invariant before considering a finding closed.
+- Keep security findings in focused PRs so review and rollback remain straightforward.
+
+## Status legend
+
+- **Closed**: production behavior and regression tests are implemented.
+- **Mostly closed**: the primary issue is fixed but one follow-up remains.
+- **Pending merge**: implementation exists in a reviewed/tested PR but is not yet on `main`.
+- **Planned**: finding remains open.
+- **Accepted tradeoff**: documented behavior that is not currently treated as a security defect.
 
 ## Phase 1 — Authentication correctness and account-takeover blockers
 
 ### P1.1 — Atomic OTP verification and consumption — C-1
 
-Status: **In progress**
+Status: **Mostly closed**
 
-- Read OTP challenges with a database row lock during verification.
-- Increment failed-attempt counters atomically in SQL.
-- Keep validation, attempt increment, successful consumption, and session creation in one transaction.
-- Ensure a consumed OTP cannot create multiple sessions under concurrent verification.
-- Add deterministic attempt-limit tests.
-- Add a PostgreSQL concurrency regression test before marking C-1 fully closed.
+Completed:
+- OTP challenges are read under a row lock during verification.
+- Failed-attempt counters are incremented atomically in persistence.
+- Validation, attempt accounting, successful consumption, and session creation remain inside one transaction.
+- Regression tests enforce the configured attempt ceiling.
+
+Remaining:
+- Add PostgreSQL concurrency integration coverage proving one OTP cannot create multiple sessions and failed attempts cannot be lost under parallel verification.
 
 ### P1.2 — Default-deny OTP purpose handling — H-3
 
-Status: **Planned**
+Status: **Closed**
 
-- Restrict public OTP purposes to flows that are implemented.
-- Change purpose policy to default-deny.
-- Replace `registration / else` verification branching with explicit supported-purpose handling.
-- Ensure verification/change/recovery purposes never implicitly create login sessions.
-- Add tests for every supported and unsupported purpose.
+- Public HTTP OTP purposes are restricted to implemented flows.
+- Purpose policy is default-deny.
+- Verification uses explicit supported-purpose branches.
+- Unsupported verification/change/recovery purposes cannot implicitly create login sessions.
+- Regression tests cover supported and unsupported purposes.
 
 ### P1.3 — User status enforcement — M-1
 
-Status: **Planned**
+Status: **Closed**
 
-- Reject login/session creation for non-active users.
-- Enforce user status during access-token authentication.
-- Define explicit behavior for `PENDING`, `SUSPENDED`, and `DISABLED`.
-- Add regression tests for existing and newly issued sessions.
+- Non-active users cannot obtain new authenticated sessions.
+- Access-token authentication checks current user status.
+- `PENDING`, `SUSPENDED`, and `DISABLED` are rejected.
+- Regression tests cover login and existing access-token behavior.
 
 ## Phase 2 — Session and refresh-token security
 
-### P2.1 — Atomic refresh rotation — H-2
+### P2.1 — Atomic refresh rotation and reuse detection — H-2
 
-- Lock the current session during refresh rotation.
-- Prevent one refresh token from creating more than one successor.
-- Add refresh-token reuse detection.
-- Revoke the active token family when reuse is detected.
-- Add a fixed absolute family expiration independent of sliding refresh TTL.
-- Add PostgreSQL concurrent-refresh tests.
+Status: **Mostly closed**
+
+Completed:
+- Refresh rotation locks the current session.
+- A refresh token cannot create more than one legitimate successor.
+- Refresh-token reuse is detected.
+- Reuse revokes the active token family.
+- Refresh families have a fixed absolute expiration independent of sliding session TTL.
+- Regression tests cover rotation, reuse, and absolute family lifetime.
+
+Remaining:
+- Add PostgreSQL concurrent-refresh integration coverage.
 
 ### P2.2 — Session recovery controls — M-8
 
+Status: **Planned**
+
 - Add revoke-all-user-sessions capability.
 - Add session listing only if required by the host product.
-- Keep public APIs minimal and explicit.
+- Keep public APIs minimal and authenticated.
+- Support incident recovery without direct database manipulation.
 
 ## Phase 3 — Abuse resistance
 
 ### P3.1 — Rate limiting — M-3
 
-- Introduce an application-level rate-limiter contract for semantic identity limits.
-- Limit OTP requests by destination and requester identity.
-- Limit OTP verification by challenge and requester/IP.
-- Add daily destination limits and abuse thresholds where appropriate.
-- Keep coarse traffic throttling at nginx/API-gateway level.
-- Provide a Redis-backed implementation for multi-instance deployments.
+Status: **Mostly closed**
+
+Completed:
+- Application-level `RateLimiter` abstraction exists.
+- OTP request limits apply by canonical destination.
+- OTP verification limits apply by challenge.
+- Daily destination limits are supported.
+- In-memory baseline implementation exists and distributed implementations can be injected.
+
+Remaining:
+- Add trusted per-IP/requester limits now that server-resolved request metadata exists.
+- Keep coarse traffic throttling at nginx/API-gateway level for deployment defense in depth.
 
 ### P3.2 — OTP request cooldown behavior — H-1
 
-- Avoid allowing an anonymous requester to monopolize another user's login challenge lifecycle.
-- Rework resend/cooldown semantics so a legitimate user is not locked out by an attacker-created challenge.
-- Exclude consumed challenges from active resend decisions.
-- Return correct `Retry-After` metadata where applicable.
+Status: **Closed**
+
+- Anonymous requesters can no longer monopolize another user's login challenge lifecycle.
+- Repeated requests inside the resend window return the active challenge instead of locking out the legitimate user.
+- Consumed/expired challenges do not block new requests.
+- Regression tests cover idempotent cooldown and consumed-challenge behavior.
 
 ### P3.3 — Account enumeration — M-2
 
-- Make unauthenticated initiation responses non-enumerating where product UX permits.
-- Avoid distinct error messages that disclose account existence.
-- Apply rate limits before identity lookup behavior can be abused at scale.
+Status: **Closed**
 
-## Phase 4 — Input and secret hardening
+- Unauthenticated OTP initiation no longer discloses account existence through registration/login mismatch behavior.
+- Account-state mismatch is evaluated only after OTP ownership is proven.
+- Rate limiting applies before the flow can be abused at scale.
+
+## Phase 4 — Input, metadata, and secret hardening
 
 ### P4.1 — Identity normalization and validation — M-5
 
-- Normalize mobile numbers to E.164 using a dedicated phone-number component.
-- Apply Unicode normalization before identity comparison.
-- Validate email syntax at the presentation boundary.
-- Ensure cooldown and uniqueness use the canonical normalized value.
+Status: **Pending merge — PR #33**
+
+Implemented on the pending branch:
+- Unicode NFKC normalization.
+- Canonical international mobile normalization with `00` to `+` conversion.
+- Unicode decimal digit conversion to ASCII digits.
+- E.164-style format enforcement without unsafe default-region guessing.
+- Email case folding plus malformed/whitespace/control-character rejection.
+- Canonical values feed uniqueness and abuse-control keys.
 
 ### P4.2 — Secret requirements — M-4
 
-- Require a sufficiently strong HMAC secret at configuration startup.
-- Use one explicit minimum secret-strength policy across JWT and secret hashing.
-- Update tests and deployment documentation with secure secret-generation guidance.
+Status: **Closed**
+
+- HMAC signing secrets require at least 32 bytes of key material.
+- Weak configuration fails fast at startup.
+- Regression tests cover below-threshold rejection and minimum-length acceptance.
 
 ### P4.3 — Trusted request metadata — M-6
 
-- Remove authoritative IP address input from public request bodies.
-- Resolve client IP through a trusted proxy-aware infrastructure component.
-- Treat device information as untrusted metadata unless independently attested.
+Status: **Closed**
 
-## Phase 5 — Detection, operations, and cleanup
+- Authoritative IP/device metadata is no longer accepted from public request bodies.
+- Direct client IP is resolved from the server request context by default.
+- Forwarded headers are ignored unless a trusted-proxy resolver is explicitly configured.
+- Host deployment behind nginx/proxies is documented.
+
+## Phase 5 — Detection, recovery, operations, and cleanup
 
 ### P5.1 — Security event logging — M-7
 
-- Add structured events for OTP failures, attempt exhaustion, refresh reuse, session revocation, and suspicious rate-limit activity.
-- Never log OTP codes, raw refresh tokens, or secrets.
-- Define host-facing hooks for metrics and alerting.
+Status: **In progress**
 
-### P5.2 — Data retention and indexes — M-9 / L-6
+- Add a host-facing security event sink contract.
+- Emit structured events for failed OTP verification, exhausted attempts, rate-limit rejection, refresh reuse, and session revocation.
+- Never include OTP codes, raw refresh tokens, signing secrets, or other credentials.
+- Prefer stable IDs and non-reversible identifiers over raw PII in events.
+- Provide a safe default implementation and allow hosts to route events to logging/metrics/SIEM providers.
 
-- Add retention policy for expired OTP challenges and obsolete sessions.
-- Add indexes based on measured hot queries.
-- Provide cleanup guidance or a host-scheduled cleanup use case.
+### P5.2 — Data retention and cleanup — M-9
 
-### P5.3 — Error mapping and operational hardening — Low findings
+Status: **Planned**
 
-- Stop converting unexpected authenticator failures into HTTP 401.
-- Define explicit domain/authentication exceptions.
-- Document HMAC key rotation strategy.
-- Review dead fields and public API surface after security behavior is stable.
+- Define retention windows for expired/consumed OTP challenges and expired/revoked sessions.
+- Provide cleanup repository/use-case contracts or explicit host scheduling guidance.
+- Ensure cleanup can run in bounded batches.
+
+### P5.3 — Hot-query indexes — L-6
+
+Status: **Planned**
+
+- Add a composite index supporting OTP active/latest lookup, based on the actual query shape.
+- Review redundant single-column indexes after the composite index is introduced.
+- Document required host migration changes.
+
+## Phase 6 — Low-severity hardening and API cleanup
+
+### P6.1 — Access-token error isolation — L-3
+
+Status: **Planned**
+
+- Replace broad authentication `except Exception` handling with explicit authentication exceptions.
+- Preserve unexpected infrastructure/programming failures as 5xx/503-class errors instead of masking them as 401.
+
+### P6.2 — JWT codec expiry safety — L-1
+
+Status: **Planned**
+
+- Remove the public-API trap created by `verify_exp=False`.
+- Either enforce expiry inside the codec or narrow the codec's public/reusable surface.
+- Keep deterministic testability without weakening direct codec use.
+
+### P6.3 — OTP notification consistency — L-2
+
+Status: **Planned**
+
+- Prevent a notification enqueue failure from leaving a fresh cooldown/challenge that was never delivered.
+- Prefer a transactional/outbox-safe design; otherwise explicitly invalidate the new challenge on send failure.
+
+### P6.4 — Dead or misleading model/public members — L-4
+
+Status: **Planned**
+
+- Review `destination_snapshot`, `UserIdentity.value`, `User.updated_at`, `AuthenticatedPrincipal.permissions`, `IdentityUnitOfWork.transaction()`, and `Session.last_used_at`.
+- Remove or implement members whose public/domain meaning is currently misleading.
+- Align package description with actual authorization capabilities.
+
+### P6.5 — Authenticated-request database lookup — L-5
+
+Status: **Accepted tradeoff / optional optimization**
+
+- Database-backed session validation intentionally gives immediate revocation semantics.
+- Consider an optional short-TTL `SessionReader` cache only when throughput measurements justify it.
+
+### P6.6 — HMAC key rotation — L-7
+
+Status: **Planned**
+
+- Introduce versioned/key-identified hashes.
+- Verify with active keys while writing with the current key.
+- Document operational rotation and emergency-compromise procedures.
+
+## Final verification work
+
+Before calling the audit fully remediated:
+
+1. add PostgreSQL concurrency integration tests for C-1 and H-2;
+2. rerun the original hostile audit against the updated `main` branch;
+3. confirm deployment guidance covers Redis/distributed rate limiting, nginx trusted proxies, retention jobs, and schema migrations;
+4. confirm no event/log path contains OTP codes, raw tokens, secrets, or unnecessary PII.
 
 ## Definition of Done
 
@@ -131,6 +234,6 @@ A security finding is closed only when:
 
 1. the invariant is enforced in production code;
 2. the behavior has regression tests;
-3. concurrency-sensitive findings have PostgreSQL integration tests;
+3. concurrency-sensitive findings have PostgreSQL integration tests before the audit is considered fully complete;
 4. public/deployment responsibilities are documented;
 5. no clean-architecture boundary is weakened to implement the fix.
