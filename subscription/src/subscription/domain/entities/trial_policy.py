@@ -16,6 +16,8 @@ class TrialPolicy:
         if self.time_condition is None and not self.usage_conditions:
             raise ValueError("trial policy must contain at least one condition")
 
-        condition_keys = [(condition.metric.key, condition.period) for condition in self.usage_conditions]
+        condition_keys = [
+            (condition.metric.key, condition.period) for condition in self.usage_conditions
+        ]
         if len(condition_keys) != len(set(condition_keys)):
             raise ValueError("trial usage conditions must be unique by metric and period")

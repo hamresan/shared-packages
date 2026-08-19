@@ -71,9 +71,7 @@ def test_weekly_usage_condition_uses_matching_period_only() -> None:
     metric = UsageMetric("conversations")
     policy = TrialPolicy(
         completion_mode=TrialCompletionMode.ANY,
-        usage_conditions=(
-            UsageCondition(metric=metric, limit=50, period=UsagePeriod.WEEK),
-        ),
+        usage_conditions=(UsageCondition(metric=metric, limit=50, period=UsagePeriod.WEEK),),
     )
 
     assert not TrialEvaluationPolicy().is_complete(
