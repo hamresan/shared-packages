@@ -219,6 +219,7 @@ Rules and boundaries:
 - validation is kept under `domain/validators`, not mixed into decision policies;
 - `SubscriptionDefinitionValidator` composes focused timeline and state validators;
 - timestamp timezone and ordering rules are handled by dedicated validators;
+- decision policies retain only actual domain decisions and do not own structural validation;
 - lifecycle services receive policies/validators through explicit dependency injection;
 - cancelled subscriptions are terminal;
 - expired subscriptions may be renewed back to active;
