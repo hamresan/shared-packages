@@ -10,6 +10,7 @@ from identity.application.errors import (
     OtpExpiredError,
     OtpResendNotAvailableError,
     RegistrationNameRequiredError,
+    UnsupportedOtpPurposeError,
 )
 
 
@@ -19,7 +20,7 @@ class IdentityHttpErrorMapper:
             return HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(error))
         if isinstance(error, (IdentityAlreadyRegisteredError, IdentityNotRegisteredError)):
             return HTTPException(status.HTTP_409_CONFLICT, str(error))
-        if isinstance(error, RegistrationNameRequiredError):
+        if isinstance(error, (RegistrationNameRequiredError, UnsupportedOtpPurposeError)):
             return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error))
         if isinstance(error, OtpChallengeNotFoundError):
             return HTTPException(status.HTTP_404_NOT_FOUND, str(error))

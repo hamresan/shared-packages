@@ -14,6 +14,7 @@ from identity.application.errors import (
     OtpChallengeNotFoundError,
     OtpExpiredError,
     RegistrationNameRequiredError,
+    UnsupportedOtpPurposeError,
 )
 from identity.application.factories.entities import SessionFactory, UserRegistrationFactory
 from identity.domain import OtpPurpose
@@ -65,12 +66,16 @@ class VerifyOtpService:
                 )
                 await uow.users.add(user)
                 await uow.identities.add(identity)
-            else:
+            elif challenge.purpose is OtpPurpose.LOGIN:
                 if challenge.user_id is None:
                     raise OtpChallengeNotFoundError("OTP challenge has no user")
                 user = await uow.users.get(challenge.user_id)
                 if user is None:
                     raise OtpChallengeNotFoundError("OTP challenge user was not found")
+            else:
+                raise UnsupportedOtpPurposeError(
+                    f"OTP purpose is not supported: {challenge.purpose.value}"
+                )
 
             refresh_token = self._refresh_token_generator.generate()
             session = self._session_factory.create(
