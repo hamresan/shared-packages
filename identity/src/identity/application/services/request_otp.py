@@ -64,7 +64,11 @@ class RequestOtpService:
 
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
-            latest = await uow.otp_challenges.get_latest_active(destination, command.purpose, now)
+            latest = await uow.otp_challenges.get_latest_active(
+                destination,
+                command.purpose,
+                now,
+            )
             if latest is not None and latest.resend_available_at > now:
                 return RequestOtpResult(
                     challenge_id=latest.id,
@@ -85,7 +89,11 @@ class RequestOtpService:
             await uow.otp_challenges.add(challenge)
             await uow.commit()
 
-        channel = NotificationChannel.SMS if command.identity_type is IdentityType.MOBILE else NotificationChannel.EMAIL
+        channel = (
+            NotificationChannel.SMS
+            if command.identity_type is IdentityType.MOBILE
+            else NotificationChannel.EMAIL
+        )
         await self._notification_sender.send(
             SendNotification(
                 channel=channel,
