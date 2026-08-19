@@ -6,6 +6,7 @@ from notification.public import NotificationSender
 from identity.application.contracts.database import AsyncSessionFactory
 from identity.application.contracts.rate_limiting import RateLimiter, RateLimitRule
 from identity.application.contracts.security import AccessTokenIssuer
+from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.factories.entities import (
     OtpChallengeFactory,
     SessionFactory,
@@ -24,6 +25,7 @@ from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
 )
 from identity.infrastructure.security.hmac_hasher import HmacSha256SecretHasher
 from identity.infrastructure.security.in_memory_rate_limiter import InMemoryRateLimiter
+from identity.infrastructure.security.noop_security_event_sink import NoOpSecurityEventSink
 from identity.infrastructure.security.normalizer import DefaultIdentityNormalizer
 from identity.infrastructure.security.system_clock import SystemClock
 from identity.infrastructure.security.token_generators import (
@@ -51,6 +53,7 @@ class IdentityModuleConfig:
     session_ttl: timedelta = timedelta(days=30)
     session_absolute_ttl: timedelta = timedelta(days=90)
     rate_limiter: RateLimiter | None = None
+    security_event_sink: SecurityEventSink | None = None
     request_metadata_resolver: RequestMetadataResolver | None = None
     otp_request_burst_limit: int = 5
     otp_request_burst_window: timedelta = timedelta(minutes=15)
@@ -70,6 +73,7 @@ class IdentityModule:
         session_factory = SessionFactory(config.session_ttl, config.session_absolute_ttl)
         user_status_policy = UserStatusPolicy()
         rate_limiter = config.rate_limiter or InMemoryRateLimiter()
+        security_event_sink = config.security_event_sink or NoOpSecurityEventSink()
         rate_limit_policy = OtpRateLimitPolicy(
             rate_limiter=rate_limiter,
             request_burst_rule=RateLimitRule(
@@ -100,6 +104,7 @@ class IdentityModule:
             ),
             purpose_policy=OtpPurposePolicy(),
             rate_limit_policy=rate_limit_policy,
+            security_event_sink=security_event_sink,
         )
         self.otp_verifier = VerifyOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -111,6 +116,7 @@ class IdentityModule:
             session_factory=session_factory,
             user_status_policy=user_status_policy,
             rate_limit_policy=rate_limit_policy,
+            security_event_sink=security_event_sink,
         )
         self.session_refresher = RefreshSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -119,11 +125,13 @@ class IdentityModule:
             refresh_token_generator=refresh_token_generator,
             access_token_issuer=config.access_token_issuer,
             session_factory=session_factory,
+            security_event_sink=security_event_sink,
         )
         self.session_revoker = RevokeSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
             clock=clock,
             hasher=hasher,
+            security_event_sink=security_event_sink,
         )
         self.public_api = IdentityPublicApi(
             access_token_authenticator=config.access_token_authenticator,
