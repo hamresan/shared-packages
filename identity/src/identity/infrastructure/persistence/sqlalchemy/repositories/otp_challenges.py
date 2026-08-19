@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import desc, select, update
@@ -14,16 +15,19 @@ class SqlAlchemyOtpChallengeRepository(OtpChallengeRepository):
         self._session = session
         self._mapper = mapper
 
-    async def get_latest(
+    async def get_latest_active(
         self,
         destination: str,
         purpose: OtpPurpose,
+        now: datetime,
     ) -> OtpChallenge | None:
         statement = (
             select(OtpChallengeModel)
             .where(
                 OtpChallengeModel.normalized_destination == destination,
                 OtpChallengeModel.purpose == purpose,
+                OtpChallengeModel.consumed_at.is_(None),
+                OtpChallengeModel.expires_at > now,
             )
             .order_by(desc(OtpChallengeModel.created_at))
             .limit(1)
