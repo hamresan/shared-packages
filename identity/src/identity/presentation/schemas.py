@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 from identity.domain import IdentityType, OtpPurpose
 
-
 SupportedOtpPurpose = Literal[OtpPurpose.REGISTRATION, OtpPurpose.LOGIN]
 
 
