@@ -71,10 +71,18 @@ class RequestOtpEndpoint:
     request_mapper: IdentityRequestMapper
     response_mapper: IdentityResponseMapper
     error_mapper: IdentityHttpErrorMapper
+    metadata_resolver: RequestMetadataResolver
 
-    async def __call__(self, request: RequestOtpRequest) -> RequestOtpResponse:
+    async def __call__(
+        self,
+        payload: RequestOtpRequest,
+        request: Request,
+    ) -> RequestOtpResponse:
+        metadata = self.metadata_resolver.resolve(request)
         try:
-            result = await self.service.execute(self.request_mapper.to_request_otp_command(request))
+            result = await self.service.execute(
+                self.request_mapper.to_request_otp_command(payload, metadata)
+            )
         except IdentityError as error:
             raise self.error_mapper.to_http_exception(error) from error
         return self.response_mapper.from_request_otp_result(result)
@@ -171,6 +179,7 @@ class FastApiIdentityAdapter:
                 request_mapper,
                 response_mapper,
                 error_mapper,
+                self.request_metadata_resolver,
             ),
             methods=["POST"],
             response_model=RequestOtpResponse,
