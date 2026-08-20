@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -43,11 +44,14 @@ class OtpChallengeRepository(Protocol):
 
 
 class SessionRepository(Protocol):
-    async def get_by_refresh_token_hash(self, refresh_token_hash: str) -> Session | None: ...
-
-    async def get_for_update_by_refresh_token_hash(
+    async def get_by_refresh_token_hashes(
         self,
-        refresh_token_hash: str,
+        refresh_token_hashes: Sequence[str],
+    ) -> Session | None: ...
+
+    async def get_for_update_by_refresh_token_hashes(
+        self,
+        refresh_token_hashes: Sequence[str],
     ) -> Session | None: ...
 
     async def revoke_family(self, family_id: UUID, revoked_at: datetime) -> None: ...
