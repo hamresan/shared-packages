@@ -56,3 +56,42 @@ def test_trusted_proxy_resolver_uses_configured_forwarded_hop() -> None:
     assert response.status_code == 200
     assert response.json()["ip"] == "203.0.113.7"
     assert response.json()["device"] == "metadata-test-agent"
+
+
+def test_trusted_proxy_resolver_canonicalizes_ipv6_requester() -> None:
+    app = FastAPI()
+    resolver = TrustedProxyRequestMetadataResolver()
+
+    async def resolve_metadata(request: Request) -> dict[str, str | None]:
+        metadata = resolver.resolve(request)
+        return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    app.add_api_route("/", resolve_metadata, methods=["GET"])
+
+    client = cast(JsonHttpClient, TestClient(app))
+    response = client.get(
+        "/",
+        headers={
+            "x-forwarded-for": "2001:0db8:0000:0000:0000:0000:0000:0001",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ip"] == "2001:db8::1"
+
+
+def test_trusted_proxy_resolver_rejects_invalid_forwarded_requester() -> None:
+    app = FastAPI()
+    resolver = TrustedProxyRequestMetadataResolver()
+
+    async def resolve_metadata(request: Request) -> dict[str, str | None]:
+        metadata = resolver.resolve(request)
+        return {"ip": metadata.ip_address, "device": metadata.device_info}
+
+    app.add_api_route("/", resolve_metadata, methods=["GET"])
+
+    client = cast(JsonHttpClient, TestClient(app))
+    response = client.get("/", headers={"x-forwarded-for": "not-an-ip"})
+
+    assert response.status_code == 200
+    assert response.json()["ip"] is None
