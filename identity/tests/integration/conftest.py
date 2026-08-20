@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 import pytest
 
 from tests.support.postgresql_database import PostgresqlIdentityDatabase
+from tests.support.postgresql_dsn import PostgresqlTestDsnPolicy
 
 POSTGRES_DSN_ENV = "IDENTITY_TEST_POSTGRES_DSN"
 
@@ -14,6 +15,7 @@ async def postgres_database() -> AsyncGenerator[PostgresqlIdentityDatabase]:
     if not dsn:
         pytest.skip(f"Set {POSTGRES_DSN_ENV} to run PostgreSQL integration tests")
 
+    PostgresqlTestDsnPolicy().ensure_safe(dsn)
     database = PostgresqlIdentityDatabase(dsn)
     await database.start()
     try:
