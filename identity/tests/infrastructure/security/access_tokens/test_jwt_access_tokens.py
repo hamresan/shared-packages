@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -28,7 +28,7 @@ TEST_JWT_SECRET = "test-jwt-secret-with-at-least-32-bytes"
 
 
 def test_pyjwt_codec_round_trip() -> None:
-    now = utc_now()
+    now = datetime.now(UTC)
     claims = AccessTokenClaims(
         user_id=uuid4(),
         session_id=uuid4(),
@@ -43,7 +43,7 @@ def test_pyjwt_codec_round_trip() -> None:
 
 
 def test_pyjwt_codec_rejects_expired_token() -> None:
-    now = utc_now()
+    now = datetime.now(UTC)
     claims = AccessTokenClaims(
         user_id=uuid4(),
         session_id=uuid4(),
