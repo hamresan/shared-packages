@@ -18,9 +18,13 @@ Default requester settings are 30 OTP requests per 15 minutes and can be changed
 
 The package does not trust client-supplied IP fields. FastAPI resolves request metadata server-side through `RequestMetadataResolver`.
 
+Requester IP values are validated and canonicalized before they are used as rate-limit keys. Equivalent IPv6 textual forms therefore map to the same requester bucket. Malformed forwarded addresses are not accepted as requester identities.
+
 `DirectRequestMetadataResolver` is the safe default and uses the direct socket peer (`request.client.host`). It ignores `X-Forwarded-For`.
 
 When Identity is deployed behind a trusted reverse proxy, the host may configure `TrustedProxyRequestMetadataResolver` with the known proxy hop count. Only do this when nginx or the upstream gateway removes/replaces untrusted forwarding headers and the application is not directly reachable around that proxy.
+
+If a trusted forwarded address cannot be parsed as a valid IP address, Identity does not use that malformed value as a requester key and falls back to the direct peer when it is a valid IP address.
 
 Do not enable forwarded-header trust merely because an `X-Forwarded-For` header is present. A client-controlled forwarding header would allow requester-rate-limit bypass.
 
