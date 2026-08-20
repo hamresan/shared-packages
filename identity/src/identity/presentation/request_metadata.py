@@ -52,9 +52,7 @@ class TrustedProxyRequestMetadataResolver(RequestMetadataResolver):
             raise ValueError("trusted_proxy_hops must be at least 1")
         self._trusted_proxy_hops = trusted_proxy_hops
         self._ip_normalizer = ip_normalizer or IpAddressNormalizer()
-        self._forwarded_for_parser = forwarded_for_parser or ForwardedForParser(
-            self._ip_normalizer
-        )
+        self._forwarded_for_parser = forwarded_for_parser or ForwardedForParser(self._ip_normalizer)
 
     def resolve(self, request: Request) -> RequestMetadata:
         ip_address = self._forwarded_for_parser.parse(

@@ -36,20 +36,20 @@ The roadmap distinguishes between:
 | H-3 OTP purpose misuse | **Closed** | Re-verify during final hostile audit |
 | M-1 User status enforcement | **Closed** | Re-verify during final hostile audit |
 | M-2 Account enumeration | **Closed** | Re-verify during final hostile audit |
-| M-3 Rate limiting | **Mostly closed** | Full quality-suite validation plus deployment-level distributed/edge throttling review |
-| M-4 Secret requirements | **Closed** | Deployment secret configuration review |
+| M-3 Rate limiting | **Closed** | Re-verify during final hostile audit; deployment-specific controls remain host responsibilities |
+| M-4 Secret requirements | **Closed** | Confirm production secret configuration in the host deployment |
 | M-5 Identity normalization/validation | **Closed** | Re-verify during final hostile audit |
-| M-6 Trusted request metadata | **Closed** | Trusted-proxy/nginx deployment review |
-| M-7 Security event logging | **Closed** | Host alerting/SIEM integration review and sensitive-data verification |
-| M-8 Session recovery / revoke-all | **Closed** | Session listing remains an optional product/operations enhancement, not required for finding closure |
-| M-9 Data retention/cleanup | **Closed** | Confirm host scheduling/retention job configuration |
+| M-6 Trusted request metadata | **Closed** | Confirm production trusted-proxy/nginx configuration |
+| M-7 Security event logging | **Closed** | Confirm production sink/alerting wiring and sensitive-data policy |
+| M-8 Session recovery / revoke-all | **Closed** | Session listing remains an optional product/operations enhancement |
+| M-9 Data retention/cleanup | **Closed** | Confirm host cleanup scheduling |
 | L-1 JWT expiry safety | **Closed** | Re-verify during final hostile audit |
 | L-2 OTP notification consistency | **Closed** | Re-verify during final hostile audit |
 | L-3 Access-token error isolation | **Closed** | Re-verify during final hostile audit |
 | L-4 Dead/misleading model and public API members | **Closed** | Re-verify retained compatibility-field semantics |
 | L-5 Authenticated-request DB lookup | **Accepted tradeoff** | Optional performance optimization only if measurements justify it |
-| L-6 Hot-query indexes | **Closed** | Confirm existing-database migration/index rollout guidance |
-| L-7 HMAC key rotation | **Closed** | Operational key-rotation configuration/procedure review |
+| L-6 Hot-query indexes | **Closed** | Confirm existing-database migration/index rollout |
+| L-7 HMAC key rotation | **Closed** | Confirm production rotation configuration/procedure |
 
 ## Phase 1 — Authentication correctness and account-takeover blockers
 
@@ -121,7 +121,7 @@ Audit recommendation reconciliation:
 
 ### P3.1 — Rate limiting — M-3
 
-Status: **Mostly closed**
+Status: **Closed**
 
 Completed:
 - Application-level `RateLimiter` abstraction exists.
@@ -131,15 +131,15 @@ Completed:
 - In-memory baseline implementation exists and distributed implementations can be injected.
 - OTP request limits also apply by trusted requester/IP across different destinations.
 - FastAPI resolves requester IP server-side through `RequestMetadataResolver`; the default resolver ignores forwarding headers.
-- Trusted proxy deployment requirements and distributed/edge throttling guidance are documented in `RATE_LIMITING.md`.
-- Trusted per-IP/requester OTP rate limiting has been implemented and merged into `main`.
+- Requester IP values are validated and canonicalized before use as rate-limit keys, including equivalent IPv6 textual forms.
+- Malformed forwarded addresses are not accepted as requester identities.
+- Regression coverage verifies canonical destination limits, daily limits, requester limits across destinations, requester IP canonicalization, and malformed forwarded metadata handling.
+- Trusted proxy deployment requirements and distributed/edge throttling guidance are documented in `RATE_LIMITING.md` and `DEPLOYMENT_SECURITY.md`.
+- The full quality suite passes after M-3 validation with PostgreSQL integration enabled (`88 passed` during R3; `95 passed` after R4 documentation review).
 
-Remaining:
-- Validate the trusted requester/IP flow with the full quality suite before closing M-3.
-- Confirm request, verify, and daily-destination limits cannot be bypassed through normalization or requester-metadata variations.
-- Review the production distributed limiter expectation, including Redis or another shared backend when multiple workers/instances are used.
-- Confirm coarse traffic throttling exists at nginx/API-gateway level and is not treated as a replacement for application-level security limits.
+Remaining verification:
 - Re-run the original SMS-pumping and high-rate brute-force amplification scenarios during the final hostile audit.
+- Confirm the host deployment uses a distributed limiter for multi-process/multi-instance operation and edge throttling where required.
 
 ### P3.2 — OTP request cooldown behavior — H-1
 
@@ -170,7 +170,7 @@ Remaining verification:
 
 Status: **Closed**
 
-Remaining deployment review:
+Deployment responsibility:
 - Confirm production HMAC/JWT secrets meet documented entropy and length requirements.
 - Confirm secrets are provided through an appropriate secrets-management mechanism and are not committed or logged.
 
@@ -178,10 +178,10 @@ Remaining deployment review:
 
 Status: **Closed**
 
-Remaining deployment review:
+Deployment responsibility:
 - Confirm production nginx/API-gateway trusted-proxy behavior matches `RequestMetadataResolver` assumptions.
 - Confirm forwarding headers are accepted only from explicitly trusted proxies.
-- Confirm untrusted clients cannot directly control stored requester IP/device forensic metadata.
+- Confirm untrusted clients cannot directly reach the application around the trusted proxy path.
 
 ## Phase 5 — Detection, recovery, operations, and cleanup
 
@@ -194,11 +194,12 @@ Completed:
 - Structured events cover OTP failures/exhaustion, rate-limit rejection, refresh reuse, and session revocation.
 - Events avoid OTP codes, raw tokens, signing secrets, and raw destination PII.
 - Hosts can route events to logging, metrics, or SIEM providers.
+- `DEPLOYMENT_SECURITY.md` explicitly documents that the default no-op sink is not sufficient for production observability and that hosts must wire a real sink where audit/alerting is required.
 
-Remaining deployment/operations review:
+Deployment responsibility:
 - Confirm the host actually wires security events to logging, metrics, or SIEM in production.
 - Confirm alerting exists for suspicious failed-verify rates, attempts exhaustion, repeated rate-limit rejection, and refresh-token reuse where operationally appropriate.
-- Inspect all security event/log paths to confirm they contain no OTP codes, raw access/refresh tokens, secrets, or unnecessary destination PII.
+- Confirm host logging pipelines do not add OTP codes, raw access/refresh tokens, secrets, or unnecessary destination PII.
 
 ### P5.2 — Data retention and cleanup — M-9
 
@@ -208,12 +209,11 @@ Completed:
 - OTP and session retention windows are configurable.
 - Cleanup runs in bounded batches.
 - The package exposes a host-invoked cleanup use case and does not own scheduling.
-- Host scheduling guidance is documented.
+- Host scheduling guidance is documented in `RETENTION_CLEANUP.md` and consolidated in `DEPLOYMENT_SECURITY.md`.
 
-Remaining deployment review:
+Deployment responsibility:
 - Confirm the host schedules cleanup jobs at an appropriate cadence.
 - Confirm retention values match operational/security requirements.
-- Confirm cleanup behavior is safe on production-sized datasets and does not leave unbounded historical growth.
 
 ### P5.3 — Hot-query indexes — L-6
 
@@ -222,11 +222,11 @@ Status: **Closed**
 Completed:
 - The OTP latest-active lookup has a composite index on `(normalized_destination, purpose, created_at)`.
 - Metadata regression coverage verifies index shape and column order.
-- Existing-database migration requirements are documented.
+- Existing-database migration requirements are documented in `INDEX_MIGRATION_NOTES.md`, `SECURITY_MIGRATION_NOTES.md`, and the consolidated deployment checklist.
 
-Remaining deployment review:
-- Confirm existing installations apply the required index/schema migration rather than relying only on fresh metadata creation.
-- Verify the production migration path is documented and reversible/operationally safe.
+Deployment responsibility:
+- Confirm existing installations apply the required index/schema migrations rather than relying only on fresh metadata creation.
+- Verify the production migration path is reviewed through the host application's migration process.
 
 ## Phase 6 — Low-severity hardening and API cleanup
 
@@ -303,7 +303,7 @@ Completed:
 - Regression coverage includes previous-key verification, legacy hashes, unknown/retired keys, and refresh-session continuity across a key rotation.
 - HMAC digest calculation, hash formatting, key validation, and keyring responsibilities are separated into dedicated components; the hasher remains a focused orchestrator.
 
-Remaining deployment/operations review:
+Deployment responsibility:
 - Review production key identifiers and active/previous key configuration.
 - Validate the documented normal-rotation procedure.
 - Validate the documented compromised-key procedure, including retirement behavior and expected session impact.
@@ -311,7 +311,7 @@ Remaining deployment/operations review:
 
 ## Remaining remediation and final verification sequence
 
-The original audit remediation table contained 13 priority groups. Production fixes for those groups are now implemented or intentionally resolved by an accepted scope decision. The following work remains before the August 2026 audit can be considered fully remediated.
+The original audit remediation table contained 13 priority groups. Production fixes for those groups are implemented or intentionally resolved by an accepted scope decision. Package-level validation and deployment documentation are now complete through R4. Environment-specific production verification remains a host deployment responsibility and must be confirmed before declaring the audit operationally closed.
 
 ### R1 — PostgreSQL concurrency validation for C-1
 
@@ -342,32 +342,49 @@ Completed:
 
 ### R3 — Close M-3 validation and deployment assumptions
 
+Status: **Complete**
+
 Priority: **High**
 
-- Run the full quality suite against the merged trusted requester/IP rate-limiting flow.
-- Add or complete any missing regression/integration coverage discovered by that validation.
-- Verify multi-worker/multi-instance deployments use a shared/distributed limiter such as Redis where required.
-- Verify nginx/API-gateway coarse throttling and trusted-proxy configuration.
-- Close M-3 after package validation passes; keep edge throttling as an explicit deployment responsibility.
+Completed:
+- Validated trusted requester/IP rate limiting against the full quality suite.
+- Added regression coverage for daily destination limits and normalization-based bypass resistance.
+- Added requester IP validation/canonicalization so equivalent IPv6 forms share one requester bucket.
+- Added coverage for malformed trusted forwarded metadata.
+- Documented that multi-worker/multi-instance deployments require a shared/distributed limiter such as Redis.
+- Documented that nginx/API-gateway/WAF throttling is an additional deployment layer, not a replacement for application-level limits.
+- Full quality suite passed with PostgreSQL integration enabled: `88 passed`.
 
 ### R4 — Deployment and operations security review
 
+Status: **Complete (package/documentation scope)**
+
 Priority: **Medium**
 
-Review the security controls that cannot be proven by package unit tests alone:
+Completed:
+- Reviewed distributed rate limiting and documented shared-backend requirements.
+- Reviewed trusted proxy assumptions and consolidated nginx/API-gateway forwarding-header requirements.
+- Reviewed security-event behavior and documented that production hosts must replace the default no-op sink when observability/alerting is required.
+- Consolidated sensitive-data logging requirements.
+- Reviewed retention cleanup scheduling responsibilities.
+- Reviewed existing-database migration/index rollout requirements.
+- Reviewed secret quality/storage requirements.
+- Reviewed normal and compromised HMAC rotation procedures.
+- Added `DEPLOYMENT_SECURITY.md` as the consolidated production security checklist.
+- Updated stale `SECURITY_RATE_LIMITING.md` guidance to reflect the implemented trusted requester/IP rate limiting.
+- Full quality suite passed after the documentation review: `95 passed`.
 
-- distributed rate limiting / Redis expectations;
-- nginx/API-gateway trusted proxy and forwarding-header configuration;
-- security-event routing and alerting;
-- sensitive-data logging rules;
-- retention cleanup scheduling;
-- existing-database migrations and indexes;
-- production secret quality and storage;
-- HMAC normal rotation and compromised-key procedures.
-
-Document any concrete host requirements that are still implicit.
+Environment-specific checks still required before production audit closure:
+- confirm the deployed limiter is distributed when multiple processes/instances are used;
+- confirm nginx/API-gateway/WAF trusted-proxy and edge-throttling configuration;
+- confirm production `SecurityEventSink`, SIEM/log routing, and alerting;
+- confirm retention cleanup scheduler;
+- confirm migrations/indexes are applied to the deployed database;
+- confirm production secrets and HMAC rotation configuration.
 
 ### R5 — Finding-by-finding hostile regression review
+
+Status: **Next**
 
 Priority: **High**
 
@@ -379,7 +396,6 @@ Re-run every original audit finding against the updated `main` branch rather tha
 - L-1 through L-7.
 
 For every finding:
-
 - reproduce the original attack preconditions where applicable;
 - trace the current endpoint-to-persistence behavior;
 - verify the intended security invariant;
@@ -387,6 +403,8 @@ For every finding:
 - record whether the original exploit is blocked, mitigated by an accepted design decision, or still reproducible.
 
 ### R6 — Final hostile security review
+
+Status: **Pending R5**
 
 Priority: **High**
 
@@ -404,15 +422,15 @@ The August 2026 security audit is not fully closed until all of the following ar
 
 1. C-1 PostgreSQL concurrency tests pass. **Done.**
 2. H-2 PostgreSQL concurrency tests pass. **Done.**
-3. M-3 full-quality validation passes.
-4. Required distributed/edge rate limiting and trusted-proxy responsibilities are explicitly documented and reviewed.
-5. Security events are wired for production observability/alerting where appropriate and contain no sensitive secrets/tokens/OTP values or unnecessary PII.
-6. Retention cleanup scheduling is confirmed for the host deployment.
-7. Existing-database migrations/index rollout is confirmed.
-8. Production secret and HMAC key-rotation procedures are reviewed.
+3. M-3 full-quality validation passes. **Done.**
+4. Distributed/edge rate limiting and trusted-proxy responsibilities are explicitly documented and reviewed. **Done at package/documentation level; production configuration confirmation remains.**
+5. Security-event sensitive-data requirements are documented and package event payloads contain no OTP codes, raw tokens, or signing secrets. **Done at package level; production sink/alerting confirmation remains.**
+6. Retention cleanup scheduling responsibility is documented. **Done at package level; production scheduler confirmation remains.**
+7. Existing-database migration/index rollout responsibility is documented. **Done at package level; deployed-database confirmation remains.**
+8. Secret and HMAC key-rotation procedures are documented and reviewed. **Done at package level; production configuration confirmation remains.**
 9. All 20 original findings are re-verified against current `main`.
 10. A fresh hostile security review finds no unresolved Critical/High issue, or any new issue is added to this roadmap before declaring completion.
-11. The full project quality suite passes.
+11. The full project quality suite passes. **Latest validated result: 95 passed.**
 
 ## Definition of Done
 
