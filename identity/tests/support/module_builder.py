@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from datetime import timedelta
 
 from identity import IdentityModule, IdentityModuleConfig
 from identity.application.contracts.security_events import SecurityEventSink
@@ -19,6 +20,9 @@ class IdentityTestModuleBuilder:
         signing_secret: bytes = TEST_SIGNING_SECRET,
         signing_key_id: str = "v1",
         previous_signing_secrets: Mapping[str, bytes] | None = None,
+        otp_resend_delay: timedelta = timedelta(seconds=60),
+        otp_request_burst_limit: int = 5,
+        otp_verify_requester_burst_limit: int = 60,
     ) -> IdentityModule:
         return IdentityModule(
             IdentityModuleConfig(
@@ -30,5 +34,8 @@ class IdentityTestModuleBuilder:
                 signing_key_id=signing_key_id,
                 previous_signing_secrets=previous_signing_secrets or {},
                 security_event_sink=security_event_sink,
+                otp_resend_delay=otp_resend_delay,
+                otp_request_burst_limit=otp_request_burst_limit,
+                otp_verify_requester_burst_limit=otp_verify_requester_burst_limit,
             )
         )

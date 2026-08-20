@@ -26,20 +26,34 @@ class RevokeSessionService:
 
     async def execute(self, refresh_token: str) -> None:
         candidate_hashes = self._hasher.hash_candidates(refresh_token)
+        event: SecurityEvent | None = None
+
         async with self._unit_of_work_factory() as uow:
-            session = await uow.sessions.get_by_refresh_token_hashes(candidate_hashes)
+            session = await uow.sessions.get_for_update_by_refresh_token_hashes(candidate_hashes)
             if session is None:
                 raise InvalidRefreshTokenError("Refresh token is invalid")
-            if session.revoked_at is None:
-                now = self._clock.now()
+
+            now = self._clock.now()
+            if session.replaced_by_session_id is not None:
+                await uow.sessions.revoke_family(session.family_id, now)
+                await uow.commit()
+                event = SecurityEvent(
+                    name=SecurityEventName.SESSION_REVOKED,
+                    occurred_at=now,
+                    user_id=session.user_id,
+                    session_id=session.id,
+                    family_id=session.family_id,
+                )
+            elif session.revoked_at is None:
                 await uow.sessions.save(replace(session, revoked_at=now))
                 await uow.commit()
-                await self._security_event_sink.emit(
-                    SecurityEvent(
-                        name=SecurityEventName.SESSION_REVOKED,
-                        occurred_at=now,
-                        user_id=session.user_id,
-                        session_id=session.id,
-                        family_id=session.family_id,
-                    )
+                event = SecurityEvent(
+                    name=SecurityEventName.SESSION_REVOKED,
+                    occurred_at=now,
+                    user_id=session.user_id,
+                    session_id=session.id,
+                    family_id=session.family_id,
                 )
+
+        if event is not None:
+            await self._security_event_sink.emit(event)

@@ -59,7 +59,11 @@ class VerifyOtpService:
     async def execute(self, command: VerifyOtpCommand) -> AuthSessionResult:
         now = self._clock.now()
         try:
-            await self._rate_limit_policy.ensure_verification_allowed(command.challenge_id, now)
+            await self._rate_limit_policy.ensure_verification_allowed(
+                command.challenge_id,
+                command.ip_address,
+                now,
+            )
         except IdentityRateLimitExceededError:
             await self._security_event_sink.emit(
                 SecurityEvent(
