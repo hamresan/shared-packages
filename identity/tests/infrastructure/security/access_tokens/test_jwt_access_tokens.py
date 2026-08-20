@@ -42,6 +42,22 @@ def test_pyjwt_codec_round_trip() -> None:
     assert codec.verify(token) == claims
 
 
+def test_pyjwt_codec_rejects_expired_token() -> None:
+    now = utc_now()
+    claims = AccessTokenClaims(
+        user_id=uuid4(),
+        session_id=uuid4(),
+        issued_at=now - timedelta(minutes=30),
+        expires_at=now - timedelta(minutes=15),
+    )
+    codec = PyJwtHmacCodec(TEST_JWT_SECRET)
+
+    token = codec.sign(claims)
+
+    with pytest.raises(JwtTokenError):
+        codec.verify(token)
+
+
 def test_pyjwt_codec_rejects_short_hmac_secret() -> None:
     with pytest.raises(ValueError, match="at least 32 bytes"):
         PyJwtHmacCodec("test-secret")
