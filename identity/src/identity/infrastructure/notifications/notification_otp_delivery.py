@@ -15,7 +15,7 @@ class NotificationOtpDelivery(OtpDelivery):
         destination: str,
         code: str,
         purpose: OtpPurpose,
-        locale: str | None,
+        locale: str,
     ) -> None:
         channel = (
             NotificationChannel.SMS
