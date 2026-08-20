@@ -20,6 +20,7 @@ from identity.presentation.schemas import (
     VerifyOtpRequest,
 )
 from identity.public import (
+    AccessTokenAuthenticationError,
     AccessTokenAuthenticator,
     AuthenticatedPrincipal,
     OtpRequester,
@@ -42,7 +43,7 @@ class AuthenticatedUserDependency:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
         try:
             return await self.access_token_authenticator.authenticate(credentials.credentials)
-        except Exception as exc:
+        except AccessTokenAuthenticationError as exc:
             raise HTTPException(
                 status.HTTP_401_UNAUTHORIZED,
                 "Invalid authentication credentials",

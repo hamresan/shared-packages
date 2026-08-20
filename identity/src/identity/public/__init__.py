@@ -13,6 +13,7 @@ from identity.application.dto import (
     VerifyOtpCommand,
 )
 from identity.domain import IdentityType, OtpPurpose
+from identity.public.errors import AccessTokenAuthenticationError
 from identity.public.services import (
     IdentityDataRetentionCleaner,
     OtpRequester,
@@ -49,6 +50,7 @@ class IdentityPublicApi:
 
 
 __all__ = [
+    "AccessTokenAuthenticationError",
     "AccessTokenAuthenticator",
     "AccessTokenIssuer",
     "AuthSessionResult",

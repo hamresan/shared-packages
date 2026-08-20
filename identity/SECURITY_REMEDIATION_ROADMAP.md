@@ -15,6 +15,7 @@ This roadmap tracks remediation of the August 2026 security audit for the passwo
 
 - **Closed**: production behavior and regression tests are implemented.
 - **Mostly closed**: the primary issue is fixed but one follow-up remains.
+- **In progress**: implementation is currently under review.
 - **Planned**: finding remains open.
 - **Accepted tradeoff**: documented behavior that is not currently treated as a security defect.
 
@@ -37,20 +38,9 @@ Remaining:
 
 Status: **Closed**
 
-- Public HTTP OTP purposes are restricted to implemented flows.
-- Purpose policy is default-deny.
-- Verification uses explicit supported-purpose branches.
-- Unsupported verification/change/recovery purposes cannot implicitly create login sessions.
-- Regression tests cover supported and unsupported purposes.
-
 ### P1.3 — User status enforcement — M-1
 
 Status: **Closed**
-
-- Non-active users cannot obtain new authenticated sessions.
-- Access-token authentication checks current user status.
-- `PENDING`, `SUSPENDED`, and `DISABLED` are rejected.
-- Regression tests cover login and existing access-token behavior.
 
 ## Phase 2 — Session and refresh-token security
 
@@ -60,23 +50,20 @@ Status: **Mostly closed**
 
 Completed:
 - Refresh rotation locks the current session.
-- A refresh token cannot create more than one legitimate successor.
-- Refresh-token reuse is detected.
-- Reuse revokes the active token family.
-- Refresh families have a fixed absolute expiration independent of sliding session TTL.
-- Regression tests cover rotation, reuse, and absolute family lifetime.
+- Refresh-token reuse is detected and revokes the active family.
+- Refresh families have a fixed absolute expiration.
 
 Remaining:
 - Add PostgreSQL concurrent-refresh integration coverage.
 
 ### P2.2 — Session recovery controls — M-8
 
-Status: **Planned**
+Status: **Closed**
 
-- Add revoke-all-user-sessions capability.
-- Add session listing only if required by the host product.
-- Keep public APIs minimal and authenticated.
-- Support incident recovery without direct database manipulation.
+- Authenticated users can revoke all active sessions.
+- The public API exposes a bulk-revocation use case for trusted host/operator recovery workflows.
+- Bulk revocation is implemented as one persistence operation and emits a security event.
+- Session listing remains optional and is not required to close the recovery gap.
 
 ## Phase 3 — Abuse resistance
 
@@ -92,25 +79,16 @@ Completed:
 - In-memory baseline implementation exists and distributed implementations can be injected.
 
 Remaining:
-- Add trusted per-IP/requester limits now that server-resolved request metadata exists.
-- Keep coarse traffic throttling at nginx/API-gateway level for deployment defense in depth.
+- Add trusted per-IP/requester limits using server-resolved request metadata.
+- Keep coarse traffic throttling at nginx/API-gateway level.
 
 ### P3.2 — OTP request cooldown behavior — H-1
 
 Status: **Closed**
 
-- Anonymous requesters can no longer monopolize another user's login challenge lifecycle.
-- Repeated requests inside the resend window return the active challenge instead of locking out the legitimate user.
-- Consumed/expired challenges do not block new requests.
-- Regression tests cover idempotent cooldown and consumed-challenge behavior.
-
 ### P3.3 — Account enumeration — M-2
 
 Status: **Closed**
-
-- Unauthenticated OTP initiation no longer discloses account existence through registration/login mismatch behavior.
-- Account-state mismatch is evaluated only after OTP ownership is proven.
-- Rate limiting applies before the flow can be abused at scale.
 
 ## Phase 4 — Input, metadata, and secret hardening
 
@@ -118,67 +96,52 @@ Status: **Closed**
 
 Status: **Closed**
 
-- Unicode NFKC normalization is applied before canonicalization.
-- Mobile identities use canonical international form with `00` to `+` conversion.
-- Unicode decimal digits are converted to ASCII digits.
-- E.164-style format is enforced without unsafe default-region guessing.
-- Email identities are case-folded and malformed/whitespace/control-character inputs are rejected.
-- Canonical values feed uniqueness and abuse-control keys.
-- Regression tests cover equivalent phone representations and malformed identity input.
-
 ### P4.2 — Secret requirements — M-4
 
 Status: **Closed**
-
-- HMAC signing secrets require at least 32 bytes of key material.
-- Weak configuration fails fast at startup.
-- Regression tests cover below-threshold rejection and minimum-length acceptance.
 
 ### P4.3 — Trusted request metadata — M-6
 
 Status: **Closed**
 
-- Authoritative IP/device metadata is no longer accepted from public request bodies.
-- Direct client IP is resolved from the server request context by default.
-- Forwarded headers are ignored unless a trusted-proxy resolver is explicitly configured.
-- Host deployment behind nginx/proxies is documented.
-
 ## Phase 5 — Detection, recovery, operations, and cleanup
 
 ### P5.1 — Security event logging — M-7
 
-Status: **In progress**
+Status: **Closed**
 
-- Add a host-facing security event sink contract.
-- Emit structured events for failed OTP verification, exhausted attempts, rate-limit rejection, refresh reuse, and session revocation.
-- Never include OTP codes, raw refresh tokens, signing secrets, or other credentials.
-- Prefer stable IDs and non-reversible identifiers over raw PII in events.
-- Provide a safe default implementation and allow hosts to route events to logging/metrics/SIEM providers.
+- A host-facing `SecurityEventSink` contract exists.
+- Structured events cover OTP failures/exhaustion, rate-limit rejection, refresh reuse, and session revocation.
+- Events avoid OTP codes, raw tokens, signing secrets, and raw destination PII.
+- Hosts can route events to logging, metrics, or SIEM providers.
 
 ### P5.2 — Data retention and cleanup — M-9
 
-Status: **Planned**
+Status: **Closed**
 
-- Define retention windows for expired/consumed OTP challenges and expired/revoked sessions.
-- Provide cleanup repository/use-case contracts or explicit host scheduling guidance.
-- Ensure cleanup can run in bounded batches.
+- OTP and session retention windows are configurable.
+- Cleanup runs in bounded batches.
+- The package exposes a host-invoked cleanup use case and does not own scheduling.
+- Host scheduling guidance is documented.
 
 ### P5.3 — Hot-query indexes — L-6
 
-Status: **Planned**
+Status: **Closed**
 
-- Add a composite index supporting OTP active/latest lookup, based on the actual query shape.
-- Review redundant single-column indexes after the composite index is introduced.
-- Document required host migration changes.
+- The OTP latest-active lookup has a composite index on `(normalized_destination, purpose, created_at)`.
+- Metadata regression coverage verifies index shape and column order.
+- Existing-database migration requirements are documented.
 
 ## Phase 6 — Low-severity hardening and API cleanup
 
 ### P6.1 — Access-token error isolation — L-3
 
-Status: **Planned**
+Status: **In progress**
 
-- Replace broad authentication `except Exception` handling with explicit authentication exceptions.
-- Preserve unexpected infrastructure/programming failures as 5xx/503-class errors instead of masking them as 401.
+- Introduce a public typed authentication error for invalid/unacceptable access-token credentials.
+- Map only that error to HTTP 401.
+- Allow unexpected infrastructure/programming failures to propagate instead of being masked as authentication failures.
+- Add regression coverage for both invalid credentials and unexpected backend failures.
 
 ### P6.2 — JWT codec expiry safety — L-1
 
@@ -223,9 +186,10 @@ Status: **Planned**
 Before calling the audit fully remediated:
 
 1. add PostgreSQL concurrency integration tests for C-1 and H-2;
-2. rerun the original hostile audit against the updated `main` branch;
-3. confirm deployment guidance covers Redis/distributed rate limiting, nginx trusted proxies, retention jobs, and schema migrations;
-4. confirm no event/log path contains OTP codes, raw tokens, secrets, or unnecessary PII.
+2. complete trusted per-IP/requester rate limiting for M-3;
+3. rerun the original hostile audit against the updated `main` branch;
+4. confirm deployment guidance covers Redis/distributed rate limiting, nginx trusted proxies, retention jobs, and schema migrations;
+5. confirm no event/log path contains OTP codes, raw tokens, secrets, or unnecessary PII.
 
 ## Definition of Done
 
