@@ -1,30 +1,22 @@
 import hmac
-from collections.abc import Mapping
 
 from identity.application.contracts.security import SecretHasher
 from identity.infrastructure.security.hmac_digest import HmacSha256DigestCalculator
 from identity.infrastructure.security.hmac_hash_format import HmacHashFormat
-from identity.infrastructure.security.hmac_key_validator import MINIMUM_HMAC_SECRET_BYTES
-from identity.infrastructure.security.hmac_keyring import HmacKey, HmacKeyring
+from identity.infrastructure.security.hmac_keyring import HmacKeyring
 
 
 class HmacSha256SecretHasher(SecretHasher):
     def __init__(
         self,
-        secret: bytes,
         *,
-        key_id: str = "v1",
-        previous_secrets: Mapping[str, bytes] | None = None,
-        digest_calculator: HmacSha256DigestCalculator | None = None,
-        hash_format: HmacHashFormat | None = None,
-        keyring: HmacKeyring | None = None,
+        keyring: HmacKeyring,
+        digest_calculator: HmacSha256DigestCalculator,
+        hash_format: HmacHashFormat,
     ) -> None:
-        self._digest_calculator = digest_calculator or HmacSha256DigestCalculator()
-        self._hash_format = hash_format or HmacHashFormat()
-        self._keyring = keyring or HmacKeyring(
-            current_key=HmacKey(key_id=key_id, secret=secret),
-            previous_keys=previous_secrets,
-        )
+        self._keyring = keyring
+        self._digest_calculator = digest_calculator
+        self._hash_format = hash_format
 
     def hash(self, value: str) -> str:
         current_key = self._keyring.current
