@@ -30,7 +30,17 @@ class HmacSha256SecretHasher(SecretHasher):
 
     def hash(self, value: str) -> str:
         digest = self._digest(self._current_secret, value)
-        return _HASH_SEPARATOR.join((_HASH_FORMAT, self._current_key_id, digest))
+        return self._format_versioned_hash(self._current_key_id, digest)
+
+    def hash_candidates(self, value: str) -> tuple[str, ...]:
+        versioned = tuple(
+            self._format_versioned_hash(key_id, self._digest(secret, value))
+            for key_id, secret in self._verification_secrets.items()
+        )
+        legacy = tuple(
+            self._digest(secret, value) for secret in self._verification_secrets.values()
+        )
+        return versioned + legacy
 
     def verify(self, value: str, hashed_value: str) -> bool:
         parsed = self._parse_versioned_hash(hashed_value)
@@ -49,6 +59,10 @@ class HmacSha256SecretHasher(SecretHasher):
     @staticmethod
     def _digest(secret: bytes, value: str) -> str:
         return hmac.new(secret, value.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def _format_versioned_hash(key_id: str, digest: str) -> str:
+        return _HASH_SEPARATOR.join((_HASH_FORMAT, key_id, digest))
 
     @staticmethod
     def _parse_versioned_hash(hashed_value: str) -> tuple[str, str] | None:
