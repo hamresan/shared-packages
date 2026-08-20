@@ -2,11 +2,12 @@ from datetime import datetime
 from uuid import UUID
 
 from identity.application.contracts.security import SecretHasher
+from identity.application.contracts.security_event_factory import SecurityEventFactory
 from identity.application.contracts.security_events import SecurityEvent, SecurityEventName
 from identity.domain import OtpChallenge, Session
 
 
-class IdentitySecurityEventFactory:
+class IdentitySecurityEventFactory(SecurityEventFactory):
     def __init__(self, hasher: SecretHasher) -> None:
         self._hasher = hasher
 
