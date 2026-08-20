@@ -36,7 +36,7 @@ packages = ["src/identity"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-pythonpath = ["src", "../notification/src"]
+pythonpath = [".", "src", "../notification/src"]
 testpaths = ["tests"]
 addopts = "--cov=identity --cov-report=term-missing --cov-report=xml --cov-fail-under=85"
 
@@ -51,7 +51,7 @@ skip_covered = true
 
 [tool.pyright]
 include = ["src", "tests"]
-extraPaths = ["src", "../notification/src"]
+extraPaths = [".", "src", "../notification/src"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 
