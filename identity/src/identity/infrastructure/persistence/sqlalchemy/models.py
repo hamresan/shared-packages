@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 from identity.domain import IdentityType, OtpPurpose, UserStatus
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -49,6 +49,14 @@ class UserIdentityModel(IdentityBase):
 
 class OtpChallengeModel(IdentityBase):
     __tablename__ = "identity_otp_challenges"
+    __table_args__ = (
+        Index(
+            "ix_identity_otp_challenges_destination_purpose_created_at",
+            "normalized_destination",
+            "purpose",
+            "created_at",
+        ),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID | None] = mapped_column(
