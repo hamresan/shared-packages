@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from identity.domain import IdentityType, OtpPurpose
 
 SupportedOtpPurpose = Literal[OtpPurpose.REGISTRATION, OtpPurpose.LOGIN]
+MAX_REFRESH_TOKEN_LENGTH = 256
 
 
 class RequestOtpRequest(BaseModel):
@@ -38,8 +39,8 @@ class AuthSessionResponse(BaseModel):
 
 
 class RefreshSessionRequest(BaseModel):
-    refresh_token: str = Field(min_length=32)
+    refresh_token: str = Field(min_length=32, max_length=MAX_REFRESH_TOKEN_LENGTH)
 
 
 class RevokeSessionRequest(BaseModel):
-    refresh_token: str = Field(min_length=32)
+    refresh_token: str = Field(min_length=32, max_length=MAX_REFRESH_TOKEN_LENGTH)
