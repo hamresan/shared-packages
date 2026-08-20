@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from identity import IdentityModule, IdentityModuleConfig
 from identity.application.contracts.security_events import SecurityEventSink
 from tests.support.authentication import FakeAccessTokenAuthenticator
@@ -13,6 +15,10 @@ class IdentityTestModuleBuilder:
         database: SqliteIdentityDatabase,
         notification_sender: FakeNotificationSender,
         security_event_sink: SecurityEventSink | None = None,
+        *,
+        signing_secret: bytes = TEST_SIGNING_SECRET,
+        signing_key_id: str = "v1",
+        previous_signing_secrets: Mapping[str, bytes] | None = None,
     ) -> IdentityModule:
         return IdentityModule(
             IdentityModuleConfig(
@@ -20,7 +26,9 @@ class IdentityTestModuleBuilder:
                 notification_sender=notification_sender,
                 access_token_issuer=FakeAccessTokenIssuer(),
                 access_token_authenticator=FakeAccessTokenAuthenticator(),
-                signing_secret=TEST_SIGNING_SECRET,
+                signing_secret=signing_secret,
+                signing_key_id=signing_key_id,
+                previous_signing_secrets=previous_signing_secrets or {},
                 security_event_sink=security_event_sink,
             )
         )

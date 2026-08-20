@@ -163,12 +163,12 @@ Status: **Closed**
 
 ### P6.4 — Dead or misleading model/public members — L-4
 
-Status: **In progress**
+Status: **Closed**
 
-- Remove the unused `AuthenticatedPrincipal.permissions` member so the public principal does not imply authorization behavior the package does not implement.
-- Remove the extra `SqlAlchemyIdentityUnitOfWork.transaction()` helper because it is not part of the unit-of-work contract and creates a second transaction API with unclear semantics.
-- Align package metadata with the implemented authentication/session scope rather than claiming authorization support.
-- Retain persisted compatibility fields (`UserIdentity.value`, `OtpChallenge.destination_snapshot`, `User.updated_at`, and `Session.last_used_at`) without destructive schema changes, and document their current non-authoritative semantics explicitly.
+- Removed the unused `AuthenticatedPrincipal.permissions` member so the public principal no longer implies authorization behavior the package does not implement.
+- Removed the extra `SqlAlchemyIdentityUnitOfWork.transaction()` helper because it was outside the unit-of-work contract and created a second transaction API with unclear semantics.
+- Aligned package metadata with the implemented authentication/session scope rather than claiming authorization support.
+- Retained persisted compatibility fields (`UserIdentity.value`, `OtpChallenge.destination_snapshot`, `User.updated_at`, and `Session.last_used_at`) without destructive schema changes and documented their current non-authoritative semantics.
 
 ### P6.5 — Authenticated-request database lookup — L-5
 
@@ -179,11 +179,14 @@ Status: **Accepted tradeoff / optional optimization**
 
 ### P6.6 — HMAC key rotation — L-7
 
-Status: **Planned**
+Status: **In progress**
 
-- Introduce versioned/key-identified hashes.
-- Verify with active keys while writing with the current key.
-- Document operational rotation and emergency-compromise procedures.
+- New OTP and refresh-token hashes are versioned with a key identifier and are written only with the current HMAC key.
+- Verification accepts explicitly configured active previous keys during an overlap window.
+- Legacy unversioned hashes remain verifiable during migration using the active key set.
+- Refresh-token lookup is rotation-aware by querying all active versioned and legacy hash candidates, so pre-rotation sessions remain usable during the configured overlap period.
+- Operational normal-rotation and compromised-key procedures are documented in `HMAC_KEY_ROTATION.md`.
+- Regression coverage includes previous-key verification, legacy hashes, unknown/retired keys, and refresh-session continuity across a key rotation.
 
 ## Final verification work
 

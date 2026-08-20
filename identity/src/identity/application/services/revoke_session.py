@@ -25,8 +25,9 @@ class RevokeSessionService:
         self._security_event_sink = security_event_sink
 
     async def execute(self, refresh_token: str) -> None:
+        candidate_hashes = self._hasher.hash_candidates(refresh_token)
         async with self._unit_of_work_factory() as uow:
-            session = await uow.sessions.get_by_refresh_token_hash(self._hasher.hash(refresh_token))
+            session = await uow.sessions.get_by_refresh_token_hashes(candidate_hashes)
             if session is None:
                 raise InvalidRefreshTokenError("Refresh token is invalid")
             if session.revoked_at is None:

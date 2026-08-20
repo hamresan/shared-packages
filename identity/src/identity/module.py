@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from notification.public import NotificationSender
@@ -26,7 +27,11 @@ from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWork,
     SqlAlchemyIdentityUnitOfWorkFactory,
 )
+from identity.infrastructure.security.hmac_digest import HmacSha256DigestCalculator
+from identity.infrastructure.security.hmac_hash_format import HmacHashFormat
 from identity.infrastructure.security.hmac_hasher import HmacSha256SecretHasher
+from identity.infrastructure.security.hmac_key_validator import HmacKeyValidator
+from identity.infrastructure.security.hmac_keyring import HmacKey, HmacKeyring
 from identity.infrastructure.security.in_memory_rate_limiter import InMemoryRateLimiter
 from identity.infrastructure.security.noop_security_event_sink import NoOpSecurityEventSink
 from identity.infrastructure.security.normalizer import DefaultIdentityNormalizer
@@ -43,6 +48,10 @@ from identity.presentation.request_metadata import (
 from identity.public import AccessTokenAuthenticator, IdentityPublicApi
 
 
+def _empty_signing_secrets() -> dict[str, bytes]:
+    return {}
+
+
 @dataclass(frozen=True, slots=True)
 class IdentityModuleConfig:
     session_factory: AsyncSessionFactory
@@ -50,6 +59,8 @@ class IdentityModuleConfig:
     access_token_issuer: AccessTokenIssuer
     access_token_authenticator: AccessTokenAuthenticator
     signing_secret: bytes
+    signing_key_id: str = "v1"
+    previous_signing_secrets: Mapping[str, bytes] = field(default_factory=_empty_signing_secrets)
     otp_ttl: timedelta = timedelta(minutes=5)
     otp_resend_delay: timedelta = timedelta(seconds=60)
     otp_max_attempts: int = 5
@@ -74,7 +85,19 @@ class IdentityModule:
         self.config = config
         self._unit_of_work_factory = SqlAlchemyIdentityUnitOfWorkFactory(config.session_factory)
         clock = SystemClock()
-        hasher = HmacSha256SecretHasher(config.signing_secret)
+        keyring = HmacKeyring(
+            current_key=HmacKey(
+                key_id=config.signing_key_id,
+                secret=config.signing_secret,
+            ),
+            previous_keys=config.previous_signing_secrets,
+            validator=HmacKeyValidator(),
+        )
+        hasher = HmacSha256SecretHasher(
+            keyring=keyring,
+            digest_calculator=HmacSha256DigestCalculator(),
+            hash_format=HmacHashFormat(),
+        )
         refresh_token_generator = SecureRefreshTokenGenerator()
         session_factory = SessionFactory(config.session_ttl, config.session_absolute_ttl)
         user_status_policy = UserStatusPolicy()
