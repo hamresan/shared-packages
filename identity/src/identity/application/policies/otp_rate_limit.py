@@ -12,14 +12,21 @@ class OtpRateLimitPolicy:
         rate_limiter: RateLimiter,
         request_burst_rule: RateLimitRule,
         request_daily_rule: RateLimitRule,
+        requester_burst_rule: RateLimitRule,
         verify_rule: RateLimitRule,
     ) -> None:
         self._rate_limiter = rate_limiter
         self._request_burst_rule = request_burst_rule
         self._request_daily_rule = request_daily_rule
+        self._requester_burst_rule = requester_burst_rule
         self._verify_rule = verify_rule
 
-    async def ensure_request_allowed(self, destination: str, now: datetime) -> None:
+    async def ensure_request_allowed(
+        self,
+        destination: str,
+        requester_key: str | None,
+        now: datetime,
+    ) -> None:
         burst = await self._rate_limiter.consume(
             scope="otp_request_burst",
             key=destination,
@@ -37,6 +44,16 @@ class OtpRateLimitPolicy:
         )
         if not daily.allowed:
             raise IdentityRateLimitExceededError.from_retry_after(daily.retry_after)
+
+        if requester_key is not None:
+            requester = await self._rate_limiter.consume(
+                scope="otp_request_requester_burst",
+                key=requester_key,
+                rule=self._requester_burst_rule,
+                now=now,
+            )
+            if not requester.allowed:
+                raise IdentityRateLimitExceededError.from_retry_after(requester.retry_after)
 
     async def ensure_verification_allowed(self, challenge_id: UUID, now: datetime) -> None:
         decision = await self._rate_limiter.consume(

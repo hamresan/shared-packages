@@ -50,7 +50,11 @@ class RequestOtpService:
         now = self._clock.now()
         destination = self._normalizer.normalize(command.identity_type, command.destination)
         try:
-            await self._rate_limit_policy.ensure_request_allowed(destination, now)
+            await self._rate_limit_policy.ensure_request_allowed(
+                destination,
+                command.ip_address,
+                now,
+            )
         except IdentityRateLimitExceededError:
             await self._security_event_sink.emit(
                 SecurityEvent(

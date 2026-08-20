@@ -16,12 +16,17 @@ from identity.presentation.schemas import (
 
 
 class IdentityRequestMapper:
-    def to_request_otp_command(self, request: RequestOtpRequest) -> RequestOtpCommand:
+    def to_request_otp_command(
+        self,
+        request: RequestOtpRequest,
+        metadata: RequestMetadata,
+    ) -> RequestOtpCommand:
         return RequestOtpCommand(
             identity_type=request.identity_type,
             destination=request.destination,
             purpose=request.purpose,
             locale=request.locale,
+            ip_address=metadata.ip_address,
         )
 
     def to_verify_otp_command(
