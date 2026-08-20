@@ -145,19 +145,21 @@ Status: **Closed**
 
 ### P6.2 — JWT codec expiry safety — L-1
 
-Status: **In progress**
+Status: **Closed**
 
-- JWT codec verification now enables PyJWT expiration validation instead of passing `verify_exp=False`.
-- Direct codec consumers therefore reject expired tokens without relying on the higher-level authenticator.
+- JWT codec verification enables PyJWT expiration validation instead of passing `verify_exp=False`.
+- Direct codec consumers reject expired tokens without relying on the higher-level authenticator.
 - The authenticator keeps its explicit expiration check as defense in depth and for fake/test verifiers.
 - Regression coverage verifies expired JWTs are rejected by the codec itself.
 
 ### P6.3 — OTP notification consistency — L-2
 
-Status: **Planned**
+Status: **In progress**
 
-- Prevent a notification enqueue failure from leaving a fresh cooldown/challenge that was never delivered.
-- Prefer a transactional/outbox-safe design; otherwise explicitly invalidate the new challenge on send failure.
+- A newly created OTP challenge is not committed until notification dispatch has been accepted successfully.
+- Notification dispatch failure exits the unit of work with an exception, so the pending challenge is rolled back and does not create a cooldown for an OTP the user never received.
+- Regression coverage verifies that a failed first dispatch can be retried immediately and causes a second notification attempt rather than reusing an undelivered challenge.
+- A future transactional outbox remains the preferred architecture if identity and notification persistence are later coordinated in one durable transaction.
 
 ### P6.4 — Dead or misleading model/public members — L-4
 
