@@ -46,4 +46,4 @@ The review does not treat a merged remediation PR as proof by itself. For each f
 
 ## R5 completion gate
 
-R5 is considered complete only after the full quality suite, including PostgreSQL integration tests, passes on this review branch. The roadmap should be marked complete only after that validation succeeds.
+**Complete.** The full quality suite, including PostgreSQL integration tests, passed on the R5 review branch: `99 passed`.
