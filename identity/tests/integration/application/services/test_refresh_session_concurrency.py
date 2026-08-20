@@ -2,7 +2,12 @@ from functools import partial
 
 import pytest
 
-from identity.application.dto import AuthSessionResult, RefreshSessionCommand, RequestOtpCommand, VerifyOtpCommand
+from identity.application.dto import (
+    AuthSessionResult,
+    RefreshSessionCommand,
+    RequestOtpCommand,
+    VerifyOtpCommand,
+)
 from identity.application.errors import InvalidRefreshTokenError, RefreshTokenReuseError
 from identity.domain import IdentityType, OtpPurpose
 from tests.support.concurrency import ConcurrentRunner
