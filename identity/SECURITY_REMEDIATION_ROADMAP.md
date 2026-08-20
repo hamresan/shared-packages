@@ -69,7 +69,7 @@ Status: **Closed**
 
 ### P3.1 — Rate limiting — M-3
 
-Status: **In progress**
+Status: **Mostly closed**
 
 Completed:
 - Application-level `RateLimiter` abstraction exists.
@@ -80,10 +80,11 @@ Completed:
 - OTP request limits also apply by trusted requester/IP across different destinations.
 - FastAPI resolves requester IP server-side through `RequestMetadataResolver`; the default resolver ignores forwarding headers.
 - Trusted proxy deployment requirements and distributed/edge throttling guidance are documented in `RATE_LIMITING.md`.
+- Trusted per-IP/requester OTP rate limiting has been implemented and merged into `main`.
 
 Remaining:
-- Validate the requester/IP flow with the full quality suite before closing M-3.
-- Keep coarse traffic throttling at nginx/API-gateway level.
+- Validate the trusted requester/IP flow with the full quality suite before closing M-3.
+- Keep coarse traffic throttling at nginx/API-gateway level as a deployment responsibility.
 
 ### P3.2 — OTP request cooldown behavior — H-1
 
@@ -197,7 +198,7 @@ Status: **Closed**
 Before calling the audit fully remediated:
 
 1. add PostgreSQL concurrency integration tests for C-1 and H-2;
-2. complete and validate trusted per-IP/requester rate limiting for M-3;
+2. complete full-quality-suite validation of the already-merged trusted per-IP/requester rate limiting and close M-3;
 3. rerun the original hostile audit against the updated `main` branch;
 4. confirm deployment guidance covers Redis/distributed rate limiting, nginx trusted proxies, retention jobs, and schema migrations;
 5. confirm no event/log path contains OTP codes, raw tokens, secrets, or unnecessary PII.
