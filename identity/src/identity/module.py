@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from notification.public import NotificationSender
@@ -50,6 +51,8 @@ class IdentityModuleConfig:
     access_token_issuer: AccessTokenIssuer
     access_token_authenticator: AccessTokenAuthenticator
     signing_secret: bytes
+    signing_key_id: str = "v1"
+    previous_signing_secrets: Mapping[str, bytes] = field(default_factory=dict)
     otp_ttl: timedelta = timedelta(minutes=5)
     otp_resend_delay: timedelta = timedelta(seconds=60)
     otp_max_attempts: int = 5
@@ -74,7 +77,11 @@ class IdentityModule:
         self.config = config
         self._unit_of_work_factory = SqlAlchemyIdentityUnitOfWorkFactory(config.session_factory)
         clock = SystemClock()
-        hasher = HmacSha256SecretHasher(config.signing_secret)
+        hasher = HmacSha256SecretHasher(
+            config.signing_secret,
+            key_id=config.signing_key_id,
+            previous_secrets=config.previous_signing_secrets,
+        )
         refresh_token_generator = SecureRefreshTokenGenerator()
         session_factory = SessionFactory(config.session_ttl, config.session_absolute_ttl)
         user_status_policy = UserStatusPolicy()
