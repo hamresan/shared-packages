@@ -3,10 +3,8 @@ import hmac
 
 import pytest
 
-from identity.infrastructure.security.hmac_hasher import (
-    MINIMUM_HMAC_SECRET_BYTES,
-    HmacSha256SecretHasher,
-)
+from identity.infrastructure.security.hmac_key_validator import MINIMUM_HMAC_SECRET_BYTES
+from tests.support.hmac import build_hmac_hasher
 
 CURRENT_SECRET = b"c" * MINIMUM_HMAC_SECRET_BYTES
 PREVIOUS_SECRET = b"p" * MINIMUM_HMAC_SECRET_BYTES
@@ -14,11 +12,11 @@ PREVIOUS_SECRET = b"p" * MINIMUM_HMAC_SECRET_BYTES
 
 def test_rejects_secret_shorter_than_minimum() -> None:
     with pytest.raises(ValueError, match="at least 32 bytes"):
-        HmacSha256SecretHasher(b"x" * (MINIMUM_HMAC_SECRET_BYTES - 1))
+        build_hmac_hasher(b"x" * (MINIMUM_HMAC_SECRET_BYTES - 1))
 
 
 def test_accepts_secret_at_minimum_length() -> None:
-    hasher = HmacSha256SecretHasher(CURRENT_SECRET)
+    hasher = build_hmac_hasher(CURRENT_SECRET)
 
     hashed_value = hasher.hash("123456")
 
@@ -28,9 +26,9 @@ def test_accepts_secret_at_minimum_length() -> None:
 
 
 def test_writes_with_current_key_and_verifies_previous_key() -> None:
-    previous_hasher = HmacSha256SecretHasher(PREVIOUS_SECRET, key_id="2026-07")
+    previous_hasher = build_hmac_hasher(PREVIOUS_SECRET, key_id="2026-07")
     previous_hash = previous_hasher.hash("refresh-token")
-    rotated_hasher = HmacSha256SecretHasher(
+    rotated_hasher = build_hmac_hasher(
         CURRENT_SECRET,
         key_id="2026-08",
         previous_secrets={"2026-07": PREVIOUS_SECRET},
@@ -48,9 +46,9 @@ def test_writes_with_current_key_and_verifies_previous_key() -> None:
 
 
 def test_rejects_versioned_hash_for_unknown_key() -> None:
-    old_hasher = HmacSha256SecretHasher(PREVIOUS_SECRET, key_id="retired")
+    old_hasher = build_hmac_hasher(PREVIOUS_SECRET, key_id="retired")
     retired_hash = old_hasher.hash("123456")
-    current_hasher = HmacSha256SecretHasher(CURRENT_SECRET, key_id="current")
+    current_hasher = build_hmac_hasher(CURRENT_SECRET, key_id="current")
 
     assert not current_hasher.verify("123456", retired_hash)
 
@@ -61,7 +59,7 @@ def test_verifies_legacy_unversioned_hash_with_active_keys() -> None:
         b"legacy-token",
         hashlib.sha256,
     ).hexdigest()
-    hasher = HmacSha256SecretHasher(
+    hasher = build_hmac_hasher(
         CURRENT_SECRET,
         key_id="current",
         previous_secrets={"previous": PREVIOUS_SECRET},
@@ -74,20 +72,20 @@ def test_verifies_legacy_unversioned_hash_with_active_keys() -> None:
 
 def test_rejects_invalid_key_configuration() -> None:
     with pytest.raises(ValueError, match="key id"):
-        HmacSha256SecretHasher(CURRENT_SECRET, key_id="")
+        build_hmac_hasher(CURRENT_SECRET, key_id="")
 
     with pytest.raises(ValueError, match="key id"):
-        HmacSha256SecretHasher(CURRENT_SECRET, key_id="bad$id")
+        build_hmac_hasher(CURRENT_SECRET, key_id="bad$id")
 
     with pytest.raises(ValueError, match="must not appear"):
-        HmacSha256SecretHasher(
+        build_hmac_hasher(
             CURRENT_SECRET,
             key_id="current",
             previous_secrets={"current": PREVIOUS_SECRET},
         )
 
     with pytest.raises(ValueError, match="at least 32 bytes"):
-        HmacSha256SecretHasher(
+        build_hmac_hasher(
             CURRENT_SECRET,
             previous_secrets={"old": b"short"},
         )
