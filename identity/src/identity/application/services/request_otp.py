@@ -5,12 +5,12 @@ from identity.application.contracts.security import (
     OtpCodeGenerator,
     SecretHasher,
 )
+from identity.application.contracts.security_event_factory import SecurityEventFactory
 from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import RequestOtpCommand, RequestOtpResult
 from identity.application.errors import IdentityRateLimitExceededError
 from identity.application.factories.entities import OtpChallengeFactory
-from identity.application.factories.security_events import IdentitySecurityEventFactory
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 
@@ -29,7 +29,7 @@ class RequestOtpService:
         purpose_policy: OtpPurposePolicy,
         rate_limit_policy: OtpRateLimitPolicy,
         security_event_sink: SecurityEventSink,
-        security_event_factory: IdentitySecurityEventFactory,
+        security_event_factory: SecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._otp_delivery = otp_delivery
