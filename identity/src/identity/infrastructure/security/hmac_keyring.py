@@ -14,18 +14,17 @@ class HmacKeyring:
     def __init__(
         self,
         current_key: HmacKey,
-        previous_keys: Mapping[str, bytes] | None = None,
-        validator: HmacKeyValidator | None = None,
+        previous_keys: Mapping[str, bytes],
+        validator: HmacKeyValidator,
     ) -> None:
-        key_validator = validator or HmacKeyValidator()
-        key_validator.validate(current_key.key_id, current_key.secret)
+        validator.validate(current_key.key_id, current_key.secret)
 
-        previous = dict(previous_keys or {})
+        previous = dict(previous_keys)
         if current_key.key_id in previous:
             raise ValueError("Current HMAC key id must not appear in previous secrets")
 
         for key_id, secret in previous.items():
-            key_validator.validate(key_id, secret)
+            validator.validate(key_id, secret)
 
         self._current = current_key
         self._verification_keys = (
