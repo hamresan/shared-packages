@@ -16,7 +16,6 @@ from identity.application.factories.entities import (
 from identity.application.policies.data_retention import DataRetentionPolicy
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
-from identity.application.policies.otp_verification import OtpChallengeVerifier
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.application.resolvers import VerifiedOtpUserResolver
 from identity.application.services.cleanup_retained_data import CleanupRetainedIdentityDataService
@@ -25,6 +24,7 @@ from identity.application.services.request_otp import RequestOtpService
 from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
 from identity.application.services.revoke_session import RevokeSessionService
 from identity.application.services.verify_otp import VerifyOtpService
+from identity.application.verifiers import OtpChallengeVerifier
 from identity.infrastructure.notifications import NotificationOtpDelivery
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWork,
