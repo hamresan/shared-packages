@@ -102,6 +102,7 @@ def test_request_otp_maps_http_request_to_application_command() -> None:
     assert response.status_code == 202
     assert context.otp_requester.command is not None
     assert context.otp_requester.command.destination == "+96890000000"
+    assert context.otp_requester.command.ip_address == "203.0.113.8"
     assert response.json()["challenge_id"] == str(context.otp_requester.challenge_id)
 
 
