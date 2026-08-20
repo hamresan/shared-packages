@@ -57,6 +57,4 @@ class VerifiedOtpUserResolver:
             self._user_status_policy.ensure_active(user)
             return user
 
-        raise UnsupportedOtpPurposeError(
-            f"OTP purpose is not supported: {challenge.purpose.value}"
-        )
+        raise UnsupportedOtpPurposeError(f"OTP purpose is not supported: {challenge.purpose.value}")

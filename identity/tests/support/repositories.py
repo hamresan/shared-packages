@@ -30,8 +30,7 @@ class FakeUserIdentityRepository(UserIdentityRepository):
             (
                 identity
                 for identity in self.identities
-                if identity.type is identity_type
-                and identity.normalized_value == normalized_value
+                if identity.type is identity_type and identity.normalized_value == normalized_value
             ),
             None,
         )
