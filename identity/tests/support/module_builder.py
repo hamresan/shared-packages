@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from identity import IdentityModule, IdentityModuleConfig
 from identity.application.contracts.security_events import SecurityEventSink
 from tests.support.authentication import FakeAccessTokenAuthenticator
-from tests.support.database import SqliteIdentityDatabase
+from tests.support.database_contracts import IdentityTestDatabase
 from tests.support.integrations import FakeAccessTokenIssuer, FakeNotificationSender
 
 TEST_SIGNING_SECRET = b"identity-test-signing-secret-32b!!"
@@ -12,7 +12,7 @@ TEST_SIGNING_SECRET = b"identity-test-signing-secret-32b!!"
 class IdentityTestModuleBuilder:
     def build(
         self,
-        database: SqliteIdentityDatabase,
+        database: IdentityTestDatabase,
         notification_sender: FakeNotificationSender,
         security_event_sink: SecurityEventSink | None = None,
         *,
