@@ -6,12 +6,12 @@ from identity.application.contracts.security import (
     RefreshTokenGenerator,
     SecretHasher,
 )
+from identity.application.contracts.security_event_factory import SecurityEventFactory
 from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, RefreshSessionCommand
 from identity.application.errors import InvalidRefreshTokenError, RefreshTokenReuseError
 from identity.application.factories.entities import SessionFactory
-from identity.application.factories.security_events import IdentitySecurityEventFactory
 
 
 class RefreshSessionService:
@@ -25,7 +25,7 @@ class RefreshSessionService:
         access_token_issuer: AccessTokenIssuer,
         session_factory: SessionFactory,
         security_event_sink: SecurityEventSink,
-        security_event_factory: IdentitySecurityEventFactory,
+        security_event_factory: SecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
