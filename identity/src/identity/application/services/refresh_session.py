@@ -6,15 +6,12 @@ from identity.application.contracts.security import (
     RefreshTokenGenerator,
     SecretHasher,
 )
-from identity.application.contracts.security_events import (
-    SecurityEvent,
-    SecurityEventName,
-    SecurityEventSink,
-)
+from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, RefreshSessionCommand
 from identity.application.errors import InvalidRefreshTokenError, RefreshTokenReuseError
 from identity.application.factories.entities import SessionFactory
+from identity.application.factories.security_events import IdentitySecurityEventFactory
 
 
 class RefreshSessionService:
@@ -28,6 +25,7 @@ class RefreshSessionService:
         access_token_issuer: AccessTokenIssuer,
         session_factory: SessionFactory,
         security_event_sink: SecurityEventSink,
+        security_event_factory: IdentitySecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
@@ -36,6 +34,7 @@ class RefreshSessionService:
         self._access_token_issuer = access_token_issuer
         self._session_factory = session_factory
         self._security_event_sink = security_event_sink
+        self._security_event_factory = security_event_factory
 
     async def execute(self, command: RefreshSessionCommand) -> AuthSessionResult:
         now = self._clock.now()
@@ -50,12 +49,9 @@ class RefreshSessionService:
                     await uow.sessions.revoke_family(current.family_id, now)
                     await uow.commit()
                     await self._security_event_sink.emit(
-                        SecurityEvent(
-                            name=SecurityEventName.REFRESH_REUSE_DETECTED,
+                        self._security_event_factory.refresh_reuse_detected(
                             occurred_at=now,
-                            user_id=current.user_id,
-                            session_id=current.id,
-                            family_id=current.family_id,
+                            session=current,
                         )
                     )
                     raise RefreshTokenReuseError("Refresh token reuse detected")
