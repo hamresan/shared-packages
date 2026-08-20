@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
@@ -15,20 +16,23 @@ class SqlAlchemySessionRepository(SessionRepository):
         self._session = session
         self._mapper = mapper
 
-    async def get_by_refresh_token_hash(self, refresh_token_hash: str) -> Session | None:
+    async def get_by_refresh_token_hashes(
+        self,
+        refresh_token_hashes: Sequence[str],
+    ) -> Session | None:
         statement = select(SessionModel).where(
-            SessionModel.refresh_token_hash == refresh_token_hash
+            SessionModel.refresh_token_hash.in_(refresh_token_hashes)
         )
         model = await self._session.scalar(statement)
         return self._mapper.to_domain(model) if model is not None else None
 
-    async def get_for_update_by_refresh_token_hash(
+    async def get_for_update_by_refresh_token_hashes(
         self,
-        refresh_token_hash: str,
+        refresh_token_hashes: Sequence[str],
     ) -> Session | None:
         statement = (
             select(SessionModel)
-            .where(SessionModel.refresh_token_hash == refresh_token_hash)
+            .where(SessionModel.refresh_token_hash.in_(refresh_token_hashes))
             .with_for_update()
         )
         model = await self._session.scalar(statement)
