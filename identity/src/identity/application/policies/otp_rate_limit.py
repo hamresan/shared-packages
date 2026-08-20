@@ -14,12 +14,14 @@ class OtpRateLimitPolicy:
         request_daily_rule: RateLimitRule,
         requester_burst_rule: RateLimitRule,
         verify_rule: RateLimitRule,
+        verify_requester_rule: RateLimitRule,
     ) -> None:
         self._rate_limiter = rate_limiter
         self._request_burst_rule = request_burst_rule
         self._request_daily_rule = request_daily_rule
         self._requester_burst_rule = requester_burst_rule
         self._verify_rule = verify_rule
+        self._verify_requester_rule = verify_requester_rule
 
     async def ensure_requester_allowed(
         self,
@@ -61,12 +63,27 @@ class OtpRateLimitPolicy:
         if not daily.allowed:
             raise IdentityRateLimitExceededError.from_retry_after(daily.retry_after)
 
-    async def ensure_verification_allowed(self, challenge_id: UUID, now: datetime) -> None:
-        decision = await self._rate_limiter.consume(
+    async def ensure_verification_allowed(
+        self,
+        challenge_id: UUID,
+        requester_key: str | None,
+        now: datetime,
+    ) -> None:
+        if requester_key is not None:
+            requester = await self._rate_limiter.consume(
+                scope="otp_verify_requester_burst",
+                key=requester_key,
+                rule=self._verify_requester_rule,
+                now=now,
+            )
+            if not requester.allowed:
+                raise IdentityRateLimitExceededError.from_retry_after(requester.retry_after)
+
+        challenge = await self._rate_limiter.consume(
             scope="otp_verify",
             key=str(challenge_id),
             rule=self._verify_rule,
             now=now,
         )
-        if not decision.allowed:
-            raise IdentityRateLimitExceededError.from_retry_after(decision.retry_after)
+        if not challenge.allowed:
+            raise IdentityRateLimitExceededError.from_retry_after(challenge.retry_after)
