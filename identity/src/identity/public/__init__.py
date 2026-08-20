@@ -31,7 +31,6 @@ class AuthenticatedPrincipal:
     authentication_method: str
     issued_at: datetime
     expires_at: datetime
-    permissions: frozenset[str] = frozenset()
 
 
 class AccessTokenAuthenticator(Protocol):
