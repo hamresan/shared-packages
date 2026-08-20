@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -28,7 +28,7 @@ TEST_JWT_SECRET = "test-jwt-secret-with-at-least-32-bytes"
 
 
 def test_pyjwt_codec_round_trip() -> None:
-    now = utc_now()
+    now = datetime.now(UTC).replace(microsecond=0)
     claims = AccessTokenClaims(
         user_id=uuid4(),
         session_id=uuid4(),
@@ -40,6 +40,22 @@ def test_pyjwt_codec_round_trip() -> None:
     token = codec.sign(claims)
 
     assert codec.verify(token) == claims
+
+
+def test_pyjwt_codec_rejects_expired_token() -> None:
+    now = datetime.now(UTC).replace(microsecond=0)
+    claims = AccessTokenClaims(
+        user_id=uuid4(),
+        session_id=uuid4(),
+        issued_at=now - timedelta(minutes=30),
+        expires_at=now - timedelta(minutes=15),
+    )
+    codec = PyJwtHmacCodec(TEST_JWT_SECRET)
+
+    token = codec.sign(claims)
+
+    with pytest.raises(JwtTokenError):
+        codec.verify(token)
 
 
 def test_pyjwt_codec_rejects_short_hmac_secret() -> None:
