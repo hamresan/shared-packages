@@ -1,9 +1,9 @@
 from uuid import UUID
 
 from identity.application.contracts.security import Clock
+from identity.application.contracts.security_event_factory import SecurityEventFactory
 from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
-from identity.application.factories.security_events import IdentitySecurityEventFactory
 
 
 class RevokeAllSessionsService:
@@ -13,7 +13,7 @@ class RevokeAllSessionsService:
         unit_of_work_factory: IdentityUnitOfWorkFactory,
         clock: Clock,
         security_event_sink: SecurityEventSink,
-        security_event_factory: IdentitySecurityEventFactory,
+        security_event_factory: SecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
