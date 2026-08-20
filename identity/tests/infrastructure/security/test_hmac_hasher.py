@@ -37,8 +37,12 @@ def test_writes_with_current_key_and_verifies_previous_key() -> None:
     )
 
     current_hash = rotated_hasher.hash("refresh-token")
+    candidates = rotated_hasher.hash_candidates("refresh-token")
 
     assert current_hash.startswith("hmac-sha256$2026-08$")
+    assert current_hash in candidates
+    assert previous_hash in candidates
+    assert len(candidates) == 4
     assert rotated_hasher.verify("refresh-token", previous_hash)
     assert rotated_hasher.verify("refresh-token", current_hash)
 
@@ -63,6 +67,7 @@ def test_verifies_legacy_unversioned_hash_with_active_keys() -> None:
         previous_secrets={"previous": PREVIOUS_SECRET},
     )
 
+    assert legacy_hash in hasher.hash_candidates("legacy-token")
     assert hasher.verify("legacy-token", legacy_hash)
     assert not hasher.verify("wrong-token", legacy_hash)
 
