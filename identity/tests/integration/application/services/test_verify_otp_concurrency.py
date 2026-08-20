@@ -13,7 +13,7 @@ from tests.support.concurrency import ConcurrentRunner
 from tests.support.database_inspector import IdentityDatabaseInspector
 from tests.support.integrations import FakeNotificationSender
 from tests.support.module_builder import IdentityTestModuleBuilder
-from tests.support.otp import latest_otp
+from tests.support.otp import invalid_otp_for, latest_otp
 from tests.support.postgresql_database import PostgresqlIdentityDatabase
 
 
@@ -73,7 +73,7 @@ async def test_concurrent_invalid_verification_preserves_attempt_accounting(
     )
     invalid_command = VerifyOtpCommand(
         challenge_id=registration.challenge_id,
-        code="000000",
+        code=invalid_otp_for(latest_otp(sender)),
         full_name="C1 Concurrency Test",
     )
 
