@@ -1,4 +1,3 @@
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 
@@ -52,7 +51,7 @@ class IdentityModuleConfig:
     access_token_authenticator: AccessTokenAuthenticator
     signing_secret: bytes
     signing_key_id: str = "v1"
-    previous_signing_secrets: Mapping[str, bytes] = field(default_factory=dict)
+    previous_signing_secrets: dict[str, bytes] = field(default_factory=dict)
     otp_ttl: timedelta = timedelta(minutes=5)
     otp_resend_delay: timedelta = timedelta(seconds=60)
     otp_max_attempts: int = 5
