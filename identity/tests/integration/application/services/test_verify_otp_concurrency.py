@@ -49,9 +49,11 @@ async def test_concurrent_valid_verification_creates_only_one_session(
     successful_results = [result for result in results if isinstance(result, AuthSessionResult)]
     failed_results = [result for result in results if isinstance(result, BaseException)]
 
-    assert len(successful_results) == 1
-    assert len(failed_results) == 1
-    assert isinstance(failed_results[0], OtpChallengeNotFoundError)
+    assert len(successful_results) == 1, f"Concurrent verification results: {results!r}"
+    assert len(failed_results) == 1, f"Concurrent verification results: {results!r}"
+    assert isinstance(failed_results[0], OtpChallengeNotFoundError), (
+        f"Unexpected concurrent verification failure: {failed_results[0]!r}"
+    )
     assert await inspector.count_sessions() == 1
 
 
@@ -84,7 +86,9 @@ async def test_concurrent_invalid_verification_preserves_attempt_accounting(
         ]
     )
 
-    assert all(isinstance(result, InvalidOtpError) for result in results)
+    assert all(isinstance(result, InvalidOtpError) for result in results), (
+        f"Unexpected concurrent invalid-verification results: {results!r}"
+    )
     assert (
         await inspector.get_otp_attempts_count(registration.challenge_id)
         == module.config.otp_max_attempts
