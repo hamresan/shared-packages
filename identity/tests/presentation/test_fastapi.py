@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from identity.presentation.fastapi import FastApiIdentityAdapter
 from identity.presentation.request_metadata import RequestMetadata
+from identity.presentation.schemas import MAX_REFRESH_TOKEN_LENGTH
 from tests.support.authentication import FakeAccessTokenAuthenticator
 from tests.support.http_client import JsonHttpClient
 from tests.support.http_services import (
@@ -153,6 +154,18 @@ def test_verify_and_refresh_use_resolved_request_metadata() -> None:
     assert context.session_refresher.command.device_info == "trusted-test-agent"
 
 
+def test_refresh_rejects_oversized_token_before_service_call() -> None:
+    context = build_client()
+
+    response = context.client.post(
+        "/identity/sessions/refresh",
+        json={"refresh_token": "r" * (MAX_REFRESH_TOKEN_LENGTH + 1)},
+    )
+
+    assert response.status_code == 422
+    assert context.session_refresher.command is None
+
+
 def test_revoke_returns_no_content() -> None:
     context = build_client()
     response = context.client.post(
@@ -162,6 +175,18 @@ def test_revoke_returns_no_content() -> None:
 
     assert response.status_code == 204
     assert context.session_revoker.refresh_token == "r" * 48
+
+
+def test_revoke_rejects_oversized_token_before_service_call() -> None:
+    context = build_client()
+
+    response = context.client.post(
+        "/identity/sessions/revoke",
+        json={"refresh_token": "r" * (MAX_REFRESH_TOKEN_LENGTH + 1)},
+    )
+
+    assert response.status_code == 422
+    assert context.session_revoker.refresh_token is None
 
 
 def test_revoke_all_requires_authentication() -> None:
