@@ -49,12 +49,10 @@ class RequestOtpService:
     async def execute(self, command: RequestOtpCommand) -> RequestOtpResult:
         now = self._clock.now()
         destination = self._normalizer.normalize(command.identity_type, command.destination)
+        self._purpose_policy.validate(command.purpose)
+
         try:
-            await self._rate_limit_policy.ensure_request_allowed(
-                destination,
-                command.ip_address,
-                now,
-            )
+            await self._rate_limit_policy.ensure_requester_allowed(command.ip_address, now)
         except IdentityRateLimitExceededError:
             await self._security_event_sink.emit(
                 SecurityEvent(
@@ -64,7 +62,6 @@ class RequestOtpService:
                 )
             )
             raise
-        self._purpose_policy.validate(command.purpose)
 
         channel = (
             NotificationChannel.SMS
@@ -85,6 +82,18 @@ class RequestOtpService:
                     expires_at=latest.expires_at,
                     resend_available_at=latest.resend_available_at,
                 )
+
+            try:
+                await self._rate_limit_policy.ensure_destination_request_allowed(destination, now)
+            except IdentityRateLimitExceededError:
+                await self._security_event_sink.emit(
+                    SecurityEvent(
+                        name=SecurityEventName.OTP_REQUEST_RATE_LIMITED,
+                        occurred_at=now,
+                        subject_fingerprint=self._hasher.hash(destination),
+                    )
+                )
+                raise
 
             code = self._code_generator.generate()
             challenge = self._challenge_factory.create(
