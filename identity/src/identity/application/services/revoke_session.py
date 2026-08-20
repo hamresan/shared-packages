@@ -1,10 +1,10 @@
 from dataclasses import replace
 
 from identity.application.contracts.security import Clock, SecretHasher
+from identity.application.contracts.security_event_factory import SecurityEventFactory
 from identity.application.contracts.security_events import SecurityEvent, SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.errors import InvalidRefreshTokenError
-from identity.application.factories.security_events import IdentitySecurityEventFactory
 
 
 class RevokeSessionService:
@@ -15,7 +15,7 @@ class RevokeSessionService:
         clock: Clock,
         hasher: SecretHasher,
         security_event_sink: SecurityEventSink,
-        security_event_factory: IdentitySecurityEventFactory,
+        security_event_factory: SecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._clock = clock
