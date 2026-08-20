@@ -9,10 +9,10 @@ from identity.access_tokens import (
     JwtTokenError,
     PyJwtHmacCodec,
 )
-from identity.application.errors import InactiveUserError
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.domain import UserStatus
 from identity.infrastructure.security.access_tokens.contracts import AccessTokenClaims
+from identity.public import AccessTokenAuthenticationError
 from tests.support.access_tokens import (
     FakeSessionReader,
     FakeTokenCodec,
@@ -123,7 +123,7 @@ async def test_authenticator_rejects_invalid_session_or_token(failure: str) -> N
         FixedClock(now),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AccessTokenAuthenticationError):
         await authenticator.authenticate("token")
 
 
@@ -144,5 +144,5 @@ async def test_authenticator_rejects_non_active_user(status: UserStatus) -> None
         FixedClock(now),
     )
 
-    with pytest.raises(InactiveUserError):
+    with pytest.raises(AccessTokenAuthenticationError):
         await authenticator.authenticate("token")
