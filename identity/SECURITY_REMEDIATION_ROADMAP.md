@@ -69,7 +69,7 @@ Status: **Closed**
 
 ### P3.1 — Rate limiting — M-3
 
-Status: **Mostly closed**
+Status: **In progress**
 
 Completed:
 - Application-level `RateLimiter` abstraction exists.
@@ -77,9 +77,12 @@ Completed:
 - OTP verification limits apply by challenge.
 - Daily destination limits are supported.
 - In-memory baseline implementation exists and distributed implementations can be injected.
+- OTP request limits also apply by trusted requester/IP across different destinations.
+- FastAPI resolves requester IP server-side through `RequestMetadataResolver`; the default resolver ignores forwarding headers.
+- Trusted proxy deployment requirements and distributed/edge throttling guidance are documented in `RATE_LIMITING.md`.
 
 Remaining:
-- Add trusted per-IP/requester limits using server-resolved request metadata.
+- Validate the requester/IP flow with the full quality suite before closing M-3.
 - Keep coarse traffic throttling at nginx/API-gateway level.
 
 ### P3.2 — OTP request cooldown behavior — H-1
@@ -179,7 +182,7 @@ Status: **Accepted tradeoff / optional optimization**
 
 ### P6.6 — HMAC key rotation — L-7
 
-Status: **In progress**
+Status: **Closed**
 
 - New OTP and refresh-token hashes are versioned with a key identifier and are written only with the current HMAC key.
 - Verification accepts explicitly configured active previous keys during an overlap window.
@@ -187,13 +190,14 @@ Status: **In progress**
 - Refresh-token lookup is rotation-aware by querying all active versioned and legacy hash candidates, so pre-rotation sessions remain usable during the configured overlap period.
 - Operational normal-rotation and compromised-key procedures are documented in `HMAC_KEY_ROTATION.md`.
 - Regression coverage includes previous-key verification, legacy hashes, unknown/retired keys, and refresh-session continuity across a key rotation.
+- HMAC digest calculation, hash formatting, key validation, and keyring responsibilities are separated into dedicated components; the hasher remains a focused orchestrator.
 
 ## Final verification work
 
 Before calling the audit fully remediated:
 
 1. add PostgreSQL concurrency integration tests for C-1 and H-2;
-2. complete trusted per-IP/requester rate limiting for M-3;
+2. complete and validate trusted per-IP/requester rate limiting for M-3;
 3. rerun the original hostile audit against the updated `main` branch;
 4. confirm deployment guidance covers Redis/distributed rate limiting, nginx trusted proxies, retention jobs, and schema migrations;
 5. confirm no event/log path contains OTP codes, raw tokens, secrets, or unnecessary PII.
