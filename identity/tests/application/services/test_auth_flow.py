@@ -15,12 +15,7 @@ from identity.domain import IdentityType, OtpPurpose
 from tests.support.database import SqliteIdentityDatabase
 from tests.support.integrations import FakeNotificationSender
 from tests.support.module_builder import IdentityTestModuleBuilder
-
-
-def latest_otp(sender: FakeNotificationSender) -> str:
-    value = sender.commands[-1].variables["otp"]
-    assert isinstance(value, str)
-    return value
+from tests.support.otp import latest_otp
 
 
 @pytest.mark.asyncio

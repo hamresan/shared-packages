@@ -30,7 +30,7 @@ The roadmap distinguishes between:
 
 | Audit finding | Current status | Remaining work |
 | --- | --- | --- |
-| C-1 Atomic OTP verification/consumption | **Mostly closed** | PostgreSQL concurrency integration validation |
+| C-1 Atomic OTP verification/consumption | **Closed** | Re-verify during final hostile audit |
 | H-1 OTP cooldown abuse / login lockout | **Closed** | Re-verify during final hostile audit |
 | H-2 Refresh rotation / reuse detection | **Mostly closed** | PostgreSQL concurrent-refresh integration validation |
 | H-3 OTP purpose misuse | **Closed** | Re-verify during final hostile audit |
@@ -55,18 +55,20 @@ The roadmap distinguishes between:
 
 ### P1.1 — Atomic OTP verification and consumption — C-1
 
-Status: **Mostly closed**
+Status: **Closed**
 
 Completed:
 - OTP challenges are read under a row lock during verification.
 - Failed-attempt counters are incremented atomically in persistence.
 - Validation, attempt accounting, successful consumption, and session creation remain inside one transaction.
 - Regression tests enforce the configured attempt ceiling.
+- PostgreSQL concurrency integration coverage proves concurrent valid verification of one challenge creates only one session.
+- PostgreSQL concurrency integration coverage proves parallel invalid verification preserves all failed-attempt increments and the configured attempt ceiling.
+- PostgreSQL validation exposed an insert-ordering issue on registration; `SqlAlchemyUserRepository.add()` now flushes the inserted user at the persistence boundary before dependent identity/session writes, without leaking SQLAlchemy concerns into the application service.
+- The full quality suite passes with PostgreSQL integration tests enabled (`86 passed`).
 
-Remaining:
-- Add PostgreSQL concurrency integration coverage proving concurrent verification of the same OTP cannot create multiple sessions.
-- Add PostgreSQL concurrency integration coverage proving failed-attempt accounting cannot be lost under parallel invalid verification.
-- Re-run the original C-1 hostile scenario after the integration tests pass.
+Remaining verification:
+- Re-run the original C-1 hostile scenario during the final finding-by-finding audit review.
 
 ### P1.2 — Default-deny OTP purpose handling — H-3
 
@@ -310,13 +312,17 @@ The original audit remediation table contained 13 priority groups. Production fi
 
 ### R1 — PostgreSQL concurrency validation for C-1
 
+Status: **Complete**
+
 Priority: **Critical**
 
-- Build focused PostgreSQL integration-test infrastructure without weakening production architecture.
-- Prove parallel valid verification of one challenge creates at most one valid session.
-- Prove parallel invalid verification cannot lose failed-attempt increments.
-- Prove the configured attempt ceiling remains effective under concurrency.
-- Run `make check` and close C-1 only after these tests pass.
+Completed:
+- Added focused PostgreSQL integration-test infrastructure without weakening production architecture.
+- Proved parallel valid verification of one challenge creates only one valid session.
+- Proved parallel invalid verification cannot lose failed-attempt increments.
+- Proved the configured attempt ceiling remains effective under concurrency.
+- Fixed the PostgreSQL registration insert-ordering issue at the persistence boundary and added mirrored repository coverage.
+- Ran the full quality suite with PostgreSQL integration enabled: `86 passed`.
 
 ### R2 — PostgreSQL concurrency validation for H-2
 
@@ -389,7 +395,7 @@ After the original 20 findings have been re-verified:
 
 The August 2026 security audit is not fully closed until all of the following are true:
 
-1. C-1 PostgreSQL concurrency tests pass.
+1. C-1 PostgreSQL concurrency tests pass. **Done.**
 2. H-2 PostgreSQL concurrency tests pass.
 3. M-3 full-quality validation passes.
 4. Required distributed/edge rate limiting and trusted-proxy responsibilities are explicitly documented and reviewed.

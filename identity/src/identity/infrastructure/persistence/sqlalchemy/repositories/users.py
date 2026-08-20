@@ -19,3 +19,4 @@ class SqlAlchemyUserRepository(UserRepository):
 
     async def add(self, user: User) -> None:
         self._session.add(self._mapper.to_model(user))
+        await self._session.flush()
