@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from identity.infrastructure.persistence.sqlalchemy import IdentityBase
+from tests.support.database_contracts import IdentityTestDatabase
 
 
-class SqliteIdentityDatabase:
+class SqliteIdentityDatabase(IdentityTestDatabase):
     def __init__(self) -> None:
         self._engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         self._session_maker = async_sessionmaker(self._engine, expire_on_commit=False)
