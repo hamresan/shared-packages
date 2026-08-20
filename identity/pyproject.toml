@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "hamresan-identity"
 version = "0.1.0"
-description = "Reusable identity, passwordless authentication, session, and authorization package."
+description = "Reusable identity, passwordless authentication, and session package."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

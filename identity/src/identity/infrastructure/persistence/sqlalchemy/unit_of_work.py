@@ -1,5 +1,4 @@
-from collections.abc import AsyncGenerator
-from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from contextlib import AbstractAsyncContextManager
 from types import TracebackType
 from typing import Self
 
@@ -95,11 +94,6 @@ class SqlAlchemyIdentityUnitOfWork(IdentityUnitOfWork):
         if self._session is None:
             raise RuntimeError("Unit of work has not been entered")
         await self._session.commit()
-
-    @asynccontextmanager
-    async def transaction(self) -> AsyncGenerator[AsyncSession]:
-        async with self._session_factory() as session, session.begin():
-            yield session
 
 
 class SqlAlchemyIdentityUnitOfWorkFactory:

@@ -5,6 +5,18 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from identity.infrastructure.persistence.sqlalchemy.base import IdentityBase
+from identity.infrastructure.persistence.sqlalchemy.repositories.otp_challenges import (
+    SqlAlchemyOtpChallengeRepository,
+)
+from identity.infrastructure.persistence.sqlalchemy.repositories.sessions import (
+    SqlAlchemySessionRepository,
+)
+from identity.infrastructure.persistence.sqlalchemy.repositories.user_identities import (
+    SqlAlchemyUserIdentityRepository,
+)
+from identity.infrastructure.persistence.sqlalchemy.repositories.users import (
+    SqlAlchemyUserRepository,
+)
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import SqlAlchemyIdentityUnitOfWork
 
 
@@ -23,7 +35,11 @@ async def test_unit_of_work_uses_host_session_factory() -> None:
 
     unit_of_work = SqlAlchemyIdentityUnitOfWork(session_factory)
 
-    async with unit_of_work.transaction() as session:
-        assert isinstance(session, AsyncSession)
+    async with unit_of_work:
+        assert isinstance(unit_of_work.users, SqlAlchemyUserRepository)
+        assert isinstance(unit_of_work.identities, SqlAlchemyUserIdentityRepository)
+        assert isinstance(unit_of_work.otp_challenges, SqlAlchemyOtpChallengeRepository)
+        assert isinstance(unit_of_work.sessions, SqlAlchemySessionRepository)
+        await unit_of_work.commit()
 
     await engine.dispose()

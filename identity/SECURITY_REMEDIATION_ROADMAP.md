@@ -154,7 +154,7 @@ Status: **Closed**
 
 ### P6.3 — OTP notification consistency — L-2
 
-Status: **In progress**
+Status: **Closed**
 
 - A newly created OTP challenge is not committed until notification dispatch has been accepted successfully.
 - Notification dispatch failure exits the unit of work with an exception, so the pending challenge is rolled back and does not create a cooldown for an OTP the user never received.
@@ -163,11 +163,12 @@ Status: **In progress**
 
 ### P6.4 — Dead or misleading model/public members — L-4
 
-Status: **Planned**
+Status: **In progress**
 
-- Review `destination_snapshot`, `UserIdentity.value`, `User.updated_at`, `AuthenticatedPrincipal.permissions`, `IdentityUnitOfWork.transaction()`, and `Session.last_used_at`.
-- Remove or implement members whose public/domain meaning is currently misleading.
-- Align package description with actual authorization capabilities.
+- Remove the unused `AuthenticatedPrincipal.permissions` member so the public principal does not imply authorization behavior the package does not implement.
+- Remove the extra `SqlAlchemyIdentityUnitOfWork.transaction()` helper because it is not part of the unit-of-work contract and creates a second transaction API with unclear semantics.
+- Align package metadata with the implemented authentication/session scope rather than claiming authorization support.
+- Retain persisted compatibility fields (`UserIdentity.value`, `OtpChallenge.destination_snapshot`, `User.updated_at`, and `Session.last_used_at`) without destructive schema changes, and document their current non-authoritative semantics explicitly.
 
 ### P6.5 — Authenticated-request database lookup — L-5
 
