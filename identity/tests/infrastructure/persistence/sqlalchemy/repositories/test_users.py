@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity.domain import User, UserStatus
 from identity.infrastructure.persistence.sqlalchemy.mappers import UserMapper
-from identity.infrastructure.persistence.sqlalchemy.repositories.users import SqlAlchemyUserRepository
+from identity.infrastructure.persistence.sqlalchemy.repositories.users import (
+    SqlAlchemyUserRepository,
+)
 
 
 async def test_add_flushes_user_before_dependent_writes() -> None:
