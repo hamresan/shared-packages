@@ -23,6 +23,7 @@ from identity.application.services.request_otp import RequestOtpService
 from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
 from identity.application.services.revoke_session import RevokeSessionService
 from identity.application.services.verify_otp import VerifyOtpService
+from identity.infrastructure.notifications import NotificationOtpDelivery
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWork,
     SqlAlchemyIdentityUnitOfWorkFactory,
@@ -130,10 +131,11 @@ class IdentityModule:
                 window=config.otp_verify_requester_burst_window,
             ),
         )
+        otp_delivery = NotificationOtpDelivery(config.notification_sender)
 
         self.otp_requester = RequestOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
-            notification_sender=config.notification_sender,
+            otp_delivery=otp_delivery,
             clock=clock,
             normalizer=DefaultIdentityNormalizer(),
             code_generator=SecureNumericOtpCodeGenerator(),

@@ -1,5 +1,4 @@
-from notification.public import NotificationChannel, NotificationSender, SendNotification
-
+from identity.application.contracts.otp_delivery import OtpDelivery
 from identity.application.contracts.security import (
     Clock,
     IdentityNormalizer,
@@ -17,7 +16,6 @@ from identity.application.errors import IdentityRateLimitExceededError
 from identity.application.factories.entities import OtpChallengeFactory
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
-from identity.domain import IdentityType
 
 
 class RequestOtpService:
@@ -25,7 +23,7 @@ class RequestOtpService:
         self,
         *,
         unit_of_work_factory: IdentityUnitOfWorkFactory,
-        notification_sender: NotificationSender,
+        otp_delivery: OtpDelivery,
         clock: Clock,
         normalizer: IdentityNormalizer,
         code_generator: OtpCodeGenerator,
@@ -36,7 +34,7 @@ class RequestOtpService:
         security_event_sink: SecurityEventSink,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
-        self._notification_sender = notification_sender
+        self._otp_delivery = otp_delivery
         self._clock = clock
         self._normalizer = normalizer
         self._code_generator = code_generator
@@ -62,12 +60,6 @@ class RequestOtpService:
                 )
             )
             raise
-
-        channel = (
-            NotificationChannel.SMS
-            if command.identity_type is IdentityType.MOBILE
-            else NotificationChannel.EMAIL
-        )
 
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
@@ -106,14 +98,12 @@ class RequestOtpService:
                 identity_id=identity.id if identity else None,
             )
             await uow.otp_challenges.add(challenge)
-            await self._notification_sender.send(
-                SendNotification(
-                    channel=channel,
-                    recipient=destination,
-                    template_key="identity.otp",
-                    locale=command.locale,
-                    variables={"otp": code, "purpose": command.purpose.value},
-                )
+            await self._otp_delivery.send(
+                identity_type=command.identity_type,
+                destination=destination,
+                code=code,
+                purpose=command.purpose,
+                locale=command.locale,
             )
             await uow.commit()
 
