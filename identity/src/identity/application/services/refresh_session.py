@@ -39,9 +39,9 @@ class RefreshSessionService:
 
     async def execute(self, command: RefreshSessionCommand) -> AuthSessionResult:
         now = self._clock.now()
-        current_hash = self._hasher.hash(command.refresh_token)
+        candidate_hashes = self._hasher.hash_candidates(command.refresh_token)
         async with self._unit_of_work_factory() as uow:
-            current = await uow.sessions.get_for_update_by_refresh_token_hash(current_hash)
+            current = await uow.sessions.get_for_update_by_refresh_token_hashes(candidate_hashes)
             if current is None or current.expires_at <= now or current.family_expires_at <= now:
                 raise InvalidRefreshTokenError("Refresh token is invalid")
 
