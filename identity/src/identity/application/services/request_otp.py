@@ -62,6 +62,12 @@ class RequestOtpService:
             raise
         self._purpose_policy.validate(command.purpose)
 
+        channel = (
+            NotificationChannel.SMS
+            if command.identity_type is IdentityType.MOBILE
+            else NotificationChannel.EMAIL
+        )
+
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
             latest = await uow.otp_challenges.get_latest_active(
@@ -87,22 +93,17 @@ class RequestOtpService:
                 identity_id=identity.id if identity else None,
             )
             await uow.otp_challenges.add(challenge)
+            await self._notification_sender.send(
+                SendNotification(
+                    channel=channel,
+                    recipient=destination,
+                    template_key="identity.otp",
+                    locale=command.locale,
+                    variables={"otp": code, "purpose": command.purpose.value},
+                )
+            )
             await uow.commit()
 
-        channel = (
-            NotificationChannel.SMS
-            if command.identity_type is IdentityType.MOBILE
-            else NotificationChannel.EMAIL
-        )
-        await self._notification_sender.send(
-            SendNotification(
-                channel=channel,
-                recipient=destination,
-                template_key="identity.otp",
-                locale=command.locale,
-                variables={"otp": code, "purpose": command.purpose.value},
-            )
-        )
         return RequestOtpResult(
             challenge_id=challenge.id,
             expires_at=challenge.expires_at,
