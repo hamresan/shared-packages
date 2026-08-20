@@ -1,12 +1,11 @@
-import hashlib
 import hmac
 from collections.abc import Mapping
 
 from identity.application.contracts.security import SecretHasher
-
-MINIMUM_HMAC_SECRET_BYTES = 32
-_HASH_FORMAT = "hmac-sha256"
-_HASH_SEPARATOR = "$"
+from identity.infrastructure.security.hmac_digest import HmacSha256DigestCalculator
+from identity.infrastructure.security.hmac_hash_format import HmacHashFormat
+from identity.infrastructure.security.hmac_key_validator import MINIMUM_HMAC_SECRET_BYTES
+from identity.infrastructure.security.hmac_keyring import HmacKey, HmacKeyring
 
 
 class HmacSha256SecretHasher(SecretHasher):
@@ -16,67 +15,49 @@ class HmacSha256SecretHasher(SecretHasher):
         *,
         key_id: str = "v1",
         previous_secrets: Mapping[str, bytes] | None = None,
+        digest_calculator: HmacSha256DigestCalculator | None = None,
+        hash_format: HmacHashFormat | None = None,
+        keyring: HmacKeyring | None = None,
     ) -> None:
-        self._validate_key(key_id, secret)
-        previous = dict(previous_secrets or {})
-        if key_id in previous:
-            raise ValueError("Current HMAC key id must not appear in previous secrets")
-        for previous_key_id, previous_secret in previous.items():
-            self._validate_key(previous_key_id, previous_secret)
-
-        self._current_key_id = key_id
-        self._current_secret = secret
-        self._verification_secrets = {key_id: secret, **previous}
+        self._digest_calculator = digest_calculator or HmacSha256DigestCalculator()
+        self._hash_format = hash_format or HmacHashFormat()
+        self._keyring = keyring or HmacKeyring(
+            current_key=HmacKey(key_id=key_id, secret=secret),
+            previous_keys=previous_secrets,
+        )
 
     def hash(self, value: str) -> str:
-        digest = self._digest(self._current_secret, value)
-        return self._format_versioned_hash(self._current_key_id, digest)
+        current_key = self._keyring.current
+        digest = self._digest_calculator.calculate(current_key.secret, value)
+        return self._hash_format.format(current_key.key_id, digest)
 
     def hash_candidates(self, value: str) -> tuple[str, ...]:
         versioned = tuple(
-            self._format_versioned_hash(key_id, self._digest(secret, value))
-            for key_id, secret in self._verification_secrets.items()
+            self._hash_format.format(
+                key.key_id,
+                self._digest_calculator.calculate(key.secret, value),
+            )
+            for key in self._keyring.verification_keys
         )
         legacy = tuple(
-            self._digest(secret, value) for secret in self._verification_secrets.values()
+            self._digest_calculator.calculate(key.secret, value)
+            for key in self._keyring.verification_keys
         )
         return versioned + legacy
 
     def verify(self, value: str, hashed_value: str) -> bool:
-        parsed = self._parse_versioned_hash(hashed_value)
+        parsed = self._hash_format.parse(hashed_value)
         if parsed is not None:
-            key_id, stored_digest = parsed
-            secret = self._verification_secrets.get(key_id)
-            if secret is None:
+            key = self._keyring.get(parsed.key_id)
+            if key is None:
                 return False
-            return hmac.compare_digest(self._digest(secret, value), stored_digest)
+            digest = self._digest_calculator.calculate(key.secret, value)
+            return hmac.compare_digest(digest, parsed.digest)
 
         return any(
-            hmac.compare_digest(self._digest(secret, value), hashed_value)
-            for secret in self._verification_secrets.values()
+            hmac.compare_digest(
+                self._digest_calculator.calculate(key.secret, value),
+                hashed_value,
+            )
+            for key in self._keyring.verification_keys
         )
-
-    @staticmethod
-    def _digest(secret: bytes, value: str) -> str:
-        return hmac.new(secret, value.encode("utf-8"), hashlib.sha256).hexdigest()
-
-    @staticmethod
-    def _format_versioned_hash(key_id: str, digest: str) -> str:
-        return _HASH_SEPARATOR.join((_HASH_FORMAT, key_id, digest))
-
-    @staticmethod
-    def _parse_versioned_hash(hashed_value: str) -> tuple[str, str] | None:
-        parts = hashed_value.split(_HASH_SEPARATOR, 2)
-        if len(parts) != 3 or parts[0] != _HASH_FORMAT:
-            return None
-        key_id, digest = parts[1], parts[2]
-        if not key_id or not digest:
-            return None
-        return key_id, digest
-
-    @staticmethod
-    def _validate_key(key_id: str, secret: bytes) -> None:
-        if not key_id or _HASH_SEPARATOR in key_id:
-            raise ValueError("HMAC key id must be non-empty and must not contain '$'")
-        if len(secret) < MINIMUM_HMAC_SECRET_BYTES:
-            raise ValueError(f"Secret must be at least {MINIMUM_HMAC_SECRET_BYTES} bytes")
