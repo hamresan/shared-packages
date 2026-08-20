@@ -3,7 +3,11 @@ from functools import partial
 import pytest
 
 from identity.application.dto import AuthSessionResult, RequestOtpCommand, VerifyOtpCommand
-from identity.application.errors import InvalidOtpError, OtpAttemptsExceededError, OtpChallengeNotFoundError
+from identity.application.errors import (
+    InvalidOtpError,
+    OtpAttemptsExceededError,
+    OtpChallengeNotFoundError,
+)
 from identity.domain import IdentityType, OtpPurpose
 from tests.support.concurrency import ConcurrentRunner
 from tests.support.database_inspector import IdentityDatabaseInspector
