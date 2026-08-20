@@ -20,8 +20,8 @@ from identity.application.errors import (
 )
 from identity.application.factories.entities import SessionFactory
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
-from identity.application.policies.otp_verification import OtpChallengeVerifier
 from identity.application.resolvers import VerifiedOtpUserResolver
+from identity.application.verifiers import OtpChallengeVerifier
 
 
 class VerifyOtpService:
