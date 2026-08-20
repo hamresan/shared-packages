@@ -6,6 +6,7 @@ from identity.domain import IdentityType, OtpPurpose
 from tests.support.database import SqliteIdentityDatabase
 from tests.support.integrations import FakeNotificationSender
 from tests.support.module_builder import IdentityTestModuleBuilder
+from tests.support.otp import invalid_otp_for, latest_otp
 
 
 @pytest.mark.asyncio
@@ -23,13 +24,14 @@ async def test_verification_rejects_attempts_after_configured_limit() -> None:
                 purpose=OtpPurpose.REGISTRATION,
             )
         )
+        invalid_otp = invalid_otp_for(latest_otp(sender))
 
         for _ in range(module.config.otp_max_attempts):
             with pytest.raises(InvalidOtpError):
                 await module.otp_verifier.execute(
                     VerifyOtpCommand(
                         challenge_id=registration.challenge_id,
-                        code="000000",
+                        code=invalid_otp,
                         full_name="Security Test",
                     )
                 )
@@ -38,7 +40,7 @@ async def test_verification_rejects_attempts_after_configured_limit() -> None:
             await module.otp_verifier.execute(
                 VerifyOtpCommand(
                     challenge_id=registration.challenge_id,
-                    code="000000",
+                    code=invalid_otp,
                     full_name="Security Test",
                 )
             )
