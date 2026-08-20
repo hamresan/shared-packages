@@ -11,6 +11,7 @@ class RequestOtpCommand:
     destination: str
     purpose: OtpPurpose
     locale: str = "en"
+    ip_address: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
