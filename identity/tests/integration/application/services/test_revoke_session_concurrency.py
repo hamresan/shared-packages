@@ -67,3 +67,39 @@ async def test_concurrent_refresh_and_revoke_leave_no_active_session_in_family(
             await module.session_refresher.execute(
                 RefreshSessionCommand(refresh_token=refresh_result.refresh_token)
             )
+
+
+@pytest.mark.asyncio
+async def test_revoking_rotated_token_revokes_active_replacement_family(
+    postgres_database: PostgresqlIdentityDatabase,
+) -> None:
+    sender = FakeNotificationSender()
+    module = IdentityTestModuleBuilder().build(postgres_database, sender)
+    inspector = IdentityDatabaseInspector(postgres_database)
+
+    registration = await module.otp_requester.execute(
+        RequestOtpCommand(
+            identity_type=IdentityType.EMAIL,
+            destination="r6-revoke-rotated@example.com",
+            purpose=OtpPurpose.REGISTRATION,
+        )
+    )
+    authenticated = await module.otp_verifier.execute(
+        VerifyOtpCommand(
+            challenge_id=registration.challenge_id,
+            code=latest_otp(sender),
+            full_name="R6 Rotated Revoke Test",
+        )
+    )
+    family_id = await inspector.get_session_family_id(authenticated.session_id)
+    rotated = await module.session_refresher.execute(
+        RefreshSessionCommand(refresh_token=authenticated.refresh_token)
+    )
+
+    await module.session_revoker.execute(authenticated.refresh_token)
+
+    assert await inspector.count_active_sessions_in_family(family_id) == 0
+    with pytest.raises(InvalidRefreshTokenError):
+        await module.session_refresher.execute(
+            RefreshSessionCommand(refresh_token=rotated.refresh_token)
+        )
