@@ -32,7 +32,7 @@ The roadmap distinguishes between:
 | --- | --- | --- |
 | C-1 Atomic OTP verification/consumption | **Closed** | Re-verify during final hostile audit |
 | H-1 OTP cooldown abuse / login lockout | **Closed** | Re-verify during final hostile audit |
-| H-2 Refresh rotation / reuse detection | **Mostly closed** | PostgreSQL concurrent-refresh integration validation |
+| H-2 Refresh rotation / reuse detection | **Closed** | Re-verify during final hostile audit |
 | H-3 OTP purpose misuse | **Closed** | Re-verify during final hostile audit |
 | M-1 User status enforcement | **Closed** | Re-verify during final hostile audit |
 | M-2 Account enumeration | **Closed** | Re-verify during final hostile audit |
@@ -88,17 +88,20 @@ Remaining verification:
 
 ### P2.1 — Atomic refresh rotation and reuse detection — H-2
 
-Status: **Mostly closed**
+Status: **Closed**
 
 Completed:
 - Refresh rotation locks the current session.
 - Refresh-token reuse is detected and revokes the active family.
 - Refresh families have a fixed absolute expiration.
+- PostgreSQL concurrency integration coverage proves concurrent use of the same refresh token produces exactly one successful rotation.
+- The competing refresh is detected as reuse and revokes the active session family.
+- PostgreSQL state inspection confirms no active session remains in the family after reuse detection.
+- PostgreSQL integration coverage confirms `family_expires_at` remains unchanged across subsequent rotations.
+- The full quality suite passes with all PostgreSQL integration tests enabled (`88 passed`).
 
-Remaining:
-- Add PostgreSQL concurrency integration coverage proving concurrent use of the same refresh token cannot create multiple valid rotated sessions.
-- Validate refresh-token reuse detection and family revocation under real PostgreSQL concurrency.
-- Re-run the original H-2 hostile scenarios after the integration tests pass.
+Remaining verification:
+- Re-run the original H-2 hostile scenarios during the final finding-by-finding audit review.
 
 ### P2.2 — Session recovery controls — M-8
 
@@ -326,12 +329,16 @@ Completed:
 
 ### R2 — PostgreSQL concurrency validation for H-2
 
+Status: **Complete**
+
 Priority: **High**
 
-- Prove parallel refresh requests using the same refresh token cannot create multiple valid rotated sessions.
-- Verify reuse detection and active-family revocation under real PostgreSQL concurrency.
-- Verify family absolute expiration remains fixed across rotation.
-- Run `make check` and close H-2 only after these tests pass.
+Completed:
+- Proved parallel refresh requests using the same refresh token produce exactly one successful rotated session.
+- Verified the competing request is treated as refresh-token reuse under real PostgreSQL row locking.
+- Verified reuse detection revokes the active family and leaves no active session in that family.
+- Verified the family's absolute expiration remains fixed across multiple rotations.
+- Ran the full quality suite with all PostgreSQL integration tests enabled: `88 passed`.
 
 ### R3 — Close M-3 validation and deployment assumptions
 
@@ -396,7 +403,7 @@ After the original 20 findings have been re-verified:
 The August 2026 security audit is not fully closed until all of the following are true:
 
 1. C-1 PostgreSQL concurrency tests pass. **Done.**
-2. H-2 PostgreSQL concurrency tests pass.
+2. H-2 PostgreSQL concurrency tests pass. **Done.**
 3. M-3 full-quality validation passes.
 4. Required distributed/edge rate limiting and trusted-proxy responsibilities are explicitly documented and reviewed.
 5. Security events are wired for production observability/alerting where appropriate and contain no sensitive secrets/tokens/OTP values or unnecessary PII.
