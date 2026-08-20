@@ -136,20 +136,21 @@ Status: **Closed**
 
 ### P6.1 — Access-token error isolation — L-3
 
-Status: **In progress**
+Status: **Closed**
 
-- Introduce a public typed authentication error for invalid/unacceptable access-token credentials.
-- Map only that error to HTTP 401.
-- Allow unexpected infrastructure/programming failures to propagate instead of being masked as authentication failures.
-- Add regression coverage for both invalid credentials and unexpected backend failures.
+- Invalid/unacceptable access-token credentials use public `AccessTokenAuthenticationError`.
+- FastAPI maps only that typed authentication error to HTTP 401.
+- Unexpected infrastructure/programming failures propagate instead of being masked as authentication failures.
+- Regression coverage distinguishes invalid credentials from backend failures.
 
 ### P6.2 — JWT codec expiry safety — L-1
 
-Status: **Planned**
+Status: **In progress**
 
-- Remove the public-API trap created by `verify_exp=False`.
-- Either enforce expiry inside the codec or narrow the codec's public/reusable surface.
-- Keep deterministic testability without weakening direct codec use.
+- JWT codec verification now enables PyJWT expiration validation instead of passing `verify_exp=False`.
+- Direct codec consumers therefore reject expired tokens without relying on the higher-level authenticator.
+- The authenticator keeps its explicit expiration check as defense in depth and for fake/test verifiers.
+- Regression coverage verifies expired JWTs are rejected by the codec itself.
 
 ### P6.3 — OTP notification consistency — L-2
 
