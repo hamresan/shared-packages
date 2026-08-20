@@ -1,5 +1,5 @@
-from datetime import UTC, datetime
 from dataclasses import replace
+from datetime import UTC, datetime
 
 import pytest
 
