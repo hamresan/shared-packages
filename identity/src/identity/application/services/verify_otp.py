@@ -14,20 +14,14 @@ from identity.application.contracts.security_events import (
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult, VerifyOtpCommand
 from identity.application.errors import (
-    IdentityAlreadyRegisteredError,
-    IdentityNotRegisteredError,
     IdentityRateLimitExceededError,
     InvalidOtpError,
     OtpAttemptsExceededError,
-    OtpChallengeNotFoundError,
-    OtpExpiredError,
-    RegistrationNameRequiredError,
-    UnsupportedOtpPurposeError,
 )
-from identity.application.factories.entities import SessionFactory, UserRegistrationFactory
+from identity.application.factories.entities import SessionFactory
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
-from identity.application.policies.user_status import UserStatusPolicy
-from identity.domain import OtpPurpose
+from identity.application.resolvers import VerifiedOtpUserResolver
+from identity.application.verifiers import OtpChallengeVerifier
 
 
 class VerifyOtpService:
@@ -39,9 +33,9 @@ class VerifyOtpService:
         hasher: SecretHasher,
         refresh_token_generator: RefreshTokenGenerator,
         access_token_issuer: AccessTokenIssuer,
-        registration_factory: UserRegistrationFactory,
         session_factory: SessionFactory,
-        user_status_policy: UserStatusPolicy,
+        challenge_verifier: OtpChallengeVerifier,
+        user_resolver: VerifiedOtpUserResolver,
         rate_limit_policy: OtpRateLimitPolicy,
         security_event_sink: SecurityEventSink,
     ) -> None:
@@ -50,9 +44,9 @@ class VerifyOtpService:
         self._hasher = hasher
         self._refresh_token_generator = refresh_token_generator
         self._access_token_issuer = access_token_issuer
-        self._registration_factory = registration_factory
         self._session_factory = session_factory
-        self._user_status_policy = user_status_policy
+        self._challenge_verifier = challenge_verifier
+        self._user_resolver = user_resolver
         self._rate_limit_policy = rate_limit_policy
         self._security_event_sink = security_event_sink
 
@@ -76,57 +70,44 @@ class VerifyOtpService:
 
         async with self._unit_of_work_factory() as uow:
             challenge = await uow.otp_challenges.get_for_update(command.challenge_id)
-            if challenge is None or challenge.consumed_at is not None:
-                raise OtpChallengeNotFoundError("OTP challenge was not found")
-            if challenge.expires_at <= now:
-                raise OtpExpiredError("OTP challenge has expired")
-            if challenge.attempts_count >= challenge.max_attempts:
-                await self._security_event_sink.emit(
-                    SecurityEvent(
-                        name=SecurityEventName.OTP_ATTEMPTS_EXCEEDED,
-                        occurred_at=now,
-                        user_id=challenge.user_id,
-                        challenge_id=challenge.id,
-                    )
-                )
-                raise OtpAttemptsExceededError("OTP attempts exceeded")
-            if not self._hasher.verify(command.code, challenge.code_hash):
-                await uow.otp_challenges.increment_attempts(challenge.id)
-                await uow.commit()
-                await self._security_event_sink.emit(
-                    SecurityEvent(
-                        name=SecurityEventName.OTP_ATTEMPT_FAILED,
-                        occurred_at=now,
-                        user_id=challenge.user_id,
-                        challenge_id=challenge.id,
-                    )
-                )
-                raise InvalidOtpError("OTP code is invalid")
-
-            if challenge.purpose is OtpPurpose.REGISTRATION:
-                if challenge.user_id is not None:
-                    raise IdentityAlreadyRegisteredError("Identity is already registered")
-                if not command.full_name or not command.full_name.strip():
-                    raise RegistrationNameRequiredError("Full name is required for registration")
-                user, identity = self._registration_factory.create(
+            try:
+                verified_challenge = self._challenge_verifier.verify(
+                    challenge=challenge,
+                    code=command.code,
                     now=now,
-                    full_name=command.full_name.strip(),
-                    identity_type=challenge.identifier_type,
-                    destination=challenge.normalized_destination,
                 )
-                await uow.users.add(user)
-                await uow.identities.add(identity)
-            elif challenge.purpose is OtpPurpose.LOGIN:
-                if challenge.user_id is None:
-                    raise IdentityNotRegisteredError("Identity is not registered")
-                user = await uow.users.get(challenge.user_id)
-                if user is None:
-                    raise OtpChallengeNotFoundError("OTP challenge user was not found")
-                self._user_status_policy.ensure_active(user)
-            else:
-                raise UnsupportedOtpPurposeError(
-                    f"OTP purpose is not supported: {challenge.purpose.value}"
-                )
+            except OtpAttemptsExceededError:
+                if challenge is not None:
+                    await self._security_event_sink.emit(
+                        SecurityEvent(
+                            name=SecurityEventName.OTP_ATTEMPTS_EXCEEDED,
+                            occurred_at=now,
+                            user_id=challenge.user_id,
+                            challenge_id=challenge.id,
+                        )
+                    )
+                raise
+            except InvalidOtpError:
+                if challenge is not None:
+                    await uow.otp_challenges.increment_attempts(challenge.id)
+                    await uow.commit()
+                    await self._security_event_sink.emit(
+                        SecurityEvent(
+                            name=SecurityEventName.OTP_ATTEMPT_FAILED,
+                            occurred_at=now,
+                            user_id=challenge.user_id,
+                            challenge_id=challenge.id,
+                        )
+                    )
+                raise
+
+            user = await self._user_resolver.resolve(
+                users=uow.users,
+                identities=uow.identities,
+                challenge=verified_challenge,
+                full_name=command.full_name,
+                now=now,
+            )
 
             refresh_token = self._refresh_token_generator.generate()
             session = self._session_factory.create(
@@ -138,7 +119,9 @@ class VerifyOtpService:
             )
             access_token = await self._access_token_issuer.issue(user.id, session.id)
             await uow.sessions.add(session)
-            await uow.otp_challenges.save(replace(challenge, verified_at=now, consumed_at=now))
+            await uow.otp_challenges.save(
+                replace(verified_challenge, verified_at=now, consumed_at=now)
+            )
             await uow.commit()
 
         return AuthSessionResult(

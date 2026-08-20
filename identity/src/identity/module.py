@@ -17,12 +17,14 @@ from identity.application.policies.data_retention import DataRetentionPolicy
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
+from identity.application.resolvers import VerifiedOtpUserResolver
 from identity.application.services.cleanup_retained_data import CleanupRetainedIdentityDataService
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
 from identity.application.services.revoke_all_sessions import RevokeAllSessionsService
 from identity.application.services.revoke_session import RevokeSessionService
 from identity.application.services.verify_otp import VerifyOtpService
+from identity.application.verifiers import OtpChallengeVerifier
 from identity.infrastructure.notifications import NotificationOtpDelivery
 from identity.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyIdentityUnitOfWork,
@@ -132,6 +134,11 @@ class IdentityModule:
             ),
         )
         otp_delivery = NotificationOtpDelivery(config.notification_sender)
+        challenge_verifier = OtpChallengeVerifier(hasher)
+        verified_user_resolver = VerifiedOtpUserResolver(
+            registration_factory=UserRegistrationFactory(),
+            user_status_policy=user_status_policy,
+        )
 
         self.otp_requester = RequestOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -155,9 +162,9 @@ class IdentityModule:
             hasher=hasher,
             refresh_token_generator=refresh_token_generator,
             access_token_issuer=config.access_token_issuer,
-            registration_factory=UserRegistrationFactory(),
             session_factory=session_factory,
-            user_status_policy=user_status_policy,
+            challenge_verifier=challenge_verifier,
+            user_resolver=verified_user_resolver,
             rate_limit_policy=rate_limit_policy,
             security_event_sink=security_event_sink,
         )
