@@ -13,6 +13,7 @@ from identity.application.factories.entities import (
     SessionFactory,
     UserRegistrationFactory,
 )
+from identity.application.factories.security_events import IdentitySecurityEventFactory
 from identity.application.policies.data_retention import DataRetentionPolicy
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
@@ -110,6 +111,7 @@ class IdentityModule:
         user_status_policy = UserStatusPolicy()
         rate_limiter = config.rate_limiter or InMemoryRateLimiter()
         security_event_sink = config.security_event_sink or NoOpSecurityEventSink()
+        security_event_factory = IdentitySecurityEventFactory(hasher)
         rate_limit_policy = OtpRateLimitPolicy(
             rate_limiter=rate_limiter,
             request_burst_rule=RateLimitRule(
@@ -155,6 +157,7 @@ class IdentityModule:
             purpose_policy=OtpPurposePolicy(),
             rate_limit_policy=rate_limit_policy,
             security_event_sink=security_event_sink,
+            security_event_factory=security_event_factory,
         )
         self.otp_verifier = VerifyOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -167,6 +170,7 @@ class IdentityModule:
             user_resolver=verified_user_resolver,
             rate_limit_policy=rate_limit_policy,
             security_event_sink=security_event_sink,
+            security_event_factory=security_event_factory,
         )
         self.session_refresher = RefreshSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
@@ -176,17 +180,20 @@ class IdentityModule:
             access_token_issuer=config.access_token_issuer,
             session_factory=session_factory,
             security_event_sink=security_event_sink,
+            security_event_factory=security_event_factory,
         )
         self.session_revoker = RevokeSessionService(
             unit_of_work_factory=self._unit_of_work_factory,
             clock=clock,
             hasher=hasher,
             security_event_sink=security_event_sink,
+            security_event_factory=security_event_factory,
         )
         self.session_bulk_revoker = RevokeAllSessionsService(
             unit_of_work_factory=self._unit_of_work_factory,
             clock=clock,
             security_event_sink=security_event_sink,
+            security_event_factory=security_event_factory,
         )
         self.data_retention_cleaner = CleanupRetainedIdentityDataService(
             unit_of_work_factory=self._unit_of_work_factory,
