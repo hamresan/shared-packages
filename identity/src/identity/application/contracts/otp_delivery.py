@@ -11,5 +11,5 @@ class OtpDelivery(Protocol):
         destination: str,
         code: str,
         purpose: OtpPurpose,
-        locale: str | None,
+        locale: str,
     ) -> None: ...
