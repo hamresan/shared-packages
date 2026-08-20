@@ -20,7 +20,7 @@ This note documents fields reviewed during security finding L-4 so persisted mem
 
 ## Session.last_used_at
 
-`last_used_at` is reserved persisted metadata for session-activity tracking. The current package does not update it during token validation or refresh, so it must not be treated as authoritative activity/audit data.
+`last_used_at` records refresh-token use for a session when that session is successfully rotated. It is not updated during ordinary access-token validation and therefore must not be treated as a complete or authoritative record of user/session activity.
 
 ## Authorization scope
 

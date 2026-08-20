@@ -36,6 +36,20 @@ def test_mobile_normalization_rejects_invalid_country_code() -> None:
         normalizer.normalize(IdentityType.MOBILE, "+0123456789")
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "+968\u200e90000000",
+        "+968\u200f90000000",
+    ],
+)
+def test_mobile_normalization_rejects_direction_control_characters(value: str) -> None:
+    normalizer = DefaultIdentityNormalizer()
+
+    with pytest.raises(InvalidIdentityValueError, match="E.164"):
+        normalizer.normalize(IdentityType.MOBILE, value)
+
+
 def test_email_normalization_applies_unicode_normalization_and_casefolding() -> None:
     normalizer = DefaultIdentityNormalizer()
 
@@ -52,6 +66,8 @@ def test_email_normalization_applies_unicode_normalization_and_casefolding() -> 
         "@example.com",
         "user@",
         "user@@example.com",
+        "user\u200e@example.com",
+        "user\u200f@example.com",
     ],
 )
 def test_email_normalization_rejects_invalid_values(value: str) -> None:
