@@ -22,6 +22,7 @@ class IdentityTestModuleBuilder:
         previous_signing_secrets: Mapping[str, bytes] | None = None,
         otp_resend_delay: timedelta = timedelta(seconds=60),
         otp_request_burst_limit: int = 5,
+        otp_verify_requester_burst_limit: int = 60,
     ) -> IdentityModule:
         return IdentityModule(
             IdentityModuleConfig(
@@ -35,5 +36,6 @@ class IdentityTestModuleBuilder:
                 security_event_sink=security_event_sink,
                 otp_resend_delay=otp_resend_delay,
                 otp_request_burst_limit=otp_request_burst_limit,
+                otp_verify_requester_burst_limit=otp_verify_requester_burst_limit,
             )
         )
