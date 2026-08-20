@@ -80,6 +80,8 @@ class IdentityModuleConfig:
     otp_requester_burst_window: timedelta = timedelta(minutes=15)
     otp_verify_limit: int = 10
     otp_verify_window: timedelta = timedelta(minutes=1)
+    otp_verify_requester_burst_limit: int = 60
+    otp_verify_requester_burst_window: timedelta = timedelta(minutes=1)
 
 
 class IdentityModule:
@@ -122,6 +124,10 @@ class IdentityModule:
             verify_rule=RateLimitRule(
                 limit=config.otp_verify_limit,
                 window=config.otp_verify_window,
+            ),
+            verify_requester_rule=RateLimitRule(
+                limit=config.otp_verify_requester_burst_limit,
+                window=config.otp_verify_requester_burst_window,
             ),
         )
 
