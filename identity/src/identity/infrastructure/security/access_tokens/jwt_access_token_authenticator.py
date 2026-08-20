@@ -1,9 +1,11 @@
 from identity.application.contracts.security import Clock
 from identity.application.contracts.session_reader import SessionReader
 from identity.application.contracts.user_reader import UserReader
+from identity.application.errors import InactiveUserError
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.infrastructure.security.access_tokens.contracts import TokenVerifier
-from identity.public import AuthenticatedPrincipal
+from identity.infrastructure.security.access_tokens.pyjwt_codec import JwtTokenError
+from identity.public import AccessTokenAuthenticationError, AuthenticatedPrincipal
 
 
 class JwtAccessTokenAuthenticator:
@@ -22,25 +24,32 @@ class JwtAccessTokenAuthenticator:
         self._clock = clock
 
     async def authenticate(self, access_token: str) -> AuthenticatedPrincipal:
-        claims = self._verifier.verify(access_token)
+        try:
+            claims = self._verifier.verify(access_token)
+        except JwtTokenError as exc:
+            raise AccessTokenAuthenticationError("Invalid access token") from exc
+
         session = await self._session_reader.get_by_id(claims.session_id)
         now = self._clock.now()
 
         if session is None:
-            raise ValueError("Session not found")
+            raise AccessTokenAuthenticationError("Session not found")
         if session.user_id != claims.user_id:
-            raise ValueError("Session does not belong to token subject")
+            raise AccessTokenAuthenticationError("Session does not belong to token subject")
         if session.revoked_at is not None:
-            raise ValueError("Session is revoked")
+            raise AccessTokenAuthenticationError("Session is revoked")
         if session.expires_at <= now:
-            raise ValueError("Session is expired")
+            raise AccessTokenAuthenticationError("Session is expired")
         if claims.expires_at <= now:
-            raise ValueError("Access token is expired")
+            raise AccessTokenAuthenticationError("Access token is expired")
 
         user = await self._user_reader.get_by_id(claims.user_id)
         if user is None:
-            raise ValueError("User not found")
-        self._user_status_policy.ensure_active(user)
+            raise AccessTokenAuthenticationError("User not found")
+        try:
+            self._user_status_policy.ensure_active(user)
+        except InactiveUserError as exc:
+            raise AccessTokenAuthenticationError("User is not active") from exc
 
         return AuthenticatedPrincipal(
             user_id=claims.user_id,
