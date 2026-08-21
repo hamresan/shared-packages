@@ -5,11 +5,8 @@ from identity.application.contracts.security import (
     OtpCodeGenerator,
     SecretHasher,
 )
-from identity.application.contracts.security_events import (
-    SecurityEvent,
-    SecurityEventName,
-    SecurityEventSink,
-)
+from identity.application.contracts.security_event_factory import SecurityEventFactory
+from identity.application.contracts.security_events import SecurityEventSink
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import RequestOtpCommand, RequestOtpResult
 from identity.application.errors import IdentityRateLimitExceededError
@@ -32,6 +29,7 @@ class RequestOtpService:
         purpose_policy: OtpPurposePolicy,
         rate_limit_policy: OtpRateLimitPolicy,
         security_event_sink: SecurityEventSink,
+        security_event_factory: SecurityEventFactory,
     ) -> None:
         self._unit_of_work_factory = unit_of_work_factory
         self._otp_delivery = otp_delivery
@@ -43,6 +41,7 @@ class RequestOtpService:
         self._purpose_policy = purpose_policy
         self._rate_limit_policy = rate_limit_policy
         self._security_event_sink = security_event_sink
+        self._security_event_factory = security_event_factory
 
     async def execute(self, command: RequestOtpCommand) -> RequestOtpResult:
         now = self._clock.now()
@@ -53,10 +52,9 @@ class RequestOtpService:
             await self._rate_limit_policy.ensure_requester_allowed(command.ip_address, now)
         except IdentityRateLimitExceededError:
             await self._security_event_sink.emit(
-                SecurityEvent(
-                    name=SecurityEventName.OTP_REQUEST_RATE_LIMITED,
+                self._security_event_factory.otp_request_rate_limited(
                     occurred_at=now,
-                    subject_fingerprint=self._hasher.hash(destination),
+                    destination=destination,
                 )
             )
             raise
@@ -79,10 +77,9 @@ class RequestOtpService:
                 await self._rate_limit_policy.ensure_destination_request_allowed(destination, now)
             except IdentityRateLimitExceededError:
                 await self._security_event_sink.emit(
-                    SecurityEvent(
-                        name=SecurityEventName.OTP_REQUEST_RATE_LIMITED,
+                    self._security_event_factory.otp_request_rate_limited(
                         occurred_at=now,
-                        subject_fingerprint=self._hasher.hash(destination),
+                        destination=destination,
                     )
                 )
                 raise
