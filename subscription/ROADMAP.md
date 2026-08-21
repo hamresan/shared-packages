@@ -282,24 +282,64 @@ Rules and boundaries:
 
 ## Stage 6 — Async SQLAlchemy persistence
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Add async SQLAlchemy persistence using a host-provided session factory.
+Implemented and tested:
 
-Rules:
+```text
+AsyncSessionFactory
+SubscriptionBase
+SqlAlchemyPlanRepository
+SqlAlchemySubscriptionRepository
+SqlAlchemyUsageRepository
+SqlAlchemySubscriptionUnitOfWork
+SqlAlchemySubscriptionUnitOfWorkFactory
+SqlAlchemySubscriptionRepositoryFactory
+PlanPersistenceMapper
+EntitlementPersistenceMapper
+SubscriptionPersistenceMapper
+UsagePersistenceMapper
+SqlAlchemyPlanHydrator
+SqlAlchemySubscriptionHydrator
+SqlAlchemyTrialWriter
+CalendarUsageWindowCalculator
+SqlAlchemyUsageWindowResolver
+build_sqlalchemy_subscription_unit_of_work_factory()
+```
 
-- no global engine/sessionmaker;
-- no foreign keys to Identity/Store/Organization tables;
-- external subject references use generic type + identifier values;
-- package tables use the `subscription_` prefix;
-- mapping stays outside services/entities;
-- repositories explicitly implement Stage 5 contracts;
-- Unit of Work explicitly implements the Stage 5 contract;
-- async integration tests are required.
+Persistence tables:
 
-Persistence shape must follow the actual domain and application boundaries from Stages 1–5.
+```text
+subscription_plan
+subscription_plan_entitlement
+subscription_subscription
+subscription_trial_policy
+subscription_trial_usage_condition
+subscription_usage_record
+```
+
+Rules and boundaries:
+
+- the consuming application owns the SQLAlchemy engine and sessionmaker lifecycle;
+- persistence receives a host-provided `AsyncSessionFactory` and never creates a global engine/sessionmaker;
+- subject references remain generic `subject_type + subject_id` values with no FK to Identity, Store, Organization, or other packages;
+- foreign keys are limited to tables owned by `hamresan-subscription`;
+- all package-owned tables use the `subscription_` prefix;
+- domain-to-persistence conversion is isolated in dedicated mappers;
+- aggregate hydration and trial-child writes are isolated in dedicated infrastructure components rather than private repository helpers;
+- typed entitlement values retain their explicit value type in persistence;
+- trial policies persist time and usage conditions without coupling usage metric keys to application-specific meanings;
+- calendar usage windows and subscription-relative trial/billing windows are resolved by dedicated components;
+- repositories and Unit of Work explicitly implement the Stage 5 contracts;
+- the Unit of Work exposes repositories through read-only properties and rolls back on exceptional exits;
+- async SQLite integration tests exercise persisted Plan, Subscription, Trial, and Usage behavior using host-owned session infrastructure;
+- SQLAlchemy is a runtime dependency while `aiosqlite` remains test-only.
+
+Quality gate for this stage: 173 tests passed, Pyright strict reports 0 errors, and total branch coverage is 94.52%.
 
 ## Stage 7 — Host-owned Alembic integration
+
+Status: **NEXT**
 
 Expose package metadata/filter helpers while keeping the revision graph in the host application.
 
@@ -365,8 +405,8 @@ To make GitHub technically block merging when this job fails, the repository's `
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2, 3, 4, 5
-Next objective: Stage 6 — async SQLAlchemy persistence
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
+Implemented: Stages 0, 1, 2, 3, 4, 5, 6
+Next objective: Stage 7 — host-owned Alembic integration
+Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; host-owned async SQLAlchemy sessions; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
