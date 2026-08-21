@@ -1,6 +1,5 @@
-from sqlalchemy import MetaData
+import sqlalchemy
 from sqlalchemy.orm import DeclarativeBase
-
 
 SUBSCRIPTION_NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -12,4 +11,4 @@ SUBSCRIPTION_NAMING_CONVENTION = {
 
 
 class SubscriptionBase(DeclarativeBase):
-    metadata = MetaData(naming_convention=SUBSCRIPTION_NAMING_CONVENTION)
+    metadata = sqlalchemy.MetaData(naming_convention=SUBSCRIPTION_NAMING_CONVENTION)
