@@ -10,6 +10,7 @@ from identity_store_consumer_app.authentication import (
 )
 from identity_store_consumer_app.database import ConsumerDatabase
 from identity_store_consumer_app.notification import NullNotificationSender
+from identity_store_consumer_app.settings import ConsumerSettings, load_consumer_settings
 from identity_store_consumer_app.store_runtime import build_store_adapter
 
 
@@ -22,7 +23,10 @@ class ConsumerApplication:
     token_adapter: InMemoryAccessTokenAdapter
 
 
-async def build_consumer_application() -> ConsumerApplication:
+async def build_consumer_application(
+    settings: ConsumerSettings | None = None,
+) -> ConsumerApplication:
+    application_settings = settings or load_consumer_settings()
     database = ConsumerDatabase()
     await database.create_schema()
 
@@ -33,7 +37,7 @@ async def build_consumer_application() -> ConsumerApplication:
             notification_sender=NullNotificationSender(),
             access_token_issuer=token_adapter,
             access_token_authenticator=token_adapter,
-            signing_secret=b"identity-store-consumer-signing-secret",
+            signing_secret=application_settings.identity_signing_secret,
         )
     )
     store = build_store_adapter(

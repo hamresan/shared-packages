@@ -10,6 +10,7 @@ from identity import (
     AuthenticatedPrincipal,
     IssuedAccessToken,
 )
+from identity.public import AccessTokenAuthenticationError
 from store import AuthenticatedActor
 
 bearer = HTTPBearer(auto_error=False)
@@ -36,7 +37,7 @@ class InMemoryAccessTokenAdapter(AccessTokenIssuer, AccessTokenAuthenticator):
     async def authenticate(self, access_token: str) -> AuthenticatedPrincipal:
         principal = self._principals.get(access_token)
         if principal is None:
-            raise ValueError("Invalid access token")
+            raise AccessTokenAuthenticationError("Invalid access token")
         return principal
 
 
@@ -49,7 +50,7 @@ class IdentityStoreActorDependency:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
         try:
             principal = await self._authenticator.authenticate(credentials.credentials)
-        except Exception as exc:
+        except AccessTokenAuthenticationError as exc:
             raise HTTPException(
                 status.HTTP_401_UNAUTHORIZED,
                 "Invalid authentication credentials",
