@@ -75,9 +75,12 @@ class SubscriptionPersistenceMapper:
         trial_policy = None
         if trial_model is not None:
             seconds = trial_model.max_duration_seconds
+            time_condition = (
+                TimeCondition(timedelta(seconds=seconds)) if seconds is not None else None
+            )
             trial_policy = TrialPolicy(
                 completion_mode=TrialCompletionMode(trial_model.completion_mode),
-                time_condition=TimeCondition(timedelta(seconds=seconds)) if seconds is not None else None,
+                time_condition=time_condition,
                 usage_conditions=tuple(
                     UsageCondition(
                         metric=UsageMetric(item.metric),
