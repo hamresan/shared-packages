@@ -1,10 +1,10 @@
 import pytest
 from fastapi.security import HTTPAuthorizationCredentials
-
-from identity_store_consumer_app.authentication import IdentityStoreActorDependency
 from identity_store_consumer_test_support.authentication import (
     FailingAccessTokenAuthenticator,
 )
+
+from identity_store_consumer_app.authentication import IdentityStoreActorDependency
 
 
 @pytest.mark.asyncio

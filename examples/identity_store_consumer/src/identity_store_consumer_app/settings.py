@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
 
-
 DEFAULT_EXAMPLE_SIGNING_SECRET = b"identity-store-consumer-example-only-secret"
 
 
