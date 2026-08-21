@@ -19,7 +19,10 @@ class SubscriptionModel(SubscriptionBase):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    trial_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    trial_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     expired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
