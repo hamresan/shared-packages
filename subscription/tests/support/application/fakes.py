@@ -103,10 +103,22 @@ class FakeSubscriptionUnitOfWork(SubscriptionUnitOfWork):
         subscriptions: SubscriptionRepository,
         usage: UsageRepository,
     ) -> None:
-        self.plans = plans
-        self.subscriptions = subscriptions
-        self.usage = usage
+        self._plans = plans
+        self._subscriptions = subscriptions
+        self._usage = usage
         self.commit_count = 0
+
+    @property
+    def plans(self) -> PlanRepository:
+        return self._plans
+
+    @property
+    def subscriptions(self) -> SubscriptionRepository:
+        return self._subscriptions
+
+    @property
+    def usage(self) -> UsageRepository:
+        return self._usage
 
     async def __aenter__(self) -> "FakeSubscriptionUnitOfWork":
         return self
