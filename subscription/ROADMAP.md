@@ -226,27 +226,63 @@ Rules and boundaries:
 - trial completion remains the responsibility of `TrialEvaluationPolicy` and is supplied to validity evaluation as a fact;
 - a `TRIALING` BASE subscription occupies the same subject-level BASE slot as an `ACTIVE` BASE subscription;
 - `ActiveBaseSubscriptionPolicy` is pure and does not query repositories;
-- the future application layer must load current subscriptions and pass them to the policy;
+- the application layer loads current subscriptions and passes them to the policy;
 - no entity or domain service depends on persistence, Identity, Store, WordPress, FastAPI, or payment implementations.
 
 ## Stage 5 — Application contracts and use cases
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Add explicit contracts and use cases for:
+Implemented and tested application contracts:
 
 ```text
-Plan Management
-Subscription Lifecycle
-Entitlement Evaluation
-Usage Metering
+PlanRepository
+SubscriptionRepository
+UsageRepository
+SubscriptionUnitOfWork
+SubscriptionUnitOfWorkFactory
+Clock
+IdentifierGenerator
 ```
 
-Expected boundaries include repositories, Unit of Work, Clock, IdentifierGenerator, Plan workflows, Subscription lifecycle workflows, entitlement checks, usage recording, and trial evaluation.
+Implemented and tested use cases:
 
-Stage 5 must orchestrate the Stage 1–4 domain through explicit contracts. Repository lookups, uniqueness checks, active-BASE checks, current usage loading, and transaction boundaries belong here rather than inside entities or domain services.
+```text
+CreatePlanService
+GetPlanService
+ChangePlanStatusService
+CreateSubscriptionService
+StartTrialService
+ActivateSubscriptionService
+CancelSubscriptionService
+RenewSubscriptionService
+RecordUsageService
+GetUsageCounterService
+EvaluateTrialService
+ResolveEntitlementsService
+```
+
+Application DTOs and dedicated creation mappers were added for plan, subscription, usage, lifecycle, and entitlement workflows.
+
+Rules and boundaries:
+
+- application services are small, use-case-oriented orchestrators;
+- persistence is accessed only through explicit repository and Unit of Work contracts;
+- transaction commits belong to write use cases;
+- plan-code uniqueness is checked in the application workflow through `PlanRepository`;
+- a subscription derives its `BASE`/`ADDON` type from the selected plan rather than trusting caller input;
+- new subscriptions can only be created from active plans;
+- activation, trial start, and renewal load subject subscriptions and apply `ActiveBaseSubscriptionPolicy` before persistence;
+- usage recording is generic and does not know the meaning of application metrics;
+- trial evaluation loads usage counters through `UsageRepository` and delegates completion logic to the pure `TrialEvaluationPolicy`;
+- entitlement resolution considers currently valid subscriptions and returns every matching `EntitlementGrant`;
+- no BASE-vs-ADDON entitlement override/merge precedence is invented without an explicit product rule;
+- application Fakes explicitly implement public contracts and live in mirrored test-support files;
+- application remains independent from SQLAlchemy, FastAPI, Identity, Store, WordPress, and payment implementations.
 
 ## Stage 6 — Async SQLAlchemy persistence
+
+Status: **NEXT**
 
 Add async SQLAlchemy persistence using a host-provided session factory.
 
@@ -257,9 +293,11 @@ Rules:
 - external subject references use generic type + identifier values;
 - package tables use the `subscription_` prefix;
 - mapping stays outside services/entities;
+- repositories explicitly implement Stage 5 contracts;
+- Unit of Work explicitly implements the Stage 5 contract;
 - async integration tests are required.
 
-Persistence shape must follow the actual domain from Stages 1–5.
+Persistence shape must follow the actual domain and application boundaries from Stages 1–5.
 
 ## Stage 7 — Host-owned Alembic integration
 
@@ -327,8 +365,8 @@ To make GitHub technically block merging when this job fails, the repository's `
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2, 3, 4
-Next objective: Stage 5 — application contracts and use cases
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
+Implemented: Stages 0, 1, 2, 3, 4, 5
+Next objective: Stage 6 — async SQLAlchemy persistence
+Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
