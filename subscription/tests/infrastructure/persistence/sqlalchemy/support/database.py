@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -20,7 +20,7 @@ class SqliteTestDatabase:
 
     def session_factory(self) -> AsyncSessionFactory:
         @asynccontextmanager
-        async def factory() -> AsyncIterator[AsyncSession]:
+        async def factory() -> AsyncGenerator[AsyncSession, None]:
             async with self.session_maker() as session:
                 yield session
 
