@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from subscription import UsagePeriod
 from subscription.infrastructure.persistence.sqlalchemy.repositories import (
