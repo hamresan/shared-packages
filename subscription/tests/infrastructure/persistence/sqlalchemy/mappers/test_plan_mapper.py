@@ -14,10 +14,17 @@ from tests.support.domain.plan_builder import PlanBuilder
 
 
 def test_plan_mapper_round_trips_typed_entitlements() -> None:
-    plan = PlanBuilder().with_entitlements(
-        PlanEntitlement(EntitlementKey("feature.enabled"), BooleanEntitlementValue(True)),
-        PlanEntitlement(EntitlementKey("credits.max"), DecimalEntitlementValue(Decimal("12.5"))),
-    ).build()
+    plan = (
+        PlanBuilder()
+        .with_entitlements(
+            PlanEntitlement(EntitlementKey("feature.enabled"), BooleanEntitlementValue(True)),
+            PlanEntitlement(
+                EntitlementKey("credits.max"),
+                DecimalEntitlementValue(Decimal("12.5")),
+            ),
+        )
+        .build()
+    )
     mapper = PlanPersistenceMapper(EntitlementPersistenceMapper())
 
     model = mapper.to_model(plan)
