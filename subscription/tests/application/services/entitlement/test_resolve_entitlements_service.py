@@ -53,7 +53,10 @@ async def test_resolve_entitlements_service_ignores_inactive_subscription() -> N
         SubscriptionValidityPolicy(TimezoneAwareDatetimeValidator()),
     )
 
-    assert await service.execute(
-        subscription.subject,
-        EntitlementKey("analytics.advanced"),
-    ) == ()
+    assert (
+        await service.execute(
+            subscription.subject,
+            EntitlementKey("analytics.advanced"),
+        )
+        == ()
+    )

@@ -52,9 +52,7 @@ async def test_activate_subscription_service_rejects_second_active_base() -> Non
         status=SubscriptionStatus.ACTIVE,
         started_at=FixedClock().now(),
     )
-    unit_of_work_factory = FakeSubscriptionUnitOfWorkFactory(
-        subscriptions=(candidate, existing)
-    )
+    unit_of_work_factory = FakeSubscriptionUnitOfWorkFactory(subscriptions=(candidate, existing))
     service = ActivateSubscriptionService(
         unit_of_work_factory,
         FixedClock(),
