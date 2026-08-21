@@ -1,6 +1,12 @@
 from subscription.application.contracts import IdentifierGenerator
 from subscription.application.dto import CreatePlanCommand
-from subscription.domain import EntitlementKey, Plan, PlanCode, PlanDefinitionPolicy, PlanEntitlement
+from subscription.domain import (
+    EntitlementKey,
+    Plan,
+    PlanCode,
+    PlanDefinitionPolicy,
+    PlanEntitlement,
+)
 
 
 class CreatePlanMapper:

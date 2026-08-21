@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from subscription import SubscriptionSource, SubscriptionStatus, SubjectReference
+from subscription import SubjectReference, SubscriptionSource, SubscriptionStatus
 from subscription.application import CreateSubscriptionCommand, CreateSubscriptionMapper
 from tests.support.application.fakes import FixedClock, FixedIdentifierGenerator
 from tests.support.domain.plan_builder import PlanBuilder

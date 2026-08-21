@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 
-from subscription import PlanStatus, SubscriptionSource, SubjectReference
+from subscription import PlanStatus, SubjectReference, SubscriptionSource
 from subscription.application import (
     CreateSubscriptionCommand,
     CreateSubscriptionMapper,
