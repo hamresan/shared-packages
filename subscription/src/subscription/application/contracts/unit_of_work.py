@@ -9,9 +9,14 @@ from subscription.application.contracts.repositories import (
 
 
 class SubscriptionUnitOfWork(Protocol):
-    plans: PlanRepository
-    subscriptions: SubscriptionRepository
-    usage: UsageRepository
+    @property
+    def plans(self) -> PlanRepository: ...
+
+    @property
+    def subscriptions(self) -> SubscriptionRepository: ...
+
+    @property
+    def usage(self) -> UsageRepository: ...
 
     async def __aenter__(self) -> "SubscriptionUnitOfWork": ...
 
