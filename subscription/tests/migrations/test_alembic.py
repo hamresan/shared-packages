@@ -74,10 +74,7 @@ def test_include_subscription_name_follows_parent_table_for_children() -> None:
         )
         is True
     )
-    assert (
-        include_subscription_name("email", "column", {"table_name": "identity_users"})
-        is False
-    )
+    assert include_subscription_name("email", "column", {"table_name": "identity_users"}) is False
 
 
 def test_include_subscription_name_keeps_non_table_scopes() -> None:
