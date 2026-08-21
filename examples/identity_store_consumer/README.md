@@ -16,9 +16,25 @@ It demonstrates the boundaries expected from consuming services:
 
 `hamresan-store` does not import Identity. The host adapter in `identity_store_consumer_app.authentication` depends on Identity's public `AccessTokenAuthenticator`, resolves an `AuthenticatedPrincipal`, and returns Store's `AuthenticatedActor`.
 
+Authentication failures are mapped narrowly: only Identity's public `AccessTokenAuthenticationError` becomes HTTP 401. Unexpected infrastructure or backend failures are allowed to propagate so they are not incorrectly reported as invalid user credentials.
+
 The database is also host-owned. `ConsumerDatabase` creates one engine/sessionmaker and supplies the same `session_factory` to both packages. Identity owns `identity_*` tables and Store owns `store_*` tables.
 
 The example application uses the unique Python package name `identity_store_consumer_app`. This intentionally avoids colliding with other consumer examples when the whole `examples` tree is collected by pytest or analyzed by Pyright.
+
+## Example-only authentication and secrets
+
+`InMemoryAccessTokenAdapter` exists only to make the example self-contained. It demonstrates the `AccessTokenIssuer` and `AccessTokenAuthenticator` boundaries, but it is not a production token implementation and should not be copied into a deployed application.
+
+The Identity signing secret is loaded from the `IDENTITY_SIGNING_SECRET` environment variable. When the variable is not present, the example falls back to an explicitly example-only development secret so local verification remains simple. A production consumer must provide the secret through its real secret-management/runtime configuration and must not rely on the fallback value.
+
+Example:
+
+```bash
+export IDENTITY_SIGNING_SECRET='replace-with-a-real-runtime-secret'
+```
+
+Production hosts should also provide their production rate limiter, trusted request-metadata resolver, security-event sink, cleanup scheduling, and other deployment controls described by the Identity package README.
 
 ## Alembic
 
@@ -34,7 +50,7 @@ From this directory, after installing the local packages and this example:
 make check
 ```
 
-The integration tests verify that one Identity principal can access `/identity/me`, create a Store through `POST /stores`, and read it through `GET /stores/me`. Alembic tests verify autogeneration sees both Identity and Store tables.
+The integration tests verify that one Identity principal can access `/identity/me`, create a Store through `POST /stores`, and read it through `GET /stores/me`. Authentication boundary tests verify that unexpected authenticator failures are not collapsed into HTTP 401. Alembic tests verify autogeneration sees both Identity and Store tables.
 
 Both consumer examples can also be collected together from the repository `examples` directory because `examples/pytest.ini` supplies their source roots without package-name collisions.
 
