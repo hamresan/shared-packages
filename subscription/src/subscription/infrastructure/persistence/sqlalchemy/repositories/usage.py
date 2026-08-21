@@ -4,7 +4,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from subscription.application import UsageRepository
-from subscription.domain import SubjectReference, UsageCounter, UsageMetric, UsagePeriod, UsageRecord
+from subscription.domain import (
+    SubjectReference,
+    UsageCounter,
+    UsageMetric,
+    UsagePeriod,
+    UsageRecord,
+)
 from subscription.infrastructure.persistence.sqlalchemy.mappers import UsagePersistenceMapper
 from subscription.infrastructure.persistence.sqlalchemy.models import UsageRecordModel
 from subscription.infrastructure.persistence.sqlalchemy.repositories.usage_window import (
