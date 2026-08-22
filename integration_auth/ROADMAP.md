@@ -24,7 +24,7 @@ Every stage must preserve:
 
 ## Stage 0 — Package foundation and architecture contract
 
-**Status: IN PROGRESS**
+**Status: COMPLETE**
 
 Goals:
 
@@ -45,6 +45,8 @@ Exit criteria:
 - README clearly explains internal-project and external-integration usage.
 
 ## Stage 1 — Core domain: integration identity and authorization model
+
+**Status: IN REVIEW**
 
 Define domain concepts only.
 
