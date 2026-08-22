@@ -88,10 +88,15 @@ Implemented:
   - generic 401/403 HTTP error mapping;
   - application contracts for injectable authenticator/authorizer implementations;
   - real FastAPI dependency tests.
+- **Stage 10 — External protocol interoperability examples**
+  - shared deterministic Python/PHP vectors;
+  - executable inbound and outbound HMAC-SHA256 examples using separate credentials;
+  - executable rotation example;
+  - executable exact permission and resource-scope examples;
+  - subprocess tests, including real PHP CLI execution when PHP is installed.
 
 Not implemented yet:
 
-- executable Python/PHP interoperability example;
 - multi-auth host composition example;
 - final security/release-hardening stage.
 
@@ -444,18 +449,39 @@ It preserves the ASGI raw path when available, preserves duplicate query values 
 canonical query encoder, hashes the request body through `BodyHasher`, and never moves HTTP types
 into the application/domain layers.
 
-### PHP / WordPress interoperability
+### Python / PHP interoperability
 
-WordPress is an example consumer, not a package domain concept.
+`examples/interoperability/` contains executable examples backed by one shared `vectors.json`.
+The fixture intentionally uses **different inbound and outbound secrets** so consumers do not infer
+that a bidirectional integration should reuse one credential.
 
-After constructing the exact same canonical request byte-for-byte, PHP can sign with:
+Run from the package directory:
+
+```bash
+python examples/interoperability/python_protocol.py
+php examples/interoperability/php_protocol.php
+python examples/interoperability/python_lifecycle_authorization.py
+```
+
+The Python and PHP protocol examples must produce the same canonical query, body hash, and
+HMAC-SHA256 signature byte-for-byte for both directions. The example secrets are deterministic
+fixture data only and must never be used in production.
+
+The lifecycle/authorization example also demonstrates:
+
+- rotating only `INBOUND` credentials while `OUTBOUND` credentials remain independent;
+- exact permission matching (`orders.read` does not imply `orders.write`);
+- exact resource-scope matching (`store:store-123` does not match `store:store-999`).
+
+WordPress is an example PHP consumer, not a package domain concept. A PHP consumer signs the same
+canonical request with:
 
 ```php
 $signature = hash_hmac('sha256', $canonicalRequest, $secret);
 ```
 
-The output must be lowercase hexadecimal. Stage 10 will add executable shared Python/PHP fixtures
-rather than relying only on documentation.
+The output is lowercase hexadecimal and the example verifier uses `hash_equals` when comparing
+known signatures.
 
 ## Bidirectional integrations
 

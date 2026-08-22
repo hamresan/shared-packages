@@ -1,0 +1,43 @@
+{
+  "inbound": {
+    "direction": "INBOUND",
+    "method": "POST",
+    "path": "/api/orders",
+    "query": [["page", "2"], ["tag", "sale"], ["tag", "blue sky"]],
+    "canonical_query": "page=2&tag=blue%20sky&tag=sale",
+    "timestamp": 1787418000,
+    "nonce": "interop-inbound-001",
+    "body": "{\"order_id\":\"order-123\",\"status\":\"paid\"}",
+    "body_sha256": "2c48b59978b18db42c140d6eb1d6c36fda04e39212c6ce500b332d08bd2fb6b8",
+    "secret": "inbound-secret-v1",
+    "signature": "5a1d7e542f89e2b8d22f507832767782eaf776eb9acae9bec15657ae6fbfaf25"
+  },
+  "outbound": {
+    "direction": "OUTBOUND",
+    "method": "GET",
+    "path": "/plugin/catalog",
+    "query": [["category", "summer sale"], ["limit", "25"]],
+    "canonical_query": "category=summer%20sale&limit=25",
+    "timestamp": 1787418060,
+    "nonce": "interop-outbound-001",
+    "body": "",
+    "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "secret": "outbound-secret-v1",
+    "signature": "6aaadad9f237e90a2c79df9b0ce1169711e51fffb30259cb511be0aea4f98555"
+  },
+  "authorization": {
+    "permissions": ["orders.read"],
+    "scopes": ["store:store-123"],
+    "allowed_permission": "orders.read",
+    "denied_permission": "orders.write",
+    "allowed_resource": ["store", "store-123"],
+    "denied_resource": ["store", "store-999"]
+  },
+  "rotation": {
+    "client_id": "client-123",
+    "current_timestamp": 1787418120,
+    "overlap_seconds": 120,
+    "inbound_credential_id": "credential-inbound-v1",
+    "outbound_credential_id": "credential-outbound-v1"
+  }
+}
