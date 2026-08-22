@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from fastapi import FastAPI
-
 from subscription import (
     ActiveBaseSubscriptionPolicy,
     PlanDefinitionPolicy,
@@ -31,7 +30,9 @@ from subscription.application import (
     ResolveEntitlementsService,
     StartTrialService,
 )
-from subscription.infrastructure.persistence import build_sqlalchemy_subscription_unit_of_work_factory
+from subscription.infrastructure.persistence import (
+    build_sqlalchemy_subscription_unit_of_work_factory,
+)
 from subscription.presentation import FastApiSubscriptionAdapter, build_fastapi_subscription_adapter
 
 from subscription_consumer_app.authentication import StaticAuthenticatedActorDependency
@@ -49,9 +50,13 @@ class SubscriptionRuntime:
     payment_events: PaidSubscriptionEventHandler
 
 
-def build_subscription_runtime(database_url: str = "sqlite+aiosqlite:///:memory:") -> SubscriptionRuntime:
+def build_subscription_runtime(
+    database_url: str = "sqlite+aiosqlite:///:memory:",
+) -> SubscriptionRuntime:
     database = ConsumerDatabase(database_url)
-    unit_of_work_factory = build_sqlalchemy_subscription_unit_of_work_factory(database.session_factory)
+    unit_of_work_factory = build_sqlalchemy_subscription_unit_of_work_factory(
+        database.session_factory
+    )
     clock = SystemClock()
     identifier_generator = UuidIdentifierGenerator()
     datetime_validator = TimezoneAwareDatetimeValidator()
