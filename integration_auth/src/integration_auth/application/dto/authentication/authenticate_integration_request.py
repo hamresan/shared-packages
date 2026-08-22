@@ -1,6 +1,6 @@
 """Authentication request DTO."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from integration_auth.domain.value_objects.identifiers import IntegrationClientId
 from integration_auth.protocol.value_objects.canonical_request import CanonicalRequest
@@ -12,4 +12,4 @@ class AuthenticateIntegrationRequest:
 
     client_id: IntegrationClientId
     request: CanonicalRequest
-    signature: str
+    signature: str = field(repr=False)
