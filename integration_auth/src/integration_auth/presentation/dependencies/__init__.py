@@ -1,1 +1,15 @@
-"""Package namespace reserved for staged integration-auth implementation."""
+"""FastAPI authentication and authorization dependencies."""
+
+from .authentication import IntegrationAuthenticationDependency
+from .authorization import (
+    AuthorizationDependency,
+    IntegrationPermissionDependencyFactory,
+    ResourceResolver,
+)
+
+__all__ = (
+    "AuthorizationDependency",
+    "IntegrationAuthenticationDependency",
+    "IntegrationPermissionDependencyFactory",
+    "ResourceResolver",
+)
