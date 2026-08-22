@@ -2,9 +2,7 @@
 
 from dataclasses import dataclass
 
-from integration_auth.domain.validators.identifier_validator import (
-    IntegrationIdentifierValidator,
-)
+from integration_auth.domain.validators.identifier_validator import IntegrationIdentifierValidator
 
 _IDENTIFIER_VALIDATOR = IntegrationIdentifierValidator()
 
