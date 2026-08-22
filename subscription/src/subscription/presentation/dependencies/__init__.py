@@ -4,7 +4,9 @@ from subscription.presentation.dependencies.authentication import (
 )
 from subscription.presentation.dependencies.authorization import SubscriptionAuthorizer
 from subscription.presentation.dependencies.guards import PlanManagementGuard, SubjectAccessGuard
-from subscription.presentation.dependencies.subscription_access import SubscriptionResourceAccessGuard
+from subscription.presentation.dependencies.subscription_access import (
+    SubscriptionResourceAccessGuard,
+)
 
 __all__ = [
     "AuthenticatedActor",
