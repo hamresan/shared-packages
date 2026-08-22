@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: install-dev lint format-check typecheck test coverage build check
+.PHONY: install-dev lint format-check typecheck test coverage build wheel-smoke check release-check
 
 install-dev:
 	$(PYTHON) -m pip install -e ".[test]"
@@ -21,6 +21,12 @@ coverage:
 	$(PYTHON) -m pytest
 
 build:
+	rm -rf dist
 	$(PYTHON) -m build
 
+wheel-smoke: build
+	$(PYTHON) scripts/release/wheel_smoke.py
+
 check: lint format-check typecheck coverage build
+
+release-check: lint format-check typecheck coverage wheel-smoke

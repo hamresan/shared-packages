@@ -194,7 +194,7 @@ authorization logic to route handlers.
 
 ## Stage 10 — External protocol interoperability example
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented executable interoperability examples:
 
@@ -212,27 +212,32 @@ Example fixture credentials are documentation/test-only and must never be reused
 
 ## Stage 11 — Multi-auth host composition example
 
-**Status: PLANNED**
+**Status: COMPLETE**
 
-Demonstrate a host using both `hamresan-identity` and `hamresan-integration-auth` without package
-coupling.
+Implemented a host-owned actor composition example that uses both `hamresan-identity` and
+`hamresan-integration-auth` without package coupling. The host maps each package principal into its
+own actor abstraction, and downstream host services depend only on that host-owned abstraction.
 
 ## Stage 12 — Security hardening and release readiness
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Review:
+Hardening review covers:
 
-- canonicalization ambiguity;
-- timing-safe verification;
-- replay/concurrency;
-- rotation/revocation;
-- secret exposure/logging;
-- permission/scope escalation;
+- canonicalization ambiguity with explicit plus/space, percent-literal, duplicate-query, and UTF-8
+  regression vectors;
+- timing-safe HMAC verification and signature tampering behavior;
+- replay/concurrency and atomic nonce consumption;
+- rotation rollback, revocation, and expiration behavior;
+- raw/protected secret and signature exposure boundaries;
+- exact permission/scope behavior with no implicit escalation;
 - clock-skew edge cases;
-- persistence indexes/hot paths;
-- wheel/build smoke tests;
-- deployment and release checklist.
+- persistence indexes and replay uniqueness constraints;
+- built-wheel installation/public-import smoke testing in a clean virtual environment;
+- deployment and release checklist in `SECURITY_REVIEW.md`;
+- `make release-check` as the final package release gate.
+
+No new authentication protocol or storage provider is introduced in this stage.
 
 Optional future work remains demand-driven: Ed25519, Redis replay stores, key identifiers, audit
 hooks and caching.
