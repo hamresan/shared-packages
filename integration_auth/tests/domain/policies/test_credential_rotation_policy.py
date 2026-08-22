@@ -73,14 +73,22 @@ def test_does_not_extend_earlier_existing_expiry() -> None:
 
 
 def test_filters_wrong_direction_revoked_and_other_client_credentials() -> None:
-    outbound = RotationCredentialBuilder(
-        current_timestamp=NOW,
-        client_id=CLIENT_ID,
-    ).with_direction(CredentialDirection.OUTBOUND).build()
-    revoked = RotationCredentialBuilder(
-        current_timestamp=NOW,
-        client_id=CLIENT_ID,
-    ).revoked(NOW).build()
+    outbound = (
+        RotationCredentialBuilder(
+            current_timestamp=NOW,
+            client_id=CLIENT_ID,
+        )
+        .with_direction(CredentialDirection.OUTBOUND)
+        .build()
+    )
+    revoked = (
+        RotationCredentialBuilder(
+            current_timestamp=NOW,
+            client_id=CLIENT_ID,
+        )
+        .revoked(NOW)
+        .build()
+    )
     other = RotationCredentialBuilder(
         current_timestamp=NOW,
         client_id=IntegrationClientId("client-other"),

@@ -13,15 +13,11 @@ from integration_auth.domain.value_objects.identifiers import (
 )
 
 
-class IntegrationCredentialProvisioningRepositoryFake(
-    IntegrationCredentialProvisioningRepository
-):
+class IntegrationCredentialProvisioningRepositoryFake(IntegrationCredentialProvisioningRepository):
     """Store credential metadata and protected material for provisioning tests."""
 
     def __init__(self, credentials: tuple[IntegrationCredential, ...] = ()) -> None:
-        self._credentials = {
-            credential.credential_id: credential for credential in credentials
-        }
+        self._credentials = {credential.credential_id: credential for credential in credentials}
         self.added: list[tuple[IntegrationCredential, ProtectedCredentialSecret]] = []
         self.updated: list[IntegrationCredential] = []
         self.rotations: list[

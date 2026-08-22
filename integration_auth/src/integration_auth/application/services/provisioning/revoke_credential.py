@@ -5,7 +5,7 @@ from integration_auth.application.contracts.provisioning.repositories import (
     IntegrationCredentialProvisioningRepository,
 )
 from integration_auth.application.errors.provisioning import ProvisioningCredentialNotFoundError
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
+from integration_auth.application.mappers.time import UnixTimestampMapper
 from integration_auth.domain.entities.integration_credential import IntegrationCredential
 from integration_auth.domain.services.credential_lifecycle_transitioner import (
     CredentialLifecycleTransitioner,

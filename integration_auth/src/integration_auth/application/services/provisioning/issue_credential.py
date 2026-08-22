@@ -16,7 +16,7 @@ from integration_auth.application.contracts.provisioning.secrets import (
 )
 from integration_auth.application.dto.provisioning.issued_credential import IssuedCredential
 from integration_auth.application.errors.provisioning import ProvisioningClientNotFoundError
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
+from integration_auth.application.mappers.time import UnixTimestampMapper
 from integration_auth.domain.entities.integration_credential import IntegrationCredential
 from integration_auth.domain.enums.credential_direction import CredentialDirection
 from integration_auth.domain.enums.credential_status import CredentialStatus

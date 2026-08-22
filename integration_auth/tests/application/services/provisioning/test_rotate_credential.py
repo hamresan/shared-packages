@@ -40,10 +40,14 @@ def test_rotates_same_direction_credentials_with_explicit_overlap() -> None:
             current_timestamp=NOW,
             client_id=CLIENT_ID,
         ).build()
-        outbound = RotationCredentialBuilder(
-            current_timestamp=NOW,
-            client_id=CLIENT_ID,
-        ).with_direction(CredentialDirection.OUTBOUND).build()
+        outbound = (
+            RotationCredentialBuilder(
+                current_timestamp=NOW,
+                client_id=CLIENT_ID,
+            )
+            .with_direction(CredentialDirection.OUTBOUND)
+            .build()
+        )
         client_repository = IntegrationClientProvisioningRepositoryFake(
             (IntegrationClient(client_id=CLIENT_ID),)
         )

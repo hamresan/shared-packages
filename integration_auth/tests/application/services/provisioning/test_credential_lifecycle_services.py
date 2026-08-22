@@ -6,9 +6,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from integration_auth.application.errors.provisioning import ProvisioningCredentialNotFoundError
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
-from integration_auth.application.services.provisioning.expire_credential import ExpireCredentialService
-from integration_auth.application.services.provisioning.revoke_credential import RevokeCredentialService
+from integration_auth.application.mappers.time import UnixTimestampMapper
+from integration_auth.application.services.provisioning.expire_credential import (
+    ExpireCredentialService,
+)
+from integration_auth.application.services.provisioning.revoke_credential import (
+    RevokeCredentialService,
+)
 from integration_auth.domain.enums.credential_status import CredentialStatus
 from integration_auth.domain.value_objects.identifiers import IntegrationCredentialId
 from tests.support.application.authentication.fixed_clock import FixedClock

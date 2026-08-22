@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
+from integration_auth.application.mappers.time import UnixTimestampMapper
 
 
 def test_maps_unix_timestamp_to_aware_utc_datetime() -> None:

@@ -1,22 +1,16 @@
 """Factory for credential rotation service tests."""
 
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
-from integration_auth.application.services.provisioning.rotate_credential import RotateCredentialService
-from integration_auth.domain.policies.credential_rotation_policy import CredentialRotationPolicy
+from integration_auth.application.mappers.time import UnixTimestampMapper
+from integration_auth.application.services.provisioning.rotate_credential import (
+    RotateCredentialService,
+)
+from integration_auth.domain.policies import CredentialRotationPolicy
 from tests.support.application.authentication.fixed_clock import FixedClock
-from tests.support.application.provisioning.fixed_id_generators import (
-    FixedIntegrationCredentialIdGenerator,
-)
-from tests.support.application.provisioning.fixed_secret_generator import (
+from tests.support.application.provisioning import (
     FixedCredentialSecretGenerator,
-)
-from tests.support.application.provisioning.integration_client_repository_fake import (
+    FixedIntegrationCredentialIdGenerator,
     IntegrationClientProvisioningRepositoryFake,
-)
-from tests.support.application.provisioning.integration_credential_repository_fake import (
     IntegrationCredentialProvisioningRepositoryFake,
-)
-from tests.support.application.provisioning.recording_secret_protector import (
     RecordingCredentialSecretProtector,
 )
 

@@ -1,7 +1,9 @@
 """Factory for credential issuance service tests."""
 
-from integration_auth.application.mappers.time.unix_timestamp_mapper import UnixTimestampMapper
-from integration_auth.application.services.provisioning.issue_credential import IssueCredentialService
+from integration_auth.application.mappers.time import UnixTimestampMapper
+from integration_auth.application.services.provisioning.issue_credential import (
+    IssueCredentialService,
+)
 from tests.support.application.authentication.fixed_clock import FixedClock
 from tests.support.application.provisioning.fixed_id_generators import (
     FixedIntegrationCredentialIdGenerator,

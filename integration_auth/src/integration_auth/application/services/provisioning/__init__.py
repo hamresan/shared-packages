@@ -3,7 +3,9 @@
 from integration_auth.application.services.provisioning.expire_credential import (
     ExpireCredentialService,
 )
-from integration_auth.application.services.provisioning.issue_credential import IssueCredentialService
+from integration_auth.application.services.provisioning.issue_credential import (
+    IssueCredentialService,
+)
 from integration_auth.application.services.provisioning.register_integration_client import (
     RegisterIntegrationClientService,
 )
