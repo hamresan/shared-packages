@@ -7,9 +7,7 @@ class CredentialLifecyclePolicy:
     """Define allowed credential lifecycle transitions."""
 
     _ALLOWED_TRANSITIONS: dict[CredentialStatus, frozenset[CredentialStatus]] = {
-        CredentialStatus.ACTIVE: frozenset(
-            {CredentialStatus.REVOKED, CredentialStatus.EXPIRED}
-        ),
+        CredentialStatus.ACTIVE: frozenset({CredentialStatus.REVOKED, CredentialStatus.EXPIRED}),
         CredentialStatus.REVOKED: frozenset(),
         CredentialStatus.EXPIRED: frozenset(),
     }
