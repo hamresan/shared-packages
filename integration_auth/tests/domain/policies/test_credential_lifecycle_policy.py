@@ -10,7 +10,9 @@ from integration_auth.domain.policies.credential_lifecycle_policy import Credent
     "target_status",
     [CredentialStatus.REVOKED, CredentialStatus.EXPIRED],
 )
-def test_active_credential_can_transition_to_terminal_status(target_status: CredentialStatus) -> None:
+def test_active_credential_can_transition_to_terminal_status(
+    target_status: CredentialStatus,
+) -> None:
     policy = CredentialLifecyclePolicy()
 
     assert policy.can_transition(CredentialStatus.ACTIVE, target_status)
