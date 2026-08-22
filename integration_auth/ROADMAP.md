@@ -163,7 +163,7 @@ unrelated host-owned tables are ignored by the package filter.
 
 ## Stage 9 — FastAPI adapter
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented presentation-layer integration:
 
@@ -194,10 +194,21 @@ authorization logic to route handlers.
 
 ## Stage 10 — External protocol interoperability example
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Deliver executable Python/PHP known-answer interoperability examples for both directions,
-including credential rotation and permission/scope examples.
+Implemented executable interoperability examples:
+
+- one shared deterministic `vectors.json` fixture;
+- Python HMAC-SHA256 signing and verification using the package implementations;
+- PHP canonicalization and HMAC-SHA256 verification against the same vectors;
+- separate inbound and outbound credentials/secrets to demonstrate bidirectional isolation;
+- duplicate-query and RFC3986 encoding coverage;
+- executable Python rotation example showing same-direction overlap behavior;
+- executable exact permission and resource-scope allow/deny examples;
+- subprocess tests for Python examples;
+- real PHP CLI execution when PHP is available, with an explicit skip otherwise.
+
+Example fixture credentials are documentation/test-only and must never be reused in real integrations.
 
 ## Stage 11 — Multi-auth host composition example
 
