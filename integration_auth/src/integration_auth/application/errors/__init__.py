@@ -6,6 +6,7 @@ from integration_auth.application.errors.authentication import (
     InvalidIntegrationSignatureError,
     NoUsableCredentialError,
 )
+from integration_auth.application.errors.authorization import IntegrationAuthorizationError
 from integration_auth.application.errors.replay import (
     ReplayDetectedError,
     ReplayProtectionError,
@@ -14,6 +15,7 @@ from integration_auth.application.errors.replay import (
 
 __all__ = (
     "IntegrationAuthenticationError",
+    "IntegrationAuthorizationError",
     "IntegrationClientNotFoundError",
     "InvalidIntegrationSignatureError",
     "NoUsableCredentialError",
