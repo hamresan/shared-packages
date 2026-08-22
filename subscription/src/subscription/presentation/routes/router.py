@@ -120,7 +120,13 @@ class SubscriptionRouterFactory:
             metric: Annotated[str, Query(min_length=1, max_length=128)],
             period: UsagePeriod,
         ) -> UsageCounterResponse:
-            return await usage_endpoints.get_counter(actor, subject_type, subject_id, metric, period)
+            return await usage_endpoints.get_counter(
+                actor,
+                subject_type,
+                subject_id,
+                metric,
+                period,
+            )
 
         async def resolve_entitlement(
             actor: Annotated[AuthenticatedActor, Depends(actor_dependency)],
