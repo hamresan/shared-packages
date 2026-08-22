@@ -26,15 +26,9 @@ def test_credential_and_nonce_hot_paths_have_indexes_or_unique_constraints() -> 
     nonce_table = cast(Table, ConsumedNonceRecord.__table__)
 
     credential_index_names = {
-        str(index.name)
-        for index in credential_table.indexes
-        if index.name is not None
+        str(index.name) for index in credential_table.indexes if index.name is not None
     }
-    nonce_index_names = {
-        str(index.name)
-        for index in nonce_table.indexes
-        if index.name is not None
-    }
+    nonce_index_names = {str(index.name) for index in nonce_table.indexes if index.name is not None}
     nonce_constraint_names = {
         str(constraint.name)
         for constraint in nonce_table.constraints
