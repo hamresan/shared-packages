@@ -364,24 +364,70 @@ Quality gate for this stage: 179 tests passed, Pyright strict reports 0 errors, 
 
 ## Stage 8 — FastAPI adapter
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Add presentation adapters only after the application API is stable.
-
-Potential HTTP responsibilities:
+Implemented and tested:
 
 ```text
-Plan management
-Subscription read/manage operations
-Entitlement queries
-Usage recording/query operations
+AuthenticatedActor
+AuthenticatedActorDependency
+SubscriptionAuthorizer
+PlanManagementGuard
+SubjectAccessGuard
+SubscriptionResourceAccessGuard
+GetSubscriptionService
+FastApiSubscriptionAdapter
+build_fastapi_subscription_adapter()
+SubscriptionRouterFactory
+PlanEndpoints
+SubscriptionEndpoints
+UsageEndpoints
+EntitlementEndpoints
+request/response Pydantic schemas
+presentation request/response mappers
+HTTP error mapper
 ```
 
-Authentication/authorization remains host-provided. Routes stay thin and mapping/error/dependency responsibilities remain separate.
+HTTP responsibilities include:
+
+```text
+POST   /subscription/plans
+GET    /subscription/plans/{plan_id}
+PATCH  /subscription/plans/{plan_id}/status
+POST   /subscription/subscriptions
+GET    /subscription/subscriptions/{subscription_id}
+POST   /subscription/subscriptions/{subscription_id}/trial
+POST   /subscription/subscriptions/{subscription_id}/activate
+POST   /subscription/subscriptions/{subscription_id}/cancel
+POST   /subscription/subscriptions/{subscription_id}/renew
+POST   /subscription/usage
+GET    /subscription/usage
+GET    /subscription/entitlements
+```
+
+Rules and boundaries:
+
+- authentication is represented by a narrow Store-owned `AuthenticatedActorDependency` contract and does not import Identity or any host authentication implementation;
+- authorization is host-provided through the narrow `SubscriptionAuthorizer` contract;
+- plan-management authorization, subject authorization, and resource-to-subject authorization are separate components;
+- a target `SubjectReference` supplied in a request is never trusted without host authorization;
+- lifecycle endpoints resolve the persisted subscription and authorize its subject before mutation;
+- routes do not access repositories, persistence models, Identity claims, or host roles;
+- request/response conversion is handled by dedicated presentation mappers;
+- typed entitlements retain their explicit type across HTTP mapping;
+- trial request schemas support time, usage, and combined policies without application-specific metric knowledge;
+- route functions remain thin and delegate workflow behavior to application use cases;
+- FastAPI/Pydantic are presentation dependencies only; domain and application remain framework-independent;
+- the host composes its authentication/authorization implementation with the package adapter at the composition root;
+- FastAPI integration tests use `httpx`/ASGI and separate test fakes/factories rather than defining infrastructure inside test methods.
+
+Quality gate for this stage: 200 tests passed, Pyright strict reports 0 errors, and total branch coverage is 93.39%.
 
 ## Stage 9 — Consumer integration examples
 
-Add a real host example covering plan definition, base/add-on subscriptions, usage recording, typed entitlement checks, combined trials, manual grants, paid activation/renewal after an external payment event, optional composition with other reusable packages, and host-owned SQLAlchemy/Alembic wiring.
+Status: **NEXT**
+
+Add a real host example covering plan definition, base/add-on subscriptions, usage recording, typed entitlement checks, combined trials, manual grants, paid activation/renewal after an external payment event, optional composition with other reusable packages, host-owned authentication/authorization composition, and host-owned SQLAlchemy/Alembic wiring.
 
 ## Stage 10 — Documentation and release readiness
 
@@ -417,8 +463,8 @@ To make GitHub technically block merging when this job fails, the repository's `
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2, 3, 4, 5, 6, 7
-Next objective: Stage 8 — FastAPI adapter
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; host-owned async SQLAlchemy sessions; host-owned Alembic revision graph; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
+Implemented: Stages 0, 1, 2, 3, 4, 5, 6, 7, 8
+Next objective: Stage 9 — consumer integration examples
+Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; host-owned async SQLAlchemy sessions; host-owned Alembic revision graph; host-provided FastAPI authentication/authorization boundaries; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
