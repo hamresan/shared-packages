@@ -4,15 +4,15 @@ from subscription import SubjectReference, UsageMetric, UsagePeriod
 from tests.support.presentation.adapter_factory import (
     PLAN_ID,
     SUBSCRIPTION_ID,
+    SubscriptionApiTestRuntime,
     build_subscription_api_test_runtime,
 )
 from tests.support.presentation.client import subscription_test_client
 from tests.support.presentation.fakes import FakeSubscriptionAuthorizer
 
 
-async def create_base_plan(runtime: object) -> Response:
-    adapter = runtime.adapter  # type: ignore[attr-defined]
-    async with subscription_test_client(adapter) as client:
+async def create_base_plan(runtime: SubscriptionApiTestRuntime) -> Response:
+    async with subscription_test_client(runtime.adapter) as client:
         return await client.post(
             "/subscription/plans",
             json={
