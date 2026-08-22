@@ -10,11 +10,9 @@ from integration_auth.domain.value_objects.identifiers import IntegrationCredent
 from integration_auth.infrastructure.persistence.sqlalchemy.mappers.credential_mapper import (
     IntegrationCredentialRecordMapper,
 )
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.credential_repository import (
-    SqlAlchemyIntegrationCredentialRepository,
-)
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.secret_provider import (
+from integration_auth.infrastructure.persistence.sqlalchemy.repositories import (
     SqlAlchemyCredentialSecretProvider,
+    SqlAlchemyIntegrationCredentialRepository,
 )
 from tests.support.infrastructure.persistence.sqlalchemy.credential_factory import (
     build_persistence_credential,

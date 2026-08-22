@@ -10,13 +10,14 @@ from integration_auth.infrastructure.persistence.sqlalchemy.models.base import I
 from integration_auth.infrastructure.persistence.sqlalchemy.repositories.client_repository import (
     SqlAlchemyIntegrationClientRepository,
 )
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.credential_repository import (
+
+from .repositories.credential_repository import (
     SqlAlchemyIntegrationCredentialRepository,
 )
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.nonce_store import (
+from .repositories.nonce_store import (
     SqlAlchemyNonceStore,
 )
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.secret_provider import (
+from .repositories.secret_provider import (
     SqlAlchemyCredentialSecretProvider,
 )
 

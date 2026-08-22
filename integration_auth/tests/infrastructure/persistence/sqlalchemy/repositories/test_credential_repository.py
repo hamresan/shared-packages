@@ -14,7 +14,7 @@ from integration_auth.domain.enums.credential_status import CredentialStatus
 from integration_auth.infrastructure.persistence.sqlalchemy.mappers.credential_mapper import (
     IntegrationCredentialRecordMapper,
 )
-from integration_auth.infrastructure.persistence.sqlalchemy.repositories.credential_repository import (
+from integration_auth.infrastructure.persistence.sqlalchemy.repositories import (
     SqlAlchemyIntegrationCredentialRepository,
 )
 from tests.support.infrastructure.persistence.sqlalchemy.credential_factory import (
