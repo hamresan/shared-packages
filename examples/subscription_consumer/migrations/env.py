@@ -5,7 +5,9 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from subscription.migrations import include_subscription_name, subscription_metadata
+
+from subscription_consumer_app.database import include_consumer_name
+from subscription.migrations import subscription_metadata
 
 config = context.config
 if config.config_file_name is not None:
@@ -20,7 +22,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        include_name=include_subscription_name,
+        include_name=include_consumer_name,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -30,7 +32,7 @@ def run_sync_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        include_name=include_subscription_name,
+        include_name=include_consumer_name,
     )
     with context.begin_transaction():
         context.run_migrations()
