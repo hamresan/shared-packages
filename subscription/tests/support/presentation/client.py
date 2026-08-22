@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,7 +10,7 @@ from subscription.presentation import FastApiSubscriptionAdapter
 @asynccontextmanager
 async def subscription_test_client(
     adapter: FastApiSubscriptionAdapter,
-) -> AsyncIterator[AsyncClient]:
+) -> AsyncGenerator[AsyncClient]:
     app = FastAPI()
     adapter.install(app)
     transport = ASGITransport(app=app)
