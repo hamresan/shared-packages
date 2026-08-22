@@ -64,9 +64,7 @@ async def test_consumer_wires_trial_paid_addon_usage_and_entitlements() -> None:
                 },
             )
             trial_id = UUID(trial.json()["id"])
-            started_trial = await client.post(
-                f"/subscription/subscriptions/{trial_id}/trial"
-            )
+            started_trial = await client.post(f"/subscription/subscriptions/{trial_id}/trial")
             usage = await client.post(
                 "/subscription/usage",
                 json={
