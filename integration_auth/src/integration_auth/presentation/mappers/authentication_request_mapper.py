@@ -23,9 +23,11 @@ class FastApiAuthenticationRequestMapper:
         headers: SignedRequestHeaders,
     ) -> AuthenticateIntegrationRequest:
         body = await request.body()
+        raw_path = request.scope.get("raw_path")
+        path = raw_path.decode("ascii") if isinstance(raw_path, bytes) else request.url.path
         canonical_request = CanonicalRequest(
             method=request.method,
-            path=request.url.path,
+            path=path,
             canonical_query=self._query_encoder.encode(request.query_params.multi_items()),
             timestamp=headers.timestamp,
             nonce=headers.nonce,
