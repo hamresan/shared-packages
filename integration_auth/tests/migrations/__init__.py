@@ -1,1 +1,1 @@
-"""Package namespace reserved for staged integration-auth implementation."""
+"""Tests for integration-auth migration helpers."""

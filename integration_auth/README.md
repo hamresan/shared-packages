@@ -68,13 +68,25 @@ Implemented:
   - strongly typed protected-secret persistence boundary;
   - raw secret returned only from issuance/rotation results;
   - atomic rotation persistence contract.
+- **Stage 7 — Async SQLAlchemy persistence**
+  - host-provided async session factory;
+  - client/credential repository adapters;
+  - protected-secret persistence and transient recovery;
+  - atomic nonce consumption under concurrency;
+  - atomic credential rotation transaction;
+  - dedicated ORM records and persistence mappers;
+  - `integration_auth_` table prefix and authentication-path indexes.
+- **Stage 8 — Host-owned Alembic integration**
+  - package-owned SQLAlchemy metadata helper;
+  - package-owned `include_name` filter;
+  - host-owned revision graph and migration environment.
 
 Not implemented yet:
 
-- async SQLAlchemy persistence adapters and real atomic nonce/rotation transactions;
-- host-owned Alembic integration helpers;
 - FastAPI adapters/dependencies;
-- executable Python/PHP consumer example.
+- executable Python/PHP interoperability example;
+- multi-auth host composition example;
+- final security/release-hardening stage.
 
 See `ROADMAP.md` for staged delivery.
 
@@ -167,18 +179,19 @@ logged.
 
 ## Replay protection
 
-Stage 3 defines this atomic persistence boundary:
+Replay protection uses this atomic persistence boundary:
 
 ```text
 consume_once(client_id, nonce, expires_at_timestamp) -> bool
 ```
 
 A `(client_id, nonce)` pair may succeed only once while protected. Timestamp validation runs
-before nonce consumption. The real database-backed atomic implementation belongs to Stage 7.
+before nonce consumption. `SqlAlchemyNonceStore` implements the atomic boundary using a database
+uniqueness constraint; concurrent replay attempts are covered by persistence integration tests.
 
 ## Application authentication
 
-Stage 4 composes signing and replay primitives without depending on SQLAlchemy or FastAPI.
+The application layer composes signing and replay primitives without depending on FastAPI.
 
 ```python
 from integration_auth.application import (
@@ -203,7 +216,7 @@ resolve client
 
 ## Authorization
 
-Stage 5 authorizes an already authenticated principal independently from HTTP.
+Authorization operates on an already authenticated principal independently from HTTP.
 
 ```python
 from integration_auth import IntegrationResource, Permission
@@ -237,8 +250,6 @@ Authorization is exact-match and fail-closed:
 responsibility.
 
 ## Credential provisioning and lifecycle
-
-Stage 6 adds application use cases without adding database infrastructure.
 
 Public services:
 
@@ -284,65 +295,31 @@ module.
 The package intentionally does **not** ship a hard-coded encryption implementation or application
 key. Key management is a host/infrastructure concern.
 
-A host provides `CredentialSecretProtector`. Its output is not raw `bytes`; it must return the
-dedicated type:
+A host provides `CredentialSecretProtector`. Its output is the dedicated
+`ProtectedCredentialSecret` type rather than raw secret bytes. Persistence stores only protected
+material.
 
-```python
-from integration_auth.application.security import ProtectedCredentialSecret
-```
-
-Credential persistence accepts `ProtectedCredentialSecret`, not the raw secret type. This makes
-accidental raw-secret persistence visible to static type checking.
+For authentication, the SQLAlchemy secret provider loads protected material and passes it to the
+host-provided `CredentialSecretUnprotector`. The recovered secret is transient verification
+material and is not added to the domain entity.
 
 Both `IssuedCredential.raw_secret` and `ProtectedCredentialSecret.value` are excluded from their
 dataclass `repr`, reducing accidental logging exposure.
 
-The intended issuance flow is:
-
-```text
-generate credential ID
--> generate strong raw secret
--> build ACTIVE credential metadata
--> protect raw secret
--> persist credential + ProtectedCredentialSecret
--> return raw secret once in IssuedCredential
-```
-
-The raw secret is returned only from issuance/rotation boundaries. Ordinary credential entities
-and later ordinary API responses must not expose it.
-
 ### Rotation
 
 Rotation is direction-specific. Incoming and outgoing credentials can be rotated independently.
-
-```text
-INBOUND rotation  != OUTBOUND rotation
-```
-
 `RotateCredentialService` takes an explicit `overlap_seconds` value. Existing currently-usable
 credentials for the same client and direction are shortened to the overlap deadline; credentials
 for the opposite direction are untouched.
 
-The provisioning repository exposes one atomic rotation operation:
-
-```text
-rotate(
-    previous_credentials,
-    new_credential,
-    protected_secret,
-)
-```
-
-Stage 6 defines this transaction boundary. Stage 7 must implement it with a real database
-transaction so a partial state cannot be persisted.
-
-A zero-second overlap is supported. The domain policy preserves the credential snapshot invariant
-that `expires_at` must be later than `issued_at` even when rotation happens in the same timestamp
-second.
+The SQLAlchemy provisioning repository implements rotation in one database transaction, so
+previous-credential changes and replacement-credential insertion either commit together or roll
+back together.
 
 ### Revocation and expiration
 
-Credential transitions remain governed by the Stage 1 lifecycle policy:
+Credential transitions remain governed by the lifecycle policy:
 
 ```text
 ACTIVE -> REVOKED
@@ -351,14 +328,80 @@ ACTIVE -> EXPIRED
 
 `REVOKED` and `EXPIRED` remain terminal states.
 
-Revocation records `revoked_at`. Expiration records `expires_at`. Lifecycle snapshot construction
-is handled by a dedicated domain service rather than hidden inside application-service helper
-methods.
+## Async SQLAlchemy persistence
 
-### Updating grants
+Persistence is an infrastructure adapter. The host owns the `AsyncEngine` and
+`async_sessionmaker`; the package never creates application-global database infrastructure.
 
-`UpdateIntegrationClientGrantsService` replaces a client's permission and scope sets. It does not
-perform authorization itself; Stage 5 remains the authorization decision boundary.
+```python
+from integration_auth.infrastructure.persistence.sqlalchemy import (
+    IntegrationClientRecordMapper,
+    IntegrationCredentialRecordMapper,
+    SqlAlchemyCredentialSecretProvider,
+    SqlAlchemyIntegrationClientRepository,
+    SqlAlchemyIntegrationCredentialRepository,
+    SqlAlchemyNonceStore,
+)
+```
+
+The same concrete repositories explicitly implement the application contracts used for
+authentication/provisioning. Persistence mapping remains outside application services and domain
+entities.
+
+Package tables:
+
+```text
+integration_auth_clients
+integration_auth_credentials
+integration_auth_consumed_nonces
+```
+
+There are no foreign keys to Identity, Store, Organization, WordPress, or other host-domain tables.
+
+## Host-owned Alembic integration
+
+The package exposes migration composition helpers but **does not own an Alembic revision chain**.
+
+```python
+from integration_auth.migrations import (
+    INTEGRATION_AUTH_TABLE_PREFIX,
+    include_integration_auth_name,
+    integration_auth_metadata,
+)
+```
+
+For a host whose Alembic environment manages only integration-auth tables:
+
+```python
+from alembic import context
+from integration_auth.migrations import (
+    include_integration_auth_name,
+    integration_auth_metadata,
+)
+
+context.configure(
+    connection=connection,
+    target_metadata=integration_auth_metadata(),
+    include_name=include_integration_auth_name,
+)
+```
+
+For a host composing multiple packages, the host may provide multiple metadata objects or combine
+package metadata into its own migration composition and compose the package filters according to
+its own Alembic setup.
+
+The host owns:
+
+- `alembic.ini`;
+- `migrations/env.py`;
+- `script.py.mako`;
+- revision files and IDs;
+- revision ordering and branch heads;
+- deployment/rollback policy.
+
+`integration_auth.migrations` owns only the package metadata boundary and the
+`integration_auth_` name filter. Real Alembic autogenerate tests verify that the three package
+tables are discovered and unrelated host tables are ignored.
 
 ## External integration usage
 
@@ -420,22 +463,6 @@ authenticated integration without authorization -> 403 Forbidden
 
 Routes must remain thin and must not parse HMAC signatures, consume nonces, inspect credential
 storage, decrypt credentials, or implement permission/scope rules directly.
-
-## Persistence roadmap
-
-Stage 7 will add async SQLAlchemy adapters.
-
-Requirements already established by the current contracts:
-
-- host owns `Engine` / `SessionMaker`;
-- repositories implement application contracts;
-- mappers/hydrators stay separate from repositories;
-- raw secrets are never stored in plaintext;
-- protected secret material stays behind a dedicated type/boundary;
-- nonce consumption is atomic;
-- credential rotation is atomic;
-- no FK to Identity/Store/Organization tables;
-- table names use the `integration_auth_` prefix.
 
 ## Integration with hamresan-identity
 

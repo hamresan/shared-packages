@@ -47,7 +47,7 @@ constant-time comparison, timestamp tolerance, and known-answer vectors.
 **Status: COMPLETE**
 
 Implemented atomic `NonceStore` contract, replay window policy, replay protector, timestamp checks,
-and concurrency behavior against an atomic fake. Real persistence atomicity remains Stage 7.
+and concurrency behavior against an atomic fake. Real persistence atomicity was added in Stage 7.
 
 ## Stage 4 — Application authentication services
 
@@ -67,7 +67,7 @@ Authorization remains independent of HTTP/FastAPI and has no wildcard or implici
 
 ## Stage 6 — Credential lifecycle and provisioning
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented services:
 
@@ -95,8 +95,7 @@ Implemented security/architecture boundaries:
 - direction-specific rotation so inbound/outbound credentials remain independent;
 - rotation repository operation is explicitly atomic;
 - lifecycle snapshot construction is handled by a dedicated domain service;
-- Unix timestamp conversion is handled by a dedicated application mapper;
-- no SQLAlchemy/FastAPI/provider-specific implementation introduced.
+- Unix timestamp conversion is handled by a dedicated application mapper.
 
 Rotation behavior:
 
@@ -122,34 +121,45 @@ Tests mirror:
 - `infrastructure/security`;
 - dedicated provisioning fakes/builders/factories under `tests/support/application/provisioning`.
 
-Stage 6 intentionally does not implement database encryption/key management. The host provides the
-`CredentialSecretProtector` implementation appropriate for its key-management system. Stage 7
-must persist only `ProtectedCredentialSecret` and implement rotation atomically in a real database
-transaction.
+The host provides the `CredentialSecretProtector` implementation appropriate for its key-management
+system. Persistence stores only `ProtectedCredentialSecret`.
 
 ## Stage 7 — Async SQLAlchemy persistence
 
-**Status: PLANNED**
+**Status: COMPLETE**
 
-Implement repository adapters using a host-provided async session factory.
+Implemented repository adapters using a host-provided async session factory.
 
-Requirements:
+Requirements delivered:
 
 - table prefix `integration_auth_`;
 - no global Engine/SessionMaker;
 - repository contracts remain in application layer;
-- dedicated persistence mappers/hydrators;
+- dedicated persistence mappers;
 - real atomic nonce consumption under concurrency;
 - real atomic credential rotation transaction;
 - protected secret persistence only; never raw plaintext secrets;
+- transient verification-secret recovery through a host-provided unprotector;
 - indexes for authentication hot paths;
-- no FK to Identity/Store/Organization tables.
+- no FK to Identity/Store/Organization tables;
+- real async SQLite integration/concurrency tests.
 
 ## Stage 8 — Host-owned Alembic integration
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Expose metadata/filter helpers while keeping revision history in the host application.
+Implemented public migration helpers:
+
+- `INTEGRATION_AUTH_TABLE_PREFIX`;
+- `integration_auth_metadata()`;
+- `include_integration_auth_name(...)`.
+
+The package exposes SQLAlchemy metadata plus an Alembic-compatible name filter while keeping
+`alembic.ini`, `env.py`, revision IDs, revision files, ordering, version directories, and the full
+revision graph in the consuming host application.
+
+Real Alembic autogenerate tests verify discovery of all integration-auth tables and verify that
+unrelated host-owned tables are ignored by the package filter.
 
 ## Stage 9 — FastAPI adapter
 

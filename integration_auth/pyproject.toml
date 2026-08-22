@@ -15,6 +15,7 @@ dependencies = [
 [project.optional-dependencies]
 test = [
   "aiosqlite>=0.20,<1.0",
+  "alembic>=1.14,<2.0",
   "build>=1.2,<2.0",
   "pyright>=1.1,<2.0",
   "pytest>=8.0,<9.0",
