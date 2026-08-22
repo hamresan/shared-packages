@@ -1,5 +1,8 @@
 """Framework-neutral integration authorization service."""
 
+from integration_auth.application.contracts.authorization.integration_authorizer import (
+    IntegrationRequestAuthorizer,
+)
 from integration_auth.application.dto.authorization import (
     AuthorizationDecisionReason,
     AuthorizationResult,
@@ -13,7 +16,7 @@ from integration_auth.domain.policies import (
 from integration_auth.domain.value_objects import IntegrationResource, Permission
 
 
-class IntegrationAuthorizer:
+class IntegrationAuthorizer(IntegrationRequestAuthorizer):
     """Authorize authenticated integrations by permission and optional resource scope."""
 
     def __init__(
