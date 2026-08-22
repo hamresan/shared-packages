@@ -40,20 +40,19 @@ Implemented:
   - stale/future timestamp rejection;
   - client-scoped nonce consumption and replay errors.
 - **Stage 4 — Application authentication**
-  - `IntegrationClientRepository` contract;
-  - `IntegrationCredentialRepository` contract;
-  - `CredentialSecretProvider` contract;
-  - `Clock` contract;
+  - repository/clock/secret-provider contracts;
   - inbound credential eligibility policy;
-  - `AuthenticateIntegrationRequest` DTO;
   - `AuthenticateIntegrationRequestService`;
-  - `IntegrationPrincipalMapper`;
-  - fail-closed authentication errors;
-  - support for multiple credential candidates during rotation overlap.
+  - fail-closed authentication and `IntegrationPrincipal` mapping.
+- **Stage 5 — Authorization**
+  - exact permission requirement policy;
+  - exact resource/scope authorization policy;
+  - framework-neutral `AuthorizationResult` with stable decision reasons;
+  - `IntegrationAuthorizer` for permission-only and permission+resource decisions;
+  - `IntegrationAuthorizationError` for require-style enforcement.
 
 Not implemented yet:
 
-- authorization services for permissions/scopes;
 - credential issuance/rotation use cases;
 - persistent SQLAlchemy repositories and nonce store;
 - host-owned Alembic integration;
@@ -142,22 +141,9 @@ query = CanonicalQueryEncoder().encode([("tag", "sale"), ("page", "2"), ("tag", 
 assert query == "page=2&tag=blue%20sky&tag=sale"
 ```
 
-Body hashing and HMAC adapters live in infrastructure:
-
-```python
-from integration_auth.infrastructure.crypto import (
-    HmacSha256RequestSigner,
-    HmacSha256RequestVerifier,
-    Sha256BodyHasher,
-)
-from integration_auth.protocol import CanonicalRequestSerializer
-
-signer = HmacSha256RequestSigner(CanonicalRequestSerializer())
-verifier = HmacSha256RequestVerifier(signer)
-```
-
-Verification uses `hmac.compare_digest` for constant-time signature comparison. Secrets and
-signatures must never be logged.
+Body hashing and HMAC adapters live in infrastructure. Verification uses
+`hmac.compare_digest` for constant-time signature comparison. Secrets and signatures must never
+be logged.
 
 ## Replay protection
 
@@ -168,14 +154,12 @@ consume_once(client_id, nonce, expires_at_timestamp) -> bool
 ```
 
 A `(client_id, nonce)` pair may succeed only once while protected. Timestamp validation runs
-before nonce consumption, so invalid stale/future requests do not pollute the replay store.
-A real database-backed atomic implementation belongs to the persistence stage.
+before nonce consumption. A real database-backed atomic implementation belongs to the
+persistence stage.
 
 ## Application authentication
 
-Stage 4 composes the previous primitives without depending on SQLAlchemy or FastAPI.
-
-Public application API:
+Stage 4 composes the signing and replay primitives without depending on SQLAlchemy or FastAPI.
 
 ```python
 from integration_auth.application import (
@@ -185,69 +169,62 @@ from integration_auth.application import (
 )
 ```
 
-Authentication infrastructure is provided through explicit contracts:
-
-```python
-from integration_auth.application.contracts import (
-    Clock,
-    CredentialSecretProvider,
-    IntegrationClientRepository,
-    IntegrationCredentialRepository,
-)
-```
-
 The authentication flow is:
 
 ```text
-1. resolve client_id
-2. load credential candidates
-3. reject credentials that are not active, inbound, owned by the client, issued, and unexpired
-4. obtain transient verification material through CredentialSecretProvider
-5. verify the HMAC signature
-6. apply timestamp/replay protection
-7. map the client identity + grants to IntegrationPrincipal
+resolve client
+-> load credential candidates
+-> filter usable inbound credentials
+-> resolve transient verification material
+-> verify signature
+-> apply replay protection
+-> map IntegrationPrincipal
 ```
 
-The service supports multiple usable credential candidates, which allows future credential
-rotation to have a controlled overlap without changing the authentication orchestration.
+`IntegrationCredential` contains no raw secret. Secret retrieval remains a separate boundary.
 
-`IntegrationCredential` still contains no raw secret. Secret retrieval is a separate boundary.
-A later persistence/security adapter is responsible for obtaining verification material without
-storing plaintext secrets.
+## Authorization
 
-Stage 4 intentionally does **not** add a Unit of Work because this read/authenticate flow has no
-multi-repository transaction boundary. Atomic nonce consumption is already owned by
-`NonceStore`. A UoW should be introduced later only if a concrete transactional use case needs it.
+Stage 5 authorizes an already authenticated `IntegrationPrincipal` independently of HTTP or
+FastAPI.
 
-Application errors are intentionally separate from HTTP. A future presentation adapter should
-map authentication failures to a generic `401 Unauthorized` without leaking client/credential
-existence details.
+```python
+from integration_auth.application import IntegrationAuthorizer
+from integration_auth.domain.policies import (
+    PermissionRequirementPolicy,
+    ResourceScopeAuthorizationPolicy,
+)
+from integration_auth import IntegrationResource, Permission
 
-## External integration example
+authorizer = IntegrationAuthorizer(
+    permission_policy=PermissionRequirementPolicy(),
+    resource_scope_policy=ResourceScopeAuthorizationPolicy(),
+)
 
-An incoming integration may eventually send:
+result = authorizer.authorize(
+    principal=principal,
+    permission=Permission("orders.read"),
+    resource=IntegrationResource("store", "store-123"),
+)
+```
+
+Authorization is fail-closed and exact-match only:
+
+- `orders.read` does not imply `orders.write`;
+- `store:store-123` does not imply `store:store-456`;
+- matching resource IDs with different resource types do not match;
+- wildcard permissions/scopes are not implemented.
+
+Two forms are supported:
 
 ```text
-X-Integration-Client-Id: wp_store_123
-X-Integration-Timestamp: 1787390042
-X-Integration-Nonce: 7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3
-X-Integration-Signature: <signature>
+route/action-level: permission only
+resource-level:     permission + exact resource scope
 ```
 
-HTTP header parsing belongs to the later FastAPI/presentation stage. Stage 4 expects already
-translated application-level authentication input.
-
-### PHP / WordPress interoperability
-
-WordPress is only an example consumer. After constructing the same canonical request byte for
-byte, PHP can sign with:
-
-```php
-$signature = hash_hmac('sha256', $canonicalRequest, $secret);
-```
-
-The output must be lowercase hexadecimal. A later interoperability stage will execute shared
-Python/PHP vectors instead of relying only on documentation.
+`authorize(...)` returns a framework-neutral decision. `require(...)` raises
+`IntegrationAuthorizationError` when access is denied. HTTP mapping remains a presentation-layer
+responsibility for Stage 9.
 
 ## Bidirectional integrations
 
@@ -265,14 +242,13 @@ INBOUND  = external side signs; Python host verifies
 OUTBOUND = Python host signs; external side verifies
 ```
 
-Do not assume the same credential is used in both directions. Incoming and outgoing credentials
-must be independently revocable/rotatable.
+Do not assume the same credential is used in both directions.
 
 ## Credential rotation
 
-Provisioning and rotation are not implemented yet. The current authentication service already
-accepts multiple eligible credential candidates so a future rotation window can overlap old and
-new verification credentials without rewriting the service.
+Provisioning and rotation are not implemented yet. The authentication service already accepts
+multiple eligible credential candidates so a future rotation overlap does not require rewriting
+authentication orchestration.
 
 Raw secrets must only cross an issuance/rotation boundary when required and must never be stored
 in plaintext when persistence is implemented.
@@ -280,34 +256,22 @@ in plaintext when persistence is implemented.
 ## Protecting routes
 
 FastAPI support is not implemented yet. The future adapter should translate HTTP requests into
-`AuthenticateIntegrationRequest`, call the authentication service, and later compose Stage 5
-authorization.
+authentication input, then compose authentication with Stage 5 authorization.
 
 Target behavior:
 
 ```text
 invalid/missing machine authentication -> 401 Unauthorized
-authenticated integration without permission -> 403 Forbidden
+authenticated integration without permission/scope -> 403 Forbidden
 ```
 
 Business routes must remain thin and must not parse HMAC signatures, consume nonces, inspect
-credential storage, or implement resource-scope rules directly.
+credential storage, or implement authorization rules directly.
 
 ## Integration with hamresan-identity
 
-Do not add a package dependency between the two authentication systems.
-
-```text
-Bearer user token
-    -> hamresan-identity
-    -> UserActor
-
-Signed machine request
-    -> hamresan-integration-auth
-    -> IntegrationPrincipal
-```
-
-The host may map both into its own application-specific actor abstraction.
+Do not add a package dependency between the two authentication systems. A host may map human and
+integration principals into its own application-specific actor abstraction.
 
 ## Persistence roadmap
 
