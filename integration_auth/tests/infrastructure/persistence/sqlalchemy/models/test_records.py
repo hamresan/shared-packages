@@ -25,10 +25,20 @@ def test_credential_and_nonce_hot_paths_have_indexes_or_unique_constraints() -> 
     credential_table = cast(Table, IntegrationCredentialRecord.__table__)
     nonce_table = cast(Table, ConsumedNonceRecord.__table__)
 
-    credential_index_names: set[str | None] = {index.name for index in credential_table.indexes}
-    nonce_index_names: set[str | None] = {index.name for index in nonce_table.indexes}
-    nonce_constraint_names: set[str | None] = {
-        constraint.name for constraint in nonce_table.constraints
+    credential_index_names = {
+        str(index.name)
+        for index in credential_table.indexes
+        if index.name is not None
+    }
+    nonce_index_names = {
+        str(index.name)
+        for index in nonce_table.indexes
+        if index.name is not None
+    }
+    nonce_constraint_names = {
+        str(constraint.name)
+        for constraint in nonce_table.constraints
+        if constraint.name is not None
     }
 
     assert "ix_integration_auth_credentials_client_status_direction" in credential_index_names
