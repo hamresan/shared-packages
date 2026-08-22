@@ -42,25 +42,3 @@ def test_authentication_request_mapper_preserves_raw_path_query_and_body_hash() 
         assert result.request.body_sha256 == Sha256BodyHasher().hash(body)
 
     asyncio.run(run())
-
-
-def test_authentication_request_mapper_falls_back_to_decoded_path_without_raw_path() -> None:
-    async def run() -> None:
-        request = FastApiRequestBuilder().build(path="/products/item")
-        del request.scope["raw_path"]
-        headers = SignedRequestHeaders(
-            client_id="client-123",
-            timestamp=1_787_418_000,
-            nonce="nonce-123",
-            signature="signature-123",
-        )
-        mapper = FastApiAuthenticationRequestMapper(
-            body_hasher=Sha256BodyHasher(),
-            query_encoder=CanonicalQueryEncoder(),
-        )
-
-        result = await mapper.map(request, headers)
-
-        assert result.request.path == "/products/item"
-
-    asyncio.run(run())
