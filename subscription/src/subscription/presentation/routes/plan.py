@@ -4,7 +4,11 @@ from subscription.application import ChangePlanStatusService, CreatePlanService,
 from subscription.presentation.dependencies import AuthenticatedActor, PlanManagementGuard
 from subscription.presentation.errors import SubscriptionHttpErrorMapper
 from subscription.presentation.mappers import SubscriptionRequestMapper, SubscriptionResponseMapper
-from subscription.presentation.schemas import ChangePlanStatusRequest, CreatePlanRequest, PlanResponse
+from subscription.presentation.schemas import (
+    ChangePlanStatusRequest,
+    CreatePlanRequest,
+    PlanResponse,
+)
 
 
 class PlanEndpoints:
