@@ -1,17 +1,13 @@
 """Authenticate signed machine-to-machine requests."""
 
-from integration_auth.application.contracts.authentication.clock import Clock
-from integration_auth.application.contracts.authentication.credential_secret_provider import (
+from integration_auth.application.contracts.authentication import (
+    Clock,
     CredentialSecretProvider,
-)
-from integration_auth.application.contracts.authentication.integration_client_repository import (
     IntegrationClientRepository,
-)
-from integration_auth.application.contracts.authentication.integration_credential_repository import (
     IntegrationCredentialRepository,
 )
 from integration_auth.application.contracts.crypto.request_verifier import RequestVerifier
-from integration_auth.application.dto.authentication.authenticate_integration_request import (
+from integration_auth.application.dto.authentication import (
     AuthenticateIntegrationRequest,
 )
 from integration_auth.application.errors.authentication import (
@@ -19,7 +15,7 @@ from integration_auth.application.errors.authentication import (
     InvalidIntegrationSignatureError,
     NoUsableCredentialError,
 )
-from integration_auth.application.mappers.authentication.integration_principal_mapper import (
+from integration_auth.application.mappers.authentication import (
     IntegrationPrincipalMapper,
 )
 from integration_auth.application.services.replay.replay_protector import ReplayProtector
@@ -76,9 +72,7 @@ class AuthenticateIntegrationRequestService:
             raise NoUsableCredentialError("integration client has no usable credential")
 
         for credential in usable_credentials:
-            secret = await self._secret_provider.get_verification_secret(
-                credential.credential_id
-            )
+            secret = await self._secret_provider.get_verification_secret(credential.credential_id)
             if secret is None:
                 continue
             if not self._request_verifier.verify(

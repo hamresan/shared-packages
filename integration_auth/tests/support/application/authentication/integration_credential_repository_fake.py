@@ -1,6 +1,6 @@
 """Integration credential repository fake."""
 
-from integration_auth.application.contracts.authentication.integration_credential_repository import (
+from integration_auth.application.contracts.authentication import (
     IntegrationCredentialRepository,
 )
 from integration_auth.domain.entities.integration_credential import IntegrationCredential

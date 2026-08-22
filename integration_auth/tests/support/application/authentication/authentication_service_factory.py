@@ -1,14 +1,14 @@
 """Factory for authentication-service tests."""
 
-from integration_auth.application.mappers.authentication.integration_principal_mapper import (
+from integration_auth.application.mappers.authentication import (
     IntegrationPrincipalMapper,
 )
-from integration_auth.application.services.authentication.authenticate_integration_request import (
+from integration_auth.application.services.authentication import (
     AuthenticateIntegrationRequestService,
 )
 from integration_auth.domain.entities.integration_client import IntegrationClient
 from integration_auth.domain.entities.integration_credential import IntegrationCredential
-from integration_auth.domain.policies.credential_authentication_policy import (
+from integration_auth.domain.policies import (
     CredentialAuthenticationPolicy,
 )
 from integration_auth.domain.value_objects.identifiers import IntegrationCredentialId

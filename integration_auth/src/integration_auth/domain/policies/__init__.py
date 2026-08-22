@@ -1,8 +1,11 @@
 """Public integration-auth domain policies."""
 
-from integration_auth.domain.policies.credential_authentication_policy import (
+from .credential_authentication_policy import (
     CredentialAuthenticationPolicy,
 )
-from integration_auth.domain.policies.credential_lifecycle_policy import CredentialLifecyclePolicy
+from .credential_lifecycle_policy import CredentialLifecyclePolicy
 
-__all__ = ("CredentialAuthenticationPolicy", "CredentialLifecyclePolicy")
+__all__ = [
+    "CredentialLifecyclePolicy",
+    "CredentialAuthenticationPolicy",
+]

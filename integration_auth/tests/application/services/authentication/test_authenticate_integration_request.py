@@ -45,9 +45,7 @@ SECRET = b"stage-4-authentication-secret"
 def test_authenticates_valid_request_and_builds_principal() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        credential = AuthenticationCredentialBuilder(
-            current_timestamp=request.timestamp
-        ).build()
+        credential = AuthenticationCredentialBuilder(current_timestamp=request.timestamp).build()
         store = AtomicNonceStoreFake()
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
@@ -125,9 +123,7 @@ def test_rejects_client_without_usable_inbound_credential() -> None:
 def test_fails_closed_when_secret_material_is_unavailable() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        credential = AuthenticationCredentialBuilder(
-            current_timestamp=request.timestamp
-        ).build()
+        credential = AuthenticationCredentialBuilder(current_timestamp=request.timestamp).build()
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
             credentials=(credential,),
@@ -151,9 +147,7 @@ def test_fails_closed_when_secret_material_is_unavailable() -> None:
 def test_rejects_invalid_signature_without_consuming_nonce() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        credential = AuthenticationCredentialBuilder(
-            current_timestamp=request.timestamp
-        ).build()
+        credential = AuthenticationCredentialBuilder(current_timestamp=request.timestamp).build()
         store = AtomicNonceStoreFake()
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
@@ -213,9 +207,7 @@ def test_supports_multiple_credential_candidates_for_rotation_overlap() -> None:
 def test_replay_failure_is_propagated_after_valid_signature() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        credential = AuthenticationCredentialBuilder(
-            current_timestamp=request.timestamp
-        ).build()
+        credential = AuthenticationCredentialBuilder(current_timestamp=request.timestamp).build()
         store = AtomicNonceStoreFake()
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
@@ -240,9 +232,7 @@ def test_replay_failure_is_propagated_after_valid_signature() -> None:
 def test_stale_signed_request_is_rejected_by_replay_protection() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        credential = AuthenticationCredentialBuilder(
-            current_timestamp=request.timestamp
-        ).build()
+        credential = AuthenticationCredentialBuilder(current_timestamp=request.timestamp).build()
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
             credentials=(credential,),
