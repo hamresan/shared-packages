@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, Integer, String
+from sqlalchemy import Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from subscription.infrastructure.persistence.sqlalchemy.base import SubscriptionBase
+from subscription.infrastructure.persistence.sqlalchemy.column_types import UtcDateTime
 
 
 class UsageRecordModel(SubscriptionBase):
@@ -23,4 +24,4 @@ class UsageRecordModel(SubscriptionBase):
     subject_id: Mapped[str] = mapped_column(String(255))
     metric: Mapped[str] = mapped_column(String(120))
     amount: Mapped[int] = mapped_column(Integer)
-    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    occurred_at: Mapped[datetime] = mapped_column(UtcDateTime())
