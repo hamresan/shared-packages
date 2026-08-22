@@ -15,7 +15,7 @@ from subscription.presentation.schemas.common import SubjectReferenceSchema, Usa
 class TrialPolicyRequest(BaseModel):
     completion_mode: TrialCompletionMode
     max_duration_seconds: int | None = Field(default=None, gt=0)
-    usage_conditions: list[UsageConditionSchema] = Field(default_factory=list)
+    usage_conditions: tuple[UsageConditionSchema, ...] = ()
 
 
 class CreateSubscriptionRequest(BaseModel):
