@@ -70,7 +70,7 @@ Key rules:
 
 ## Stage 2 — Canonical request and cryptographic contracts
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented in this stage:
 
@@ -111,29 +111,37 @@ Tests cover:
 
 ## Stage 3 — Replay protection
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Implement replay defense as a first-class application boundary.
+Implemented replay defense as a first-class application boundary.
 
-Planned contracts/components:
+Implemented contracts/components:
 
-- `NonceRepository` / replay store contract;
-- nonce uniqueness policy;
-- `ReplayProtector` service or equivalent focused component;
-- explicit replay window configuration;
-- reuse the Stage 2 timestamp-tolerance policy where appropriate.
+- atomic `NonceStore` replay-store contract;
+- `ReplayWindowPolicy` with explicit retention configuration;
+- `ReplayProtector` focused application service;
+- reuse of the Stage 2 timestamp-tolerance policy;
+- explicit `TimestampOutsideToleranceError` and `ReplayDetectedError` failures.
 
-Requirements:
+Requirements enforced:
 
-- reject stale/future timestamps outside configured tolerance;
-- reject repeated nonce per integration client within replay window;
-- nonce consumption must be atomic at the persistence boundary;
-- concurrent duplicate requests must not both succeed.
+- reject stale/future timestamps outside configured tolerance before nonce consumption;
+- reject repeated nonce per integration client within the protected window;
+- nonce consumption is defined as atomic at the storage boundary;
+- nonce expiry is never earlier than the point at which the request timestamp becomes invalid;
+- concurrent duplicate requests must not both succeed;
+- no SQLAlchemy/persistent replay adapter is introduced in this stage.
 
-Tests:
+Tests cover:
 
-- unit policy tests;
-- concurrent replay tests at persistence/integration stage once SQLAlchemy exists.
+- first-use success;
+- duplicate rejection for the same client;
+- same nonce allowed for different clients;
+- stale/future timestamp rejection without consuming nonce;
+- replay-window expiry calculations;
+- concurrent duplicate requests against an atomic test fake.
+
+A real SQLAlchemy concurrency test remains part of the persistence stage, where the atomic contract must be implemented by the database adapter.
 
 ## Stage 4 — Application authentication services
 

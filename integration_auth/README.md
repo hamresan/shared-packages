@@ -13,7 +13,7 @@ Python:       >= 3.12
 It is deliberately separate from `hamresan-identity`:
 
 - `hamresan-identity` owns human users, sessions, and user access tokens;
-- `hamresan-integration-auth` owns machine/integration identity, credentials, signed requests, permissions, scopes, and credential lifecycle;
+- `hamresan-integration-auth` owns machine/integration identity, credentials, signed requests, permissions, scopes, replay protection, and credential lifecycle;
 - a host application may use both and map them into its own actor abstraction.
 
 The package has no direct dependency on Identity, WordPress, WooCommerce, Store, Subscription, or provider-specific SDKs.
@@ -40,11 +40,18 @@ Implemented:
   - constant-time HMAC verification;
   - configurable timestamp-tolerance policy;
   - fixed known-answer vectors suitable for cross-language interoperability tests.
+- **Stage 3 — Replay protection core**
+  - atomic `NonceStore` contract;
+  - `ReplayWindowPolicy`;
+  - `ReplayProtector` application service;
+  - stale/future timestamp rejection before nonce consumption;
+  - client-scoped nonce uniqueness;
+  - explicit replay/timestamp errors.
 
 Not implemented yet:
 
-- nonce/replay persistence and atomic nonce consumption;
-- request-authentication application services;
+- persistent nonce/replay storage;
+- complete request-authentication application services;
 - authorization services;
 - credential issuance/rotation services;
 - SQLAlchemy persistence;
@@ -292,21 +299,38 @@ Secrets and signatures must not be logged.
 
 # Timestamp tolerance and replay protection
 
-Stage 2 includes only the configurable clock-skew policy:
+Stage 2 provides the clock-skew policy and Stage 3 adds replay protection around atomic nonce consumption.
 
 ```python
-from integration_auth.protocol import TimestampTolerancePolicy
-
-policy = TimestampTolerancePolicy(max_clock_skew_seconds=300)
-allowed = policy.allows(
-    request_timestamp=1787390042,
-    current_timestamp=1787390100,
-)
+from integration_auth.application.contracts import NonceStore
+from integration_auth.application.services import ReplayProtector
+from integration_auth.protocol import ReplayWindowPolicy, TimestampTolerancePolicy
 ```
 
-The policy accepts timestamps at both positive and negative skew boundaries and rejects values outside the configured tolerance.
+`TimestampTolerancePolicy` accepts timestamps at both positive and negative skew boundaries and rejects values outside the configured tolerance.
 
-**Nonce consumption and replay prevention are Stage 3 concerns and are not implemented yet.** A signed request must not be considered fully authenticated merely because its HMAC signature verifies.
+`NonceStore` defines the persistence-boundary contract:
+
+```text
+consume_once(client_id, nonce, expires_at_timestamp) -> bool
+```
+
+The operation must be atomic. The first consumption of a `(client_id, nonce)` pair succeeds; concurrent/later attempts must fail while the nonce is protected.
+
+`ReplayProtector` performs the Stage 3 flow:
+
+```text
+1. validate request timestamp against configured clock skew
+2. calculate a safe nonce expiry
+3. atomically consume the client-scoped nonce
+4. reject the request when the nonce was already consumed
+```
+
+Timestamp validation runs before nonce consumption, so stale/future requests do not pollute the replay store.
+
+`ReplayWindowPolicy` keeps a nonce for at least the configured retention period and never expires it before the signed request can no longer be accepted by the timestamp policy.
+
+Stage 3 intentionally defines the contract and application boundary only. A real persistent/SQLAlchemy nonce store is implemented in the persistence stage, where atomicity must be enforced by the database adapter.
 
 # External integration usage
 
@@ -319,7 +343,7 @@ X-Integration-Nonce: 7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3
 X-Integration-Signature: <signature>
 ```
 
-Header parsing and request authentication orchestration belong to later application/presentation stages. Stage 2 provides the protocol and crypto building blocks only.
+Header parsing and complete request authentication orchestration belong to later application/presentation stages. Stages 2 and 3 provide signing, timestamp and replay-protection building blocks.
 
 ## PHP / WordPress interoperability
 
@@ -405,7 +429,7 @@ invalid or missing integration authentication -> 401 Unauthorized
 authenticated integration without permission -> 403 Forbidden
 ```
 
-Business routes must remain thin and must not parse HMAC signatures, inspect credential persistence, or implement resource-scope rules directly.
+Business routes must remain thin and must not parse HMAC signatures, inspect credential persistence, consume nonces directly, or implement resource-scope rules.
 
 # Credential rotation and persistence
 
@@ -420,7 +444,7 @@ When implemented:
 - persistence uses async SQLAlchemy repositories;
 - the host application owns Engine/SessionMaker;
 - the host owns the Alembic revision graph;
-- nonce consumption must eventually be atomic.
+- nonce consumption must implement the Stage 3 atomic `NonceStore` contract under concurrency.
 
 # Integration with hamresan-identity
 
@@ -450,14 +474,18 @@ integration_auth/
 │   ├── policies/
 │   ├── validators/
 │   └── value_objects/
-├── protocol/                       # Stage 2
+├── protocol/                       # Stage 2 + Stage 3 replay policy
 │   ├── canonicalization/
 │   ├── policies/
 │   ├── validators/
 │   └── value_objects/
 ├── application/
-│   └── contracts/
-│       └── crypto/                 # Stage 2 contracts
+│   ├── contracts/
+│   │   ├── crypto/                 # Stage 2 contracts
+│   │   └── replay/                 # Stage 3 NonceStore
+│   ├── errors/                     # Stage 3 replay errors
+│   └── services/
+│       └── replay/                 # Stage 3 ReplayProtector
 ├── infrastructure/
 │   └── crypto/
 │       ├── hashing/                # Stage 2 SHA-256
