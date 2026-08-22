@@ -2,13 +2,13 @@
 
 from dataclasses import dataclass
 
+from integration_auth.application.contracts.authentication.request_authenticator import (
+    IntegrationRequestAuthenticator,
+)
+from integration_auth.application.contracts.authorization.integration_authorizer import (
+    IntegrationRequestAuthorizer,
+)
 from integration_auth.application.contracts.crypto.body_hasher import BodyHasher
-from integration_auth.application.services.authentication.authenticate_integration_request import (
-    AuthenticateIntegrationRequestService,
-)
-from integration_auth.application.services.authorization.integration_authorizer import (
-    IntegrationAuthorizer,
-)
 from integration_auth.presentation.dependencies.authentication import (
     IntegrationAuthenticationDependency,
 )
@@ -38,8 +38,8 @@ class FastApiIntegrationAuthFactory:
     def create(
         self,
         *,
-        authenticator: AuthenticateIntegrationRequestService,
-        authorizer: IntegrationAuthorizer,
+        authenticator: IntegrationRequestAuthenticator,
+        authorizer: IntegrationRequestAuthorizer,
         body_hasher: BodyHasher,
         query_encoder: CanonicalQueryEncoder,
     ) -> FastApiIntegrationAuth:
