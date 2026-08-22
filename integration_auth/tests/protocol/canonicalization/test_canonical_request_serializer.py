@@ -1,4 +1,6 @@
-from integration_auth.protocol.canonicalization.canonical_request_serializer import CanonicalRequestSerializer
+from integration_auth.protocol.canonicalization.canonical_request_serializer import (
+    CanonicalRequestSerializer,
+)
 from tests.support.protocol.canonical_request_builder import CanonicalRequestBuilder
 from tests.support.protocol.known_answer_vector import EXPECTED_CANONICAL_REQUEST
 

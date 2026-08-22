@@ -1,8 +1,12 @@
 import pytest
 
 from integration_auth.application.contracts.crypto.request_signer import RequestSigner
-from integration_auth.infrastructure.crypto.hmac.hmac_sha256_request_signer import HmacSha256RequestSigner
-from integration_auth.protocol.canonicalization.canonical_request_serializer import CanonicalRequestSerializer
+from integration_auth.infrastructure.crypto.hmac.hmac_sha256_request_signer import (
+    HmacSha256RequestSigner,
+)
+from integration_auth.protocol.canonicalization.canonical_request_serializer import (
+    CanonicalRequestSerializer,
+)
 from tests.support.protocol.canonical_request_builder import CanonicalRequestBuilder
 from tests.support.protocol.known_answer_vector import EXPECTED_SIGNATURE, TEST_SECRET
 

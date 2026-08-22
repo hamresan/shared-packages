@@ -1,6 +1,8 @@
 import pytest
 
-from integration_auth.protocol.validators.canonical_request_validator import CanonicalRequestValidator
+from integration_auth.protocol.validators.canonical_request_validator import (
+    CanonicalRequestValidator,
+)
 
 VALID_METHOD = "POST"
 VALID_PATH = "/api/items"
