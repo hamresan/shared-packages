@@ -11,11 +11,13 @@ from integration_auth.application.contracts.provisioning.repositories import (
 from integration_auth.application.contracts.provisioning.secrets import (
     CredentialSecretGenerator,
     CredentialSecretProtector,
+    CredentialSecretUnprotector,
 )
 
 __all__ = (
     "CredentialSecretGenerator",
     "CredentialSecretProtector",
+    "CredentialSecretUnprotector",
     "IntegrationClientIdGenerator",
     "IntegrationClientProvisioningRepository",
     "IntegrationCredentialIdGenerator",

@@ -8,10 +8,13 @@ version = "0.1.0"
 description = "Reusable machine-to-machine authentication, request signing, replay protection, and authorization package."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+  "sqlalchemy[asyncio]>=2.0,<3.0",
+]
 
 [project.optional-dependencies]
 test = [
+  "aiosqlite>=0.20,<1.0",
   "build>=1.2,<2.0",
   "pyright>=1.1,<2.0",
   "pytest>=8.0,<9.0",

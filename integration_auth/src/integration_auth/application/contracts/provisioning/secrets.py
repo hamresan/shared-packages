@@ -1,4 +1,4 @@
-"""Credential secret generation and protection contracts."""
+"""Credential secret generation, protection, and recovery contracts."""
 
 from typing import Protocol
 
@@ -17,3 +17,9 @@ class CredentialSecretProtector(Protocol):
     """Protect raw secret material before persistence."""
 
     def protect(self, secret: bytes) -> ProtectedCredentialSecret: ...
+
+
+class CredentialSecretUnprotector(Protocol):
+    """Recover transient verification material from protected persistence data."""
+
+    def unprotect(self, secret: ProtectedCredentialSecret) -> bytes: ...
