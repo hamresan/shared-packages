@@ -339,20 +339,32 @@ Quality gate for this stage: 173 tests passed, Pyright strict reports 0 errors, 
 
 ## Stage 7 — Host-owned Alembic integration
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Expose package metadata/filter helpers while keeping the revision graph in the host application.
-
-Expected public API:
+Implemented and tested public migration integration:
 
 ```text
+SUBSCRIPTION_TABLE_PREFIX
 subscription_metadata()
 include_subscription_name()
 ```
 
-Real Alembic autogenerate tests must verify `subscription_*` ownership/filtering.
+Rules and boundaries:
+
+- the package exposes only its SQLAlchemy metadata and Alembic name filter;
+- the consuming host owns `alembic.ini`, `env.py`, revision files, migration ordering, and the revision graph;
+- `subscription_metadata()` exposes only Subscription-owned tables;
+- `include_subscription_name()` accepts `subscription_*` tables and their child objects while excluding unrelated host tables;
+- real Alembic autogenerate tests verify all Subscription tables are discovered;
+- autogenerate filtering is tested against a host-owned `identity_users` table to ensure it is not treated as Subscription-owned;
+- no package-owned Alembic environment or revision files are introduced;
+- Alembic remains a test-only dependency of `hamresan-subscription`.
+
+Quality gate for this stage: 179 tests passed, Pyright strict reports 0 errors, and total branch coverage is 94.59%.
 
 ## Stage 8 — FastAPI adapter
+
+Status: **NEXT**
 
 Add presentation adapters only after the application API is stable.
 
@@ -405,8 +417,8 @@ To make GitHub technically block merging when this job fails, the repository's `
 ## Continuation checkpoint
 
 ```text
-Implemented: Stages 0, 1, 2, 3, 4, 5, 6
-Next objective: Stage 7 — host-owned Alembic integration
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; host-owned async SQLAlchemy sessions; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
+Implemented: Stages 0, 1, 2, 3, 4, 5, 6, 7
+Next objective: Stage 8 — FastAPI adapter
+Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit application contracts/UoW; host-owned async SQLAlchemy sessions; host-owned Alembic revision graph; paid/manual/promotional/etc. sources; no hard dependency on other Hamresan packages
 Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
 ```
