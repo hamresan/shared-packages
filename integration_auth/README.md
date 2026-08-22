@@ -143,14 +143,18 @@ A principal represents the authenticated machine identity, not a user:
 ```python
 IntegrationPrincipal(
     client_id="wp_store_123",
-    permissions=frozenset({
-        "catalog.read",
-        "catalog.write",
-        "orders.read",
-    }),
-    scopes=frozenset({
-        "store:store-123",
-    }),
+    permissions=frozenset(
+        {
+            "catalog.read",
+            "catalog.write",
+            "orders.read",
+        }
+    ),
+    scopes=frozenset(
+        {
+            "store:store-123",
+        }
+    ),
 )
 ```
 
