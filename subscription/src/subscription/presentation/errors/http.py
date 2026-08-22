@@ -26,5 +26,8 @@ class SubscriptionHttpErrorMapper:
         if isinstance(error, PlanUnavailableError):
             return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error))
         if isinstance(error, ValueError):
-            return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(error))
+            return HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(error),
+            )
         return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
