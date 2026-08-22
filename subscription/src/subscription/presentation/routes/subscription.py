@@ -98,7 +98,8 @@ class SubscriptionEndpoints:
     ) -> SubscriptionResponse:
         try:
             await self._resource_guard.ensure_allowed(actor, subscription_id)
-            return self._response_mapper.subscription(await self._canceller.execute(subscription_id))
+            updated = await self._canceller.execute(subscription_id)
+            return self._response_mapper.subscription(updated)
         except Exception as error:
             raise self._error_mapper.map(error) from error
 
