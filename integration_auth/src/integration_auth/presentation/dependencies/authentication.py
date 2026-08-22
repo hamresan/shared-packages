@@ -12,7 +12,9 @@ from integration_auth.presentation.errors.http_error_mapper import FastApiIntegr
 from integration_auth.presentation.mappers.authentication_request_mapper import (
     FastApiAuthenticationRequestMapper,
 )
-from integration_auth.presentation.mappers.signed_request_header_parser import SignedRequestHeaderParser
+from integration_auth.presentation.mappers.signed_request_header_parser import (
+    SignedRequestHeaderParser,
+)
 
 
 class IntegrationAuthenticationDependency:
@@ -35,6 +37,10 @@ class IntegrationAuthenticationDependency:
         try:
             headers = self._header_parser.parse(request)
             authentication_request = await self._request_mapper.map(request, headers)
+        except ValueError as exc:
+            raise self._error_mapper.authentication_error() from exc
+
+        try:
             return await self._authenticator.authenticate(authentication_request)
-        except (IntegrationAuthenticationError, ReplayProtectionError, ValueError) as exc:
+        except (IntegrationAuthenticationError, ReplayProtectionError) as exc:
             raise self._error_mapper.authentication_error() from exc
