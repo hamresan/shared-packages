@@ -1,17 +1,16 @@
 """Framework-neutral integration authorization service."""
 
-from integration_auth.application.dto.authorization.authorization_result import (
+from integration_auth.application.dto.authorization import (
     AuthorizationDecisionReason,
     AuthorizationResult,
 )
-from integration_auth.application.errors.authorization import IntegrationAuthorizationError
-from integration_auth.domain.entities.integration_principal import IntegrationPrincipal
-from integration_auth.domain.policies.permission_requirement_policy import PermissionRequirementPolicy
-from integration_auth.domain.policies.resource_scope_authorization_policy import (
+from integration_auth.application.errors import IntegrationAuthorizationError
+from integration_auth.domain.entities import IntegrationPrincipal
+from integration_auth.domain.policies import (
+    PermissionRequirementPolicy,
     ResourceScopeAuthorizationPolicy,
 )
-from integration_auth.domain.value_objects.integration_resource import IntegrationResource
-from integration_auth.domain.value_objects.permission import Permission
+from integration_auth.domain.value_objects import IntegrationResource, Permission
 
 
 class IntegrationAuthorizer:
@@ -37,17 +36,13 @@ class IntegrationAuthorizer:
             principal=principal,
             permission=permission,
         ):
-            return AuthorizationResult.deny(
-                AuthorizationDecisionReason.MISSING_PERMISSION
-            )
+            return AuthorizationResult.deny(AuthorizationDecisionReason.MISSING_PERMISSION)
 
         if resource is not None and not self._resource_scope_policy.allows(
             principal=principal,
             resource=resource,
         ):
-            return AuthorizationResult.deny(
-                AuthorizationDecisionReason.MISSING_RESOURCE_SCOPE
-            )
+            return AuthorizationResult.deny(AuthorizationDecisionReason.MISSING_RESOURCE_SCOPE)
 
         return AuthorizationResult.allow()
 

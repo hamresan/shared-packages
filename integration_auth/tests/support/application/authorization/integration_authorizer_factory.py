@@ -1,10 +1,10 @@
 """Test factory for IntegrationAuthorizer."""
 
-from integration_auth.application.services.authorization.integration_authorizer import (
+from integration_auth.application.services.authorization import (
     IntegrationAuthorizer,
 )
-from integration_auth.domain.policies.permission_requirement_policy import PermissionRequirementPolicy
-from integration_auth.domain.policies.resource_scope_authorization_policy import (
+from integration_auth.domain.policies import (
+    PermissionRequirementPolicy,
     ResourceScopeAuthorizationPolicy,
 )
 

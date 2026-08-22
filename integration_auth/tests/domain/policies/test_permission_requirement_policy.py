@@ -1,8 +1,8 @@
 """Tests for exact permission authorization."""
 
-from integration_auth.domain.policies.permission_requirement_policy import PermissionRequirementPolicy
-from integration_auth.domain.value_objects.permission import Permission
-from tests.support.application.authorization.authorization_principal_builder import (
+from integration_auth.domain.policies import PermissionRequirementPolicy
+from integration_auth.domain.value_objects import Permission
+from tests.support.application.authorization import (
     AuthorizationPrincipalBuilder,
 )
 

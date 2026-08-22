@@ -2,9 +2,7 @@
 
 from dataclasses import dataclass
 
-from integration_auth.domain.value_objects.identifiers import IntegrationClientId
-from integration_auth.domain.value_objects.integration_scope import IntegrationScope
-from integration_auth.domain.value_objects.permission import Permission
+from integration_auth.domain.value_objects import IntegrationClientId, IntegrationScope, Permission
 
 
 @dataclass(frozen=True, slots=True)
