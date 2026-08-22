@@ -76,7 +76,7 @@ A real persistent atomic implementation remains part of Stage 7.
 
 ## Stage 4 — Application authentication services
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented:
 
@@ -111,30 +111,23 @@ Security/architecture decisions:
 - no SQLAlchemy or FastAPI in the application layer;
 - no Unit of Work is introduced yet because Stage 4 has no concrete multi-repository transaction boundary; atomic nonce consumption remains owned by `NonceStore`.
 
-Tests mirror:
-
-- `domain/policies`;
-- `application/mappers/authentication`;
-- `application/services/authentication`;
-- dedicated authentication Fakes/Builders/Factories under `tests/support/application/authentication`.
-
 ## Stage 5 — Authorization: permissions and scopes
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Implement authorization independently of HTTP framework.
+Implemented:
 
-Planned API:
-
+- exact `PermissionRequirementPolicy`;
+- exact `ResourceScopeAuthorizationPolicy`;
+- framework-neutral `AuthorizationResult`;
+- stable authorization decision reasons;
 - `IntegrationAuthorizer`;
-- permission requirement policy;
-- resource/scope authorization policy;
-- authorization result/errors.
+- `IntegrationAuthorizationError` for require-style enforcement.
 
-Support:
+Supported forms:
 
 1. route/action-level permission checks;
-2. resource-level permission + scope checks.
+2. resource-level permission + exact resource-scope checks.
 
 Examples:
 
@@ -143,7 +136,17 @@ catalog.write
 orders.read + store:store-123
 ```
 
-The package must not know what Catalog, Order or Store objects are.
+Authorization rules:
+
+- permission matching is exact;
+- resource type and resource ID must both match an explicit scope grant;
+- no wildcard permission/scope behavior;
+- no implicit permission inheritance;
+- permission denial happens before scope evaluation;
+- authorization is independent of HTTP/FastAPI;
+- the package does not know what Catalog, Order, Store, or Organization objects are.
+
+Tests mirror domain policies, application DTOs and authorization services, with reusable builders/factories under `tests/support/application/authorization`.
 
 ## Stage 6 — Credential lifecycle and provisioning
 
