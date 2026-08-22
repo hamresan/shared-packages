@@ -26,130 +26,67 @@ Every stage must preserve:
 
 **Status: COMPLETE**
 
-Foundation, packaging, docs, test structure and quality gates are established.
-
 ## Stage 1 — Core domain: integration identity and authorization model
 
 **Status: COMPLETE**
-
-Implemented integration clients, credential metadata/lifecycle, principals, permissions, scopes,
-resources, typed IDs, and inbound/outbound credential direction.
 
 ## Stage 2 — Canonical request and cryptographic contracts
 
 **Status: COMPLETE**
 
-Implemented canonical request/query rules, SHA-256 hashing, HMAC-SHA256 signing/verification,
-constant-time comparison, timestamp tolerance, and known-answer vectors.
-
 ## Stage 3 — Replay protection
 
 **Status: COMPLETE**
-
-Implemented atomic `NonceStore` contract, replay window policy, replay protector, timestamp checks,
-and concurrency behavior against an atomic fake. Real persistence atomicity remains Stage 7.
 
 ## Stage 4 — Application authentication services
 
 **Status: COMPLETE**
 
-Implemented client/credential readers, transient secret-provider boundary, clock contract,
-credential eligibility policy, signed-request authentication service, and principal mapping.
-
 ## Stage 5 — Authorization: permissions and scopes
 
 **Status: COMPLETE**
 
-Implemented exact permission checks, exact resource-scope checks, framework-neutral authorization
-results, stable decision reasons, and `IntegrationAuthorizer`.
-
-Authorization remains independent of HTTP/FastAPI and has no wildcard or implicit inheritance.
-
 ## Stage 6 — Credential lifecycle and provisioning
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
-Implemented services:
-
-- register/create integration client;
-- issue credential;
-- rotate credential;
-- revoke credential;
-- expire credential;
-- update permissions/scopes.
-
-Implemented security/architecture boundaries:
-
-- explicit client/credential ID generator contracts;
-- UUID4 standard-library generator adapters;
-- `CredentialSecretGenerator` contract;
-- `SecretsCredentialSecretGenerator` producing 256-bit secrets;
-- `CredentialSecretProtector` contract;
-- `ProtectedCredentialSecret` type for persistence boundaries;
-- raw secrets excluded from object `repr`;
-- protected secret material excluded from object `repr`;
-- raw secret returned only by issuance/rotation result;
-- credential entities still contain no secret material;
-- provisioning repositories accept protected secret material, never raw secret bytes;
-- explicit `overlap_seconds` rotation window;
-- direction-specific rotation so inbound/outbound credentials remain independent;
-- rotation repository operation is explicitly atomic;
-- lifecycle snapshot construction is handled by a dedicated domain service;
-- Unix timestamp conversion is handled by a dedicated application mapper;
-- no SQLAlchemy/FastAPI/provider-specific implementation introduced.
-
-Rotation behavior:
-
-```text
-same client + same direction + currently usable ACTIVE credentials
-    -> expiry shortened to overlap deadline
-opposite direction
-    -> untouched
-new credential
-    -> ACTIVE and independently managed
-```
-
-A zero-second overlap is supported while preserving domain timestamp invariants.
-
-Tests mirror:
-
-- `domain/services`;
-- `domain/policies`;
-- `application/dto/provisioning`;
-- `application/mappers/time`;
-- `application/security`;
-- `application/services/provisioning`;
-- `infrastructure/security`;
-- dedicated provisioning fakes/builders/factories under `tests/support/application/provisioning`.
-
-Stage 6 intentionally does not implement database encryption/key management. The host provides the
-`CredentialSecretProtector` implementation appropriate for its key-management system. Stage 7
-must persist only `ProtectedCredentialSecret` and implement rotation atomically in a real database
-transaction.
+Implemented integration-client registration, grant updates, credential issuance, direction-specific
+rotation with overlap, revocation, expiration, protected-secret boundaries, secure ID/secret
+generation, and atomic rotation persistence contracts.
 
 ## Stage 7 — Async SQLAlchemy persistence
 
-**Status: PLANNED**
+**Status: COMPLETE**
 
-Implement repository adapters using a host-provided async session factory.
+Implemented host-session-owned async SQLAlchemy adapters with:
 
-Requirements:
-
-- table prefix `integration_auth_`;
-- no global Engine/SessionMaker;
-- repository contracts remain in application layer;
-- dedicated persistence mappers/hydrators;
-- real atomic nonce consumption under concurrency;
-- real atomic credential rotation transaction;
-- protected secret persistence only; never raw plaintext secrets;
+- `integration_auth_` table prefix;
+- dedicated ORM records and persistence mappers;
+- authentication and provisioning repository implementations;
+- protected secret persistence only;
+- transient verification-secret recovery through a host-provided unprotector;
+- atomic nonce consumption via database uniqueness;
+- atomic credential rotation in one transaction;
 - indexes for authentication hot paths;
-- no FK to Identity/Store/Organization tables.
+- no FK to Identity/Store/Organization tables;
+- real async SQLite integration/concurrency tests.
 
 ## Stage 8 — Host-owned Alembic integration
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Expose metadata/filter helpers while keeping revision history in the host application.
+Implemented public migration helpers:
+
+- `INTEGRATION_AUTH_TABLE_PREFIX`;
+- `integration_auth_metadata()`;
+- `include_integration_auth_name(...)`.
+
+The package exposes only its SQLAlchemy metadata and an Alembic-compatible name filter. The host
+application owns `alembic.ini`, `env.py`, revision identifiers, ordering, version directories, and
+the full revision graph.
+
+Real Alembic autogenerate tests verify that integration-auth tables are discovered and unrelated
+host tables are ignored by the package filter.
 
 ## Stage 9 — FastAPI adapter
 
