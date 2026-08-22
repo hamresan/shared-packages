@@ -152,8 +152,10 @@ hard-coded application encryption key.
 The host provides the provisioning and authentication security boundaries:
 
 ```python
-from integration_auth.application.contracts.provisioning import CredentialSecretProtector
-from integration_auth.infrastructure.persistence.sqlalchemy import CredentialSecretUnprotector
+from integration_auth.application.contracts.provisioning import (
+    CredentialSecretProtector,
+    CredentialSecretUnprotector,
+)
 ```
 
 Provisioning stores only `ProtectedCredentialSecret`. Authentication recovers the secret only as
