@@ -3,7 +3,9 @@
 from integration_auth.application.contracts.authentication.credential_secret_provider import (
     CredentialSecretProvider,
 )
-from integration_auth.application.contracts.provisioning.secrets import CredentialSecretUnprotector
+from integration_auth.application.contracts.provisioning.secrets import (
+    CredentialSecretUnprotector,
+)
 from integration_auth.application.security.protected_credential_secret import (
     ProtectedCredentialSecret,
 )
