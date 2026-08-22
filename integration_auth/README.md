@@ -80,10 +80,17 @@ Implemented:
   - package-owned SQLAlchemy metadata helper;
   - package-owned `include_name` filter;
   - host-owned revision graph and migration environment.
+- **Stage 9 — FastAPI adapter**
+  - signed-request header parsing and validation;
+  - HTTP request to application-authentication mapping;
+  - authentication dependency returning `IntegrationPrincipal`;
+  - permission/resource-scope dependency factory;
+  - generic 401/403 HTTP error mapping;
+  - application contracts for injectable authenticator/authorizer implementations;
+  - real FastAPI dependency tests.
 
 Not implemented yet:
 
-- FastAPI adapters/dependencies;
 - executable Python/PHP interoperability example;
 - multi-auth host composition example;
 - final security/release-hardening stage.
@@ -92,11 +99,20 @@ See `ROADMAP.md` for staged delivery.
 
 ## Installation
 
-From a package index when published:
+Core package:
 
 ```bash
 pip install hamresan-integration-auth
 ```
+
+FastAPI presentation adapter:
+
+```bash
+pip install "hamresan-integration-auth[fastapi]"
+```
+
+FastAPI remains an optional dependency. Domain, application, protocol, crypto, and persistence
+layers do not conceptually depend on FastAPI.
 
 Development in this repository:
 
@@ -175,7 +191,7 @@ assert query == "page=2&tag=blue%20sky&tag=sale"
 
 Concrete SHA-256/HMAC adapters live in infrastructure. HMAC verification uses
 `hmac.compare_digest` for constant-time comparison. Raw secrets and signatures must never be
-logged.
+logged. Authentication and presentation DTOs exclude signature values from their `repr`.
 
 ## Replay protection
 
@@ -213,6 +229,15 @@ resolve client
 ```
 
 `IntegrationCredential` contains credential metadata only. It never stores raw secret material.
+
+The application also exposes narrow contracts used by presentation adapters:
+
+```python
+from integration_auth.application.contracts.authentication import IntegrationRequestAuthenticator
+from integration_auth.application.contracts.authorization import IntegrationRequestAuthorizer
+```
+
+Concrete application services explicitly implement those contracts.
 
 ## Authorization
 
@@ -405,7 +430,7 @@ tables are discovered and unrelated host tables are ignored.
 
 ## External integration usage
 
-A future HTTP adapter may receive headers such as:
+The FastAPI adapter expects these signed-request headers:
 
 ```text
 X-Integration-Client-Id: wp_store_123
@@ -414,8 +439,10 @@ X-Integration-Nonce: 7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3
 X-Integration-Signature: <signature>
 ```
 
-Header parsing belongs to Stage 9. The core/application layers work with translated application
-inputs rather than FastAPI request objects.
+The adapter translates FastAPI `Request` data into the existing application authentication input.
+It preserves the ASGI raw path when available, preserves duplicate query values through the
+canonical query encoder, hashes the request body through `BodyHasher`, and never moves HTTP types
+into the application/domain layers.
 
 ### PHP / WordPress interoperability
 
@@ -449,20 +476,70 @@ OUTBOUND = Python host signs; external side verifies
 Do not assume one credential is shared in both directions. Each direction can be issued, rotated,
 revoked, and expired independently.
 
-## Protecting routes
+## Protecting FastAPI routes
 
-FastAPI integration is **not implemented yet**. Stage 9 will translate HTTP requests into the
-existing authentication/authorization application APIs.
+Compose the adapter in the host application. The package does not create application routes.
 
-Target semantics:
+```python
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Request
+
+from integration_auth import IntegrationPrincipal, IntegrationResource, Permission
+from integration_auth.infrastructure.crypto.hashing import Sha256BodyHasher
+from integration_auth.presentation import FastApiIntegrationAuthFactory
+from integration_auth.protocol import CanonicalQueryEncoder
+
+integration_http = FastApiIntegrationAuthFactory().create(
+    authenticator=authentication_service,
+    authorizer=authorizer,
+    body_hasher=Sha256BodyHasher(),
+    query_encoder=CanonicalQueryEncoder(),
+)
+
+app = FastAPI()
+
+
+@app.get("/integration/profile")
+async def integration_profile(
+    principal: Annotated[IntegrationPrincipal, Depends(integration_http.authenticate)],
+) -> dict[str, str]:
+    return {"client_id": principal.client_id.value}
+```
+
+For permission + resource-scope enforcement, the host supplies the mapping from its HTTP resource
+to the generic `IntegrationResource`:
+
+```python
+def store_resource(request: Request) -> IntegrationResource:
+    return IntegrationResource("store", str(request.path_params["store_id"]))
+
+
+require_orders_read = integration_http.permissions.create(
+    Permission("orders.read"),
+    resource_resolver=store_resource,
+)
+
+
+@app.get("/stores/{store_id}/orders")
+async def store_orders(
+    principal: Annotated[IntegrationPrincipal, Depends(require_orders_read)],
+) -> dict[str, str]:
+    return {"client_id": principal.client_id.value}
+```
+
+HTTP semantics are fail-closed and intentionally generic:
 
 ```text
-invalid/missing machine authentication -> 401 Unauthorized
+invalid/missing/malformed machine authentication -> 401 Unauthorized
+invalid signature/timestamp/replay               -> 401 Unauthorized
 authenticated integration without authorization -> 403 Forbidden
 ```
 
-Routes must remain thin and must not parse HMAC signatures, consume nonces, inspect credential
-storage, decrypt credentials, or implement permission/scope rules directly.
+Authentication errors do not expose whether the client ID, credential, signature, timestamp, or
+nonce was the failing detail. Authorization errors do not expose the missing permission/scope
+reason. Routes do not parse signatures, consume nonces, inspect credential storage, decrypt
+credentials, or implement authorization rules directly.
 
 ## Integration with hamresan-identity
 

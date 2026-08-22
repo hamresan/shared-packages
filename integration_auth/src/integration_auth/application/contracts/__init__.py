@@ -5,7 +5,9 @@ from integration_auth.application.contracts.authentication import (
     CredentialSecretProvider,
     IntegrationClientRepository,
     IntegrationCredentialRepository,
+    IntegrationRequestAuthenticator,
 )
+from integration_auth.application.contracts.authorization import IntegrationRequestAuthorizer
 from integration_auth.application.contracts.crypto import BodyHasher, RequestSigner, RequestVerifier
 from integration_auth.application.contracts.provisioning import (
     CredentialSecretGenerator,
@@ -29,6 +31,8 @@ __all__ = (
     "IntegrationCredentialIdGenerator",
     "IntegrationCredentialProvisioningRepository",
     "IntegrationCredentialRepository",
+    "IntegrationRequestAuthenticator",
+    "IntegrationRequestAuthorizer",
     "NonceStore",
     "RequestSigner",
     "RequestVerifier",

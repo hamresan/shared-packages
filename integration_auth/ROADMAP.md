@@ -146,7 +146,7 @@ Requirements delivered:
 
 ## Stage 8 — Host-owned Alembic integration
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
 Implemented public migration helpers:
 
@@ -163,23 +163,34 @@ unrelated host-owned tables are ignored by the package filter.
 
 ## Stage 9 — FastAPI adapter
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Planned responsibilities:
+Implemented presentation-layer integration:
 
-- signed-request header parsing;
-- authentication dependency;
-- permission dependency/factory;
-- presentation mappers;
-- HTTP error mapping;
-- thin routes.
+- fixed signed-request header parsing for client ID, timestamp, nonce, and signature;
+- dedicated required-header validation;
+- FastAPI request -> `AuthenticateIntegrationRequest` mapping;
+- raw URL path preservation when ASGI supplies `raw_path`;
+- canonical duplicate-query handling through the existing canonical query encoder;
+- request-body hashing through the `BodyHasher` contract;
+- authentication dependency returning `IntegrationPrincipal`;
+- permission dependency factory with optional host-provided resource resolver;
+- explicit application contracts for request authentication and authorization;
+- generic 401 mapping for malformed/failed machine authentication and replay rejection;
+- generic 403 mapping for authenticated integrations lacking permission/scope;
+- signature values excluded from presentation/application DTO `repr`;
+- optional `fastapi` package extra rather than a mandatory core dependency;
+- real FastAPI `Depends(...)` route tests using `TestClient`.
 
-Required semantics:
+Required semantics are enforced:
 
 ```text
 failed authentication -> 401
 authenticated principal lacking authorization -> 403
 ```
+
+Routes remain host-owned and thin. The adapter does not add persistence, crypto, replay, or
+authorization logic to route handlers.
 
 ## Stage 10 — External protocol interoperability example
 
