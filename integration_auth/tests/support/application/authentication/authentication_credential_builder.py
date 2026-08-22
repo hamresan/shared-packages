@@ -20,6 +20,20 @@ class AuthenticationCredentialBuilder:
         self.direction = CredentialDirection.INBOUND
         self.current_timestamp = current_timestamp
 
+    def with_credential_id(
+        self,
+        credential_id: IntegrationCredentialId,
+    ) -> "AuthenticationCredentialBuilder":
+        self.credential_id = credential_id
+        return self
+
+    def with_direction(
+        self,
+        direction: CredentialDirection,
+    ) -> "AuthenticationCredentialBuilder":
+        self.direction = direction
+        return self
+
     def build(self) -> IntegrationCredential:
         builder = IntegrationCredentialBuilder()
         builder.credential_id = self.credential_id

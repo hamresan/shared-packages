@@ -97,9 +97,11 @@ def test_rejects_unknown_client_before_credential_resolution() -> None:
 def test_rejects_client_without_usable_inbound_credential() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        builder = AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
-        builder.direction = CredentialDirection.OUTBOUND
-        credential = builder.build()
+        credential = (
+            AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
+            .with_direction(CredentialDirection.OUTBOUND)
+            .build()
+        )
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
             credentials=(credential,),
@@ -174,12 +176,16 @@ def test_rejects_invalid_signature_without_consuming_nonce() -> None:
 def test_supports_multiple_credential_candidates_for_rotation_overlap() -> None:
     async def run() -> None:
         request = CanonicalRequestBuilder().build()
-        first_builder = AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
-        first_builder.credential_id = IntegrationCredentialId("credential-1")
-        second_builder = AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
-        second_builder.credential_id = IntegrationCredentialId("credential-2")
-        first = first_builder.build()
-        second = second_builder.build()
+        first = (
+            AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
+            .with_credential_id(IntegrationCredentialId("credential-1"))
+            .build()
+        )
+        second = (
+            AuthenticationCredentialBuilder(current_timestamp=request.timestamp)
+            .with_credential_id(IntegrationCredentialId("credential-2"))
+            .build()
+        )
         service = build_authentication_service(
             client=AuthenticationClientBuilder().build(),
             credentials=(first, second),

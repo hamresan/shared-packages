@@ -334,9 +334,7 @@ Canonical query rules:
 ```python
 from integration_auth.protocol import CanonicalQueryEncoder
 
-query = CanonicalQueryEncoder().encode(
-    [("tag", "sale"), ("page", "2"), ("tag", "blue sky")]
-)
+query = CanonicalQueryEncoder().encode([("tag", "sale"), ("page", "2"), ("tag", "blue sky")])
 assert query == "page=2&tag=blue%20sky&tag=sale"
 ```
 
