@@ -1,5 +1,9 @@
 """Tests for SQLAlchemy persistence record schema constraints."""
 
+from typing import cast
+
+from sqlalchemy import Table
+
 from integration_auth.infrastructure.persistence.sqlalchemy.models.client_record import (
     IntegrationClientRecord,
 )
@@ -18,10 +22,13 @@ def test_all_persistence_tables_use_integration_auth_prefix() -> None:
 
 
 def test_credential_and_nonce_hot_paths_have_indexes_or_unique_constraints() -> None:
-    credential_index_names = {index.name for index in IntegrationCredentialRecord.__table__.indexes}
-    nonce_index_names = {index.name for index in ConsumedNonceRecord.__table__.indexes}
-    nonce_constraint_names = {
-        constraint.name for constraint in ConsumedNonceRecord.__table__.constraints
+    credential_table = cast(Table, IntegrationCredentialRecord.__table__)
+    nonce_table = cast(Table, ConsumedNonceRecord.__table__)
+
+    credential_index_names: set[str | None] = {index.name for index in credential_table.indexes}
+    nonce_index_names: set[str | None] = {index.name for index in nonce_table.indexes}
+    nonce_constraint_names: set[str | None] = {
+        constraint.name for constraint in nonce_table.constraints
     }
 
     assert "ix_integration_auth_credentials_client_status_direction" in credential_index_names
