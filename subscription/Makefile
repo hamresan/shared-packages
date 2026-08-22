@@ -1,9 +1,9 @@
-.PHONY: install-dev check lint format-check typecheck test coverage package-build
+.PHONY: install-dev check lint format-check typecheck test coverage package-build package-smoke
 
 install-dev:
 	python -m pip install -e ".[test]"
 
-check: lint format-check typecheck coverage package-build
+check: lint format-check typecheck coverage package-build package-smoke
 
 lint:
 	python -m ruff check .
@@ -23,3 +23,9 @@ coverage:
 package-build:
 	rm -rf dist
 	python -m build
+
+package-smoke:
+	rm -rf .package-smoke
+	python -m pip install --no-deps --target .package-smoke dist/*.whl
+	PYTHONPATH=.package-smoke python -c "import subscription; from subscription.application import CreatePlanService; from subscription.infrastructure.persistence import build_sqlalchemy_subscription_unit_of_work_factory; from subscription.presentation import FastApiSubscriptionAdapter"
+	rm -rf .package-smoke
