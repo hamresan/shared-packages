@@ -5,44 +5,42 @@
 Build a reusable, pip-installable `hamresan-subscription` package inside `hamresan/shared-packages`.
 
 ```text
-Repository: hamresan/shared-packages
-Package folder: subscription
+Repository:   hamresan/shared-packages
+Package:      subscription
 Distribution: hamresan-subscription
-Import: subscription
+Import:       subscription
 ```
 
-The package is application-agnostic. It does not depend on WordPress, Sellora, Identity, Store, payment providers, or another concrete application. Integrations belong in host composition roots through narrow public contracts.
+The package is application-agnostic. Identity, Store, WordPress, payment providers, authentication implementations, authorization rules, and consumer-owned subject models remain outside the package and connect through public contracts at the host composition root.
 
 ## Product decisions
 
-- A subject may have at most one active `BASE` subscription at a time.
+- A subject may have at most one active/trialing `BASE` subscription.
 - Multiple `ADDON` subscriptions may be active concurrently.
-- Plans are database-backed and defined by the consuming application through package APIs.
-- Subjects use generic `subject_type + subject_id` references and do not require foreign keys to external packages.
-- Trials may be time-based, usage-based, recurring-usage-based, or combined.
-- Combined trial conditions support `ANY` and `ALL` semantics.
+- Plans are database-backed and consumer-defined through package APIs.
+- Subjects use generic `subject_type + subject_id` references without foreign keys to external packages.
+- Trials support time, usage, recurring usage, and combined `ANY`/`ALL` rules.
 - Entitlements are strongly typed: boolean, integer, decimal, string, or unlimited.
 - Entitlement limits and actual usage are separate concepts.
-- Usage metrics are generic keys owned semantically by the host application.
-- Subscription sources include paid, trial, manual, promotional, and migrated sources.
-- Payment processing, invoicing, taxes, and provider-specific billing behavior remain outside this package.
+- Usage metrics are generic keys whose meaning belongs to the host application.
+- Sources include paid, trial, manual, promotional, and migrated subscriptions.
+- Payment processing, invoicing, taxes, and provider-specific billing behavior remain outside the package.
 
 ## Architecture principles
 
-- Clean Architecture and SOLID are mandatory.
-- Domain and application layers remain framework-independent.
-- Application services are small, use-case-oriented orchestrators.
-- Validation, mapping, policies, calculations, persistence, and provider integration are separate responsibilities.
-- Dependencies are explicit and injected through contracts/interfaces.
-- No Service Locator and no hidden dependency construction.
-- Public APIs are exported through controlled package boundaries.
-- Persistence is async and receives host-owned SQLAlchemy session infrastructure.
-- SQLAlchemy engine/sessionmaker lifecycle belongs to the host application.
+- Clean Architecture and SOLID.
+- Framework-independent domain and application layers.
+- Small use-case-oriented application services.
+- Explicit dependency injection through contracts/interfaces.
+- Separate validation, mapping, policies, persistence, and provider integration.
+- No Service Locator or hidden dependency construction.
+- Controlled public package APIs.
+- Host-owned SQLAlchemy engine/sessionmaker lifecycle.
+- Host-owned Alembic revision history and ordering.
+- Host-owned authentication and authorization implementations.
 - Package tables use the `subscription_` prefix.
-- Alembic revision history and migration ordering are host-owned.
-- Authentication and authorization implementations are host-owned.
-- Tests mirror source responsibilities; independent Fakes, Builders, Factories, fixtures, and helpers live in dedicated support files.
-- Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%.
+- Tests mirror source responsibilities.
+- Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%.
 
 ## Stage status
 
@@ -58,49 +56,35 @@ The package is application-agnostic. It does not depend on WordPress, Sellora, I
 | 7 | Host-owned Alembic integration | **COMPLETED** |
 | 8 | FastAPI adapter | **COMPLETED** |
 | 9 | Consumer integration example | **COMPLETED** |
-| 10 | Documentation and release readiness | **NEXT** |
+| 10 | Documentation and release readiness | **COMPLETED** |
 
 ## Stage 0 — Foundation and documentation
-
-Status: **COMPLETED**
 
 Created package foundation, mirrored test structure, packaging metadata, README, Makefile, Ruff, Ruff format, Pyright strict, pytest, and coverage enforcement.
 
 ## Stage 1 — Core domain primitives
 
-Status: **COMPLETED**
-
 Implemented generic `SubjectReference`, subscription/plan/trial/usage enums, and strongly typed entitlement value objects. Subject IDs intentionally remain strings so consumers are not forced to use UUID identifiers.
 
 ## Stage 2 — Plan and entitlement domain
 
-Status: **COMPLETED**
-
-Implemented `Plan`, `PlanEntitlement`, `PlanCode`, `EntitlementKey`, plan definition rules, and explicit plan status transitions. Pricing/payment concerns remain outside the Plan domain.
+Implemented `Plan`, `PlanEntitlement`, `PlanCode`, `EntitlementKey`, plan definition rules, and explicit plan lifecycle transitions. Pricing/payment concerns remain outside the Plan domain.
 
 ## Stage 3 — Trial and usage domain
 
-Status: **COMPLETED**
-
-Implemented generic usage metrics/records/counters, time and usage trial conditions, `TrialPolicy`, and pure `TrialEvaluationPolicy`. Supported scenarios include time-only, usage-only, weekly usage, and combined `ANY`/`ALL` trials.
+Implemented generic usage metrics/records/counters, time and usage conditions, `TrialPolicy`, and pure `TrialEvaluationPolicy`. Supported scenarios include time-only, usage-only, weekly usage, and combined `ANY`/`ALL` trials.
 
 ## Stage 4 — Subscription lifecycle domain
 
-Status: **COMPLETED**
-
-Implemented immutable `Subscription` snapshots, lifecycle transitions, validity evaluation, active-base rules, focused timestamp/state validators, and `SubscriptionLifecycleService`. Cancelled subscriptions are terminal; expired subscriptions may be renewed.
+Implemented immutable `Subscription` snapshots, lifecycle transitions, validity evaluation, active-base rules, focused timestamp/state validators, and `SubscriptionLifecycleService`.
 
 ## Stage 5 — Application contracts and use cases
 
-Status: **COMPLETED**
+Implemented explicit repository/UoW/Clock/Identifier contracts, DTOs/mappers, and focused use cases for plan management, subscription lifecycle, usage, trial evaluation, and entitlement resolution.
 
-Implemented explicit repositories, Unit of Work, Clock, IdentifierGenerator, DTOs/mappers, and focused use cases for plan management, subscription lifecycle, usage recording/query, trial evaluation, and entitlement resolution.
-
-Application services depend only on contracts and do not depend on SQLAlchemy, FastAPI, Identity, Store, WordPress, or payment implementations.
+Application services remain independent from SQLAlchemy, FastAPI, Identity, Store, WordPress, and payment implementations.
 
 ## Stage 6 — Async SQLAlchemy persistence
-
-Status: **COMPLETED**
 
 Implemented host-session-based async SQLAlchemy repositories and Unit of Work for:
 
@@ -113,13 +97,11 @@ subscription_trial_usage_condition
 subscription_usage_record
 ```
 
-The host owns engine/sessionmaker lifecycle. External subject references have no foreign keys to Identity, Store, Organization, or other packages.
+Persistence receives host-owned session infrastructure. External subject references have no foreign keys to other packages.
 
-Stage 9 integration testing exposed that SQLite drops timezone metadata even for `DateTime(timezone=True)`. Persistence was hardened with a dedicated `UtcDateTime` SQLAlchemy type that normalizes aware values to UTC, rejects naive writes, and rehydrates timezone-aware UTC values across dialects. Subscription and Usage timestamps use this type, with mirrored regression tests.
+A dedicated UTC SQLAlchemy type normalizes aware values to UTC, rejects naive writes, and rehydrates timezone-aware values across dialect behavior.
 
 ## Stage 7 — Host-owned Alembic integration
-
-Status: **COMPLETED**
 
 Public migration integration exposes:
 
@@ -129,103 +111,61 @@ subscription_metadata()
 include_subscription_name()
 ```
 
-The host owns `alembic.ini`, `env.py`, revision files, ordering, and the revision graph. The package does not ship an independent Alembic environment.
+The host owns `alembic.ini`, `env.py`, revision files, ordering, and the revision graph.
 
 ## Stage 8 — FastAPI adapter
 
-Status: **COMPLETED**
-
-Implemented package-owned presentation boundaries and host-provided security integration:
+Implemented package-owned presentation boundaries and host-provided security integration through:
 
 ```text
 AuthenticatedActor
 AuthenticatedActorDependency
 SubscriptionAuthorizer
-PlanManagementGuard
-SubjectAccessGuard
-SubscriptionResourceAccessGuard
 FastApiSubscriptionAdapter
 build_fastapi_subscription_adapter()
-SubscriptionRouterFactory
 ```
 
-HTTP responsibilities include plan management, subscription creation/read/lifecycle operations, usage record/query, and entitlement queries. Request/response schemas and presentation mappers are separate components. Routes remain thin and never access repositories directly.
-
-Lifecycle endpoints resolve the persisted subscription and authorize its actual subject before mutation. Identity roles, tokens, claims, and authentication implementations remain outside the package.
+Routes remain thin, subject access is authorized through the host contract, and lifecycle endpoints authorize the persisted subscription's actual subject before mutation.
 
 ## Stage 9 — Consumer integration example
 
-Status: **COMPLETED**
+Added `examples/subscription_consumer`, demonstrating real host composition for:
 
-Added a real host application under:
-
-```text
-examples/subscription_consumer
-```
-
-The example demonstrates:
-
-- host-owned async SQLAlchemy engine/sessionmaker;
-- host-owned Alembic configuration and environment;
-- typed host adapter for the Alembic name-filter callback;
-- host implementation of `AuthenticatedActorDependency`;
-- host implementation of `SubscriptionAuthorizer`;
-- explicit composition of real Subscription domain policies, application use cases, SQLAlchemy Unit of Work, and FastAPI adapter;
-- database-backed `BASE` and `ADDON` plans;
-- combined `14 days OR 100 conversations` trial;
-- generic usage recording;
+- SQLAlchemy engine/sessionmaker ownership;
+- Alembic environment/revision ownership;
+- authentication and authorization adapters;
+- BASE and ADDON plans;
+- combined time/usage trial;
+- usage recording;
 - manual add-on grant;
-- paid activation and renewal after a verified external payment event;
-- typed entitlement resolution;
-- dedicated `PaidSubscriptionEventHandler` in host code rather than payment logic inside the package.
+- paid activation/renewal after a verified external event;
+- typed entitlement resolution.
 
-A dedicated workflow was added:
-
-```text
-.github/workflows/subscription-consumer-integration-ci.yml
-```
-
-It installs the real package and consumer example and runs the example's `make check`.
-
-The integration flow caught the SQLite timezone round-trip issue described in Stage 6, proving the example acts as a real cross-layer test rather than a documentation-only sample.
-
-Final Stage 9 package quality result:
-
-```text
-Ruff: PASS
-Ruff format: PASS
-Pyright strict: 0 errors
-pytest: 203 passed
-branch coverage: 93.40%
-Subscription Consumer Integration CI: PASS
-```
+The dedicated consumer workflow runs the example's `make check`. Stage 9 also exposed and drove the UTC persistence hardening described in Stage 6.
 
 ## Stage 10 — Documentation and release readiness
 
-Status: **NEXT**
+Status: **COMPLETED**
 
-Finalize release-quality package documentation and distribution readiness:
+Finalized release-quality package guidance and distribution checks:
 
-- replace conceptual README snippets with copyable examples using the final public APIs;
-- document direct application-service usage;
-- document FastAPI adapter composition;
-- document host authentication/authorization integration;
-- document SQLAlchemy session ownership;
-- document host-owned Alembic integration;
-- document BASE/ADDON plan creation;
-- document time-, usage-, and combined-trial flows;
-- document usage recording and entitlement evaluation;
-- document manual/promotional/paid lifecycle integration without embedding payment-provider logic;
-- document table ownership and UTC timestamp persistence behavior;
-- review public package exports and dependency extras;
-- validate wheel/sdist build and clean-install smoke tests;
-- finalize version/release checklist and CI expectations.
+- README now documents actual public APIs rather than planned/conceptual APIs;
+- direct application-service responsibilities are documented;
+- SQLAlchemy host-session composition is documented;
+- host-owned Alembic integration and table ownership are documented;
+- FastAPI authentication/authorization boundaries are documented;
+- BASE/ADDON, trial, usage, entitlement, manual/promotional, and paid-event flows are documented;
+- UTC timestamp persistence behavior is documented;
+- `RELEASE.md` provides versioning, public API, persistence, migration, CI, artifact, publish, and post-release checks;
+- `make check` now builds wheel + sdist artifacts;
+- `make check` installs the built wheel into an isolated target directory and smoke-tests controlled public imports from the artifact;
+- release checks continue to include Ruff, Ruff format, Pyright strict, pytest, and branch coverage >= 85%.
 
 ## Deferred / separate concerns
 
 These remain outside `hamresan-subscription` unless a future concrete requirement changes the boundary:
 
-- payment processing and payment-provider SDKs;
+- payment processing and provider SDKs;
 - invoicing;
 - WordPress connection/authentication;
 - tax/VAT calculation;
@@ -252,10 +192,15 @@ make check
 
 Repository branch protection should require the relevant GitHub status checks before merge.
 
-## Continuation checkpoint
+## Roadmap completion checkpoint
 
 ```text
-Implemented: Stages 0–9
-Next objective: Stage 10 — Documentation and release readiness
-Core decisions: one active BASE per subject; multiple ADDONs; DB-backed consumer-defined plans; typed entitlements; time/usage/combined trials; generic usage metrics; immutable subscription snapshots; explicit contracts/UoW; host-owned async SQLAlchemy sessions; host-owned Alembic graph; host-provided authentication/authorization; payment integration outside the package; UTC-aware persistence across dialects; no hard dependency on other Hamresan packages
-Quality gate: Ruff + Ruff format + Pyright strict + pytest + branch coverage >= 85%
+Initial roadmap: Stages 0–10 COMPLETED
+Package boundary: reusable subscription/plan/trial/usage/entitlement core with optional SQLAlchemy and FastAPI adapters
+Persistence: host-owned async sessions; subscription_* tables; UTC-aware timestamps
+Migrations: host-owned Alembic revision graph
+Security: host-provided authentication and authorization contracts
+Billing: payment-provider behavior remains outside the package
+Release gate: Ruff + format + Pyright strict + pytest + branch coverage >= 85% + wheel/sdist build + built-wheel smoke import
+Next work: only concrete consumer-driven requirements, bug fixes, compatibility changes, or explicit release/version work
+```
