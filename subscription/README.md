@@ -2,246 +2,90 @@
 
 Reusable subscription, plan, entitlement, trial, and usage-management package for Python applications.
 
-The repository folder is `subscription`, the Python import package will be `subscription`, and the installable distribution will be `hamresan-subscription`.
+```text
+Distribution: hamresan-subscription
+Import:       subscription
+Python:       >= 3.12
+```
 
-The package is intentionally application-agnostic. It does not depend on WordPress, Sellora, Store, Identity, payment providers, or any other concrete application. Consumers define their own plans and connect subscriptions to their own subjects through public contracts and composition-root wiring.
+The package is application-agnostic. It does not depend on Identity, Store, WordPress, payment providers, or application-specific user/organization models. Consumers connect those concerns at their composition root through narrow public contracts.
 
-## Intended installation
+## Install
 
-Once released:
+After publishing the distribution:
 
 ```bash
 pip install hamresan-subscription
 ```
 
-For local development:
+For repository development:
 
 ```bash
+cd subscription
 make install-dev
 make check
 ```
 
-## Core concepts
-
-The package is designed around:
+A complete runnable host integration is available in:
 
 ```text
-Plan
-Subscription
-Entitlement
-TrialPolicy
-UsageMetric / Usage
+examples/subscription_consumer
+```
+
+It demonstrates SQLAlchemy, Alembic, FastAPI authentication/authorization composition, trials, usage, BASE/ADDON subscriptions, paid activation/renewal, and entitlement resolution.
+
+## Core model
+
+```text
 SubjectReference
+    │
+    ├── BASE subscription (maximum one active/trialing)
+    └── ADDON subscriptions (multiple allowed)
+             │
+             └── Plan
+                  └── typed entitlements
 ```
 
-A consuming application stores and manages its own plans through the package. Different applications can define different plan sets without changing package source code.
+Plans are database-backed and defined by the consuming application through package APIs. The package does not ship a fixed Free/Pro/Enterprise plan catalog.
 
-Example:
+## Subject references
+
+Subscriptions belong to a generic subject:
+
+```python
+from subscription import SubjectReference
+
+subject = SubjectReference(
+    subject_type="store",
+    subject_id="store-123",
+)
+```
+
+`subject_type` is a canonical lowercase identifier. `subject_id` is a string and does not need to be a UUID.
+
+Examples:
 
 ```text
-Application A
-- free
-- pro
-- business
-
-Application B
-- starter
-- growth
-- enterprise
+("user", "123")
+("store", "store-123")
+("organization", "org_42")
+("workspace", "workspace-a")
 ```
 
-## Subscription types
+There is no FK from Subscription tables to consumer-owned User, Store, or Organization tables.
 
-A subject may have one active base-plan subscription at a time.
+## Subscription types and sources
 
-```text
-Subject
-  ↓
-Active BASE subscription
-```
-
-Additional capabilities are modeled as independent add-on subscriptions:
-
-```text
-Subject
-├── BASE: pro
-├── ADDON: whatsapp
-└── ADDON: advanced_analytics
-```
-
-The package distinguishes at least:
+Supported subscription types:
 
 ```text
 BASE
 ADDON
 ```
 
-The one-active-base-plan rule is a domain policy. Multiple add-on subscriptions may be active concurrently.
+A subject may have at most one active or trialing BASE subscription. Multiple ADDON subscriptions can be active concurrently.
 
-## Subject references
-
-The package remains independent of User, Store, Organization, Workspace, Tenant, or any other owning domain.
-
-A consumer supplies a generic subject reference, conceptually:
-
-```text
-subject_type
-subject_id
-```
-
-Examples:
-
-```text
-("user", user_id)
-("store", store_id)
-("organization", organization_id)
-("workspace", workspace_id)
-```
-
-No foreign key to another package's tables is required. Cross-package relationships are application-level references owned by the host.
-
-## Defining plans in a project
-
-Plans are database-backed entities owned by this package. A consumer creates and manages the plans it needs through package application services or HTTP adapters.
-
-Conceptually:
-
-```python
-plan = await plan_creator.create(
-    code="pro",
-    name="Pro",
-    subscription_type="BASE",
-    entitlements=[
-        BooleanEntitlement("analytics.advanced", True),
-        IntegerEntitlement("team.members.max", 5),
-        IntegerEntitlement("conversations.monthly", 1000),
-    ],
-)
-```
-
-The exact public API will be finalized during implementation, but defining plans must never require editing package code.
-
-## Typed entitlements
-
-Entitlements represent what a plan or subscription grants.
-
-Planned value types:
-
-```text
-BOOLEAN
-INTEGER
-DECIMAL
-STRING
-UNLIMITED
-```
-
-Examples:
-
-```text
-analytics.advanced = true
-team.members.max = 5
-conversations.monthly = 1000
-storage.gb = 20
-model.default = "premium"
-products.max = unlimited
-```
-
-Typical consumer usage:
-
-```python
-if await entitlement_checker.can_use(subject, "analytics.advanced"):
-    ...
-
-member_limit = await entitlement_checker.get_limit(subject, "team.members.max")
-model_name = await entitlement_checker.get_value(subject, "model.default")
-```
-
-Consumers should depend on entitlement-checking contracts, not on Subscription persistence.
-
-## Usage metering
-
-Entitlement and actual usage are separate concepts.
-
-```text
-Entitlement:
-conversations.monthly = 1000
-
-Current usage:
-conversations.monthly = 427
-
-Remaining:
-573
-```
-
-The package does not know what a conversation, AI message, order, or API request is. The consumer reports usage using generic metric keys.
-
-Examples:
-
-```text
-conversations
-ai_messages
-orders
-api_calls
-storage_bytes
-```
-
-Conceptually:
-
-```python
-await usage_recorder.record(
-    subject=subject,
-    metric="conversations",
-    amount=1,
-)
-```
-
-## Trial subscriptions
-
-Trials are first-class and may be time-based, usage-based, or both.
-
-Time-only example:
-
-```text
-14 days
-```
-
-Usage-only example:
-
-```text
-100 conversations
-```
-
-Combined example:
-
-```text
-14 days OR 100 conversations
-whichever happens first
-```
-
-Recurring usage trial example:
-
-```text
-50 conversations per week
-```
-
-Trial completion rules must be modeled as dedicated policies/conditions rather than scattered fields on `Subscription`.
-
-Conceptually:
-
-```text
-TrialPolicy
-├── TimeCondition
-├── UsageCondition
-└── CompletionMode: ANY | ALL
-```
-
-The package remains metric-agnostic. The host records usage; the trial evaluator determines whether the trial remains valid.
-
-## Subscription source
-
-A subscription does not need to come from a payment.
-
-Planned source types include:
+Supported sources:
 
 ```text
 PAID
@@ -251,157 +95,362 @@ PROMOTIONAL
 MIGRATED
 ```
 
+Payment processing is intentionally outside the package. A host verifies its payment-provider event and then calls Subscription application services.
+
+## Typed entitlements
+
+Entitlements are strongly typed:
+
+```text
+BOOLEAN
+INTEGER
+DECIMAL
+STRING
+UNLIMITED
+```
+
+Example domain values:
+
+```python
+from subscription import (
+    BooleanEntitlementValue,
+    IntegerEntitlementValue,
+    StringEntitlementValue,
+    UnlimitedEntitlementValue,
+)
+
+analytics = BooleanEntitlementValue(True)
+conversation_limit = IntegerEntitlementValue(1000)
+model_name = StringEntitlementValue("premium")
+unlimited_products = UnlimitedEntitlementValue()
+```
+
+Typical entitlement keys are consumer-defined:
+
+```text
+analytics.advanced
+conversations.monthly
+team.members.max
+model.default
+products.max
+```
+
+The package does not invent precedence between BASE and ADDON grants with the same key. `ResolveEntitlementsService` returns matching grants and the consuming application can apply its own product rule when needed.
+
+## Trial policies
+
+Trials can be time-based, usage-based, recurring-usage-based, or combined.
+
 Examples:
 
 ```text
-Payment succeeded
-→ activate subscription with source=PAID
+14 days
+100 conversations
+14 days OR 100 conversations
+50 conversations per week
 ```
 
-```text
-Admin grants Pro for three months
-→ activate subscription with source=MANUAL
-```
-
-```text
-Marketing promotion
-→ activate subscription with source=PROMOTIONAL
-```
-
-Payment processing is intentionally outside this package. Stripe or any other payment provider may call Subscription application services after successful payment, but payment-provider code does not belong in the Subscription core.
-
-## Working with other Hamresan packages
-
-`hamresan-subscription` should not hard-depend on `hamresan-identity`, `hamresan-store`, or `hamresan-notification`.
-
-A consuming application may connect them in its composition root.
-
-Example with Store:
-
-```text
-Authenticated user
-      ↓
-Store
-      ↓
-SubjectReference("store", store.id)
-      ↓
-EntitlementChecker
-```
-
-Example capability check:
+Example domain policy:
 
 ```python
-subject = SubjectReference(type="store", id=store.id)
+from datetime import timedelta
 
-if not await entitlement_checker.can_use(subject, "analytics.advanced"):
-    raise FeatureNotAvailableError()
+from subscription import (
+    TimeCondition,
+    TrialCompletionMode,
+    TrialPolicy,
+    UsageCondition,
+    UsageMetric,
+    UsagePeriod,
+)
+
+trial_policy = TrialPolicy(
+    completion_mode=TrialCompletionMode.ANY,
+    time_condition=TimeCondition(timedelta(days=14)),
+    usage_conditions=(
+        UsageCondition(
+            metric=UsageMetric("conversations"),
+            limit=100,
+            period=UsagePeriod.TRIAL,
+        ),
+    ),
+)
 ```
 
-Other reusable packages should depend only on narrow Subscription contracts when integration is genuinely required.
+`ANY` means the trial finishes when the first configured condition is reached. `ALL` means every configured condition must be reached.
 
-## Planned public responsibilities
+The package does not know what `conversations`, `orders`, or `api_calls` mean. The host defines metric keys and reports usage.
 
-The package is expected to expose stable contracts around four responsibilities:
+## Application API
+
+Stable application entry points are exported from `subscription.application`.
+
+Main services:
 
 ```text
-Plan Management
-Subscription Lifecycle
-Entitlement Evaluation
-Usage Metering
+CreatePlanService
+GetPlanService
+ChangePlanStatusService
+CreateSubscriptionService
+GetSubscriptionService
+StartTrialService
+ActivateSubscriptionService
+CancelSubscriptionService
+RenewSubscriptionService
+RecordUsageService
+GetUsageCounterService
+EvaluateTrialService
+ResolveEntitlementsService
 ```
 
-Likely use-case contracts include:
+Infrastructure-facing contracts:
 
 ```text
-PlanCreator
-PlanReader
-PlanUpdater
-
-SubscriptionCreator
-SubscriptionActivator
-SubscriptionReader
-SubscriptionCanceller
-SubscriptionRenewer
-
-SubscriptionValidityChecker
-EntitlementChecker
-
-UsageRecorder
-UsageReader
-TrialEvaluator
+Clock
+IdentifierGenerator
+PlanRepository
+SubscriptionRepository
+UsageRepository
+SubscriptionUnitOfWork
+SubscriptionUnitOfWorkFactory
 ```
 
-Names may evolve while the domain is implemented, but these responsibilities should remain separated.
-
-## Package structure
-
-The package follows Clean Architecture and keeps responsibilities explicit:
+Commands/queries include:
 
 ```text
-subscription/
-├── src/
-│   └── subscription/
-│       ├── domain/
-│       │   ├── entities/
-│       │   ├── enums/
-│       │   ├── value_objects/
-│       │   ├── policies/
-│       │   └── services/
-│       ├── application/
-│       │   ├── contracts/
-│       │   ├── dto/
-│       │   ├── services/
-│       │   ├── validators/
-│       │   └── mappers/
-│       ├── infrastructure/
-│       │   └── persistence/
-│       │       └── sqlalchemy/
-│       ├── presentation/
-│       │   ├── dependencies/
-│       │   ├── errors/
-│       │   ├── mappers/
-│       │   ├── routes/
-│       │   └── schemas/
-│       └── migrations/
-├── tests/
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   ├── presentation/
-│   ├── migrations/
-│   └── support/
-├── pyproject.toml
-├── Makefile
-├── README.md
-└── ROADMAP.md
+CreatePlanCommand
+CreateSubscriptionCommand
+ActivateSubscriptionCommand
+RenewSubscriptionCommand
+RecordUsageCommand
+GetUsageCounterQuery
 ```
 
-Test folders mirror package responsibilities. Independent Fakes, Builders, Factories, fixtures, and test helpers belong in dedicated support files rather than inside test methods.
+Consumer code should import from controlled package APIs such as:
 
-## Architecture rules
+```python
+from subscription import SubjectReference
+from subscription.application import CreateSubscriptionService
+from subscription.infrastructure.persistence import (
+    build_sqlalchemy_subscription_unit_of_work_factory,
+)
+from subscription.presentation import build_fastapi_subscription_adapter
+```
 
-- Clean Architecture and SOLID are mandatory.
-- Domain and application layers are framework-independent.
-- Services are thin workflow/use-case orchestrators.
-- Mapping, validation, policies, calculations, persistence, and provider integration live in dedicated components.
-- No service-locator pattern.
-- Dependencies are injected through explicit contracts/interfaces.
-- No direct dependency on payment providers or other Hamresan packages.
-- Persistence is async and host-provided session infrastructure is preferred.
-- Alembic revision history remains host-owned.
-- Package-owned tables will use the `subscription_` prefix.
-- Public imports should come from controlled package APIs rather than deep internal module paths.
+Avoid importing internal implementation modules unless you are extending the package itself.
 
-## Quality expectations
+## SQLAlchemy integration
 
-The package foundation is expected to preserve the repository quality standard:
+The host owns the SQLAlchemy engine and sessionmaker lifecycle. The package receives a host-provided async session factory.
+
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from subscription.infrastructure.persistence import (
+    build_sqlalchemy_subscription_unit_of_work_factory,
+)
+
+engine = create_async_engine(DATABASE_URL)
+session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+unit_of_work_factory = build_sqlalchemy_subscription_unit_of_work_factory(
+    session_factory,
+)
+```
+
+The package never creates a global engine or global sessionmaker.
+
+Package-owned tables:
+
+```text
+subscription_plan
+subscription_plan_entitlement
+subscription_subscription
+subscription_trial_policy
+subscription_trial_usage_condition
+subscription_usage_record
+```
+
+All package tables use the `subscription_` prefix. Foreign keys are limited to Subscription-owned tables.
+
+Subscription and usage timestamps use a dedicated UTC SQLAlchemy type. Naive datetime writes are rejected and hydrated values remain timezone-aware across supported dialect behavior.
+
+## Alembic integration
+
+Alembic revision history belongs to the host application.
+
+The package exposes:
+
+```python
+from subscription.migrations import (
+    include_subscription_name,
+    subscription_metadata,
+)
+```
+
+A host can include Subscription metadata in its own Alembic environment and use `include_subscription_name()` when filtering package-owned objects.
+
+The package does **not** own:
+
+```text
+alembic.ini
+migrations/env.py
+revision files
+revision ordering
+revision graph
+```
+
+See `examples/subscription_consumer/migrations` for a real host-owned setup.
+
+## FastAPI integration
+
+The FastAPI adapter does not import an Identity implementation. Authentication and authorization are supplied by the host.
+
+Public presentation contracts:
+
+```python
+from subscription.presentation import (
+    AuthenticatedActor,
+    AuthenticatedActorDependency,
+    SubscriptionAuthorizer,
+    build_fastapi_subscription_adapter,
+)
+```
+
+The host implements `AuthenticatedActorDependency` and `SubscriptionAuthorizer`, composes the adapter, and installs its router into the host FastAPI application.
+
+HTTP responsibilities include:
+
+```text
+POST   /subscription/plans
+GET    /subscription/plans/{plan_id}
+PATCH  /subscription/plans/{plan_id}/status
+POST   /subscription/subscriptions
+GET    /subscription/subscriptions/{subscription_id}
+POST   /subscription/subscriptions/{subscription_id}/trial
+POST   /subscription/subscriptions/{subscription_id}/activate
+POST   /subscription/subscriptions/{subscription_id}/cancel
+POST   /subscription/subscriptions/{subscription_id}/renew
+POST   /subscription/usage
+GET    /subscription/usage
+GET    /subscription/entitlements
+```
+
+A target subject from an HTTP request is never considered authorized merely because the caller supplied it. Host authorization is evaluated through `SubscriptionAuthorizer`.
+
+## Paid subscription integration
+
+Provider-specific billing remains host code:
+
+```text
+Stripe / payment provider
+        ↓
+host verifies event
+        ↓
+host maps verified event
+        ↓
+ActivateSubscriptionService / RenewSubscriptionService
+```
+
+The consumer example contains `PaidSubscriptionEventHandler` to demonstrate this boundary. It is intentionally not part of `hamresan-subscription`.
+
+## Manual and promotional grants
+
+A subscription does not require a payment event. Hosts may create subscriptions with sources such as `MANUAL` or `PROMOTIONAL` and then activate them through the same lifecycle application API.
+
+This supports scenarios such as:
+
+```text
+admin grants Pro for three months
+marketing grants temporary analytics add-on
+migration imports an existing entitlement
+```
+
+## Usage metering
+
+Usage and entitlement limits are separate concepts.
+
+```text
+Entitlement: conversations.monthly = 1000
+Usage:       conversations = 427
+```
+
+A host records generic usage events through `RecordUsageService`. Period-specific counters are resolved by the package's usage repository/window components.
+
+The metric vocabulary remains application-owned.
+
+## Full consumer example
+
+Run the real integration example from repository root:
+
+```bash
+cd examples/subscription_consumer
+python -m pip install -e "../../subscription"
+python -m pip install -e ".[test]"
+make check
+```
+
+The integration test covers:
+
+```text
+BASE plan
+ADDON plan
+combined time + usage trial
+usage recording
+manual add-on grant
+external paid activation
+renewal
+entitlement resolution
+host authentication/authorization
+host SQLAlchemy/Alembic ownership
+```
+
+## Architecture boundaries
+
+`hamresan-subscription` owns:
+
+- Plan, Subscription, Trial and Usage domain rules;
+- typed entitlement model;
+- application use cases and contracts;
+- optional SQLAlchemy persistence adapter;
+- migration metadata/filter helpers;
+- FastAPI presentation adapter.
+
+The consuming application owns:
+
+- User/Store/Organization models;
+- authentication implementation;
+- authorization rules;
+- SQLAlchemy engine/sessionmaker lifecycle;
+- Alembic revision graph;
+- payment provider integration and payment verification;
+- product-specific metric meanings;
+- product-specific entitlement conflict/precedence rules.
+
+## Quality gate
+
+```bash
+make check
+```
+
+Runs:
 
 ```text
 Ruff
 Ruff format --check
 Pyright strict
-pytest
-branch coverage >= 85%
+pytest with branch coverage >= 85%
+package build (wheel + sdist)
 ```
 
-The implementation roadmap is tracked in `ROADMAP.md`.
+GitHub Actions also runs the package quality gate and the real consumer integration gate for relevant pull requests.
+
+## Release checklist
+
+See `RELEASE.md` before publishing a version.
+
+The checklist includes versioning, package build verification, consumer integration validation, public API review, migration ownership verification, and release artifact checks.
+
+## Current status
+
+Stages 0–10 of the initial package roadmap are complete once the release-readiness changes in this stage are merged. Future work should be driven by concrete consumer requirements rather than adding provider-specific behavior to the core package.
