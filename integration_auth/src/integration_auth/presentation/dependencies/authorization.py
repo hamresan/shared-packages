@@ -5,10 +5,10 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
-from integration_auth.application.errors.authorization import IntegrationAuthorizationError
-from integration_auth.application.services.authorization.integration_authorizer import (
-    IntegrationAuthorizer,
+from integration_auth.application.contracts.authorization.integration_authorizer import (
+    IntegrationRequestAuthorizer,
 )
+from integration_auth.application.errors.authorization import IntegrationAuthorizationError
 from integration_auth.domain.entities.integration_principal import IntegrationPrincipal
 from integration_auth.domain.value_objects.integration_resource import IntegrationResource
 from integration_auth.domain.value_objects.permission import Permission
@@ -30,7 +30,7 @@ class IntegrationPermissionDependencyFactory:
     def __init__(
         self,
         *,
-        authorizer: IntegrationAuthorizer,
+        authorizer: IntegrationRequestAuthorizer,
         authentication_dependency: IntegrationAuthenticationDependency,
         error_mapper: FastApiIntegrationErrorMapper,
     ) -> None:
