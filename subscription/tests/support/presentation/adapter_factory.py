@@ -6,6 +6,7 @@ from subscription import (
     PlanDefinitionPolicy,
     PlanStatusTransitionPolicy,
     SubscriptionValidityPolicy,
+    TimezoneAwareDatetimeValidator,
 )
 from subscription.application import (
     ActivateSubscriptionService,
@@ -103,7 +104,7 @@ def build_subscription_api_test_runtime(
         resolve_entitlements=ResolveEntitlementsService(
             unit_of_work_factory,
             clock,
-            SubscriptionValidityPolicy(),
+            SubscriptionValidityPolicy(TimezoneAwareDatetimeValidator()),
         ),
     )
     return SubscriptionApiTestRuntime(adapter, unit_of_work_factory, effective_authorizer)
