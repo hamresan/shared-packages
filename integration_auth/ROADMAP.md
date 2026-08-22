@@ -69,61 +69,173 @@ Authorization remains independent of HTTP/FastAPI and has no wildcard or implici
 
 **Status: COMPLETE**
 
-Implemented client registration, grant updates, credential issuance/rotation/revocation/expiration,
-secure secret generation, protected-secret boundaries, direction-specific overlap rotation, and
-atomic rotation persistence contracts.
+Implemented services:
+
+- register/create integration client;
+- issue credential;
+- rotate credential;
+- revoke credential;
+- expire credential;
+- update permissions/scopes.
+
+Implemented security/architecture boundaries:
+
+- explicit client/credential ID generator contracts;
+- UUID4 standard-library generator adapters;
+- `CredentialSecretGenerator` contract;
+- `SecretsCredentialSecretGenerator` producing 256-bit secrets;
+- `CredentialSecretProtector` contract;
+- `ProtectedCredentialSecret` type for persistence boundaries;
+- raw secrets excluded from object `repr`;
+- protected secret material excluded from object `repr`;
+- raw secret returned only by issuance/rotation result;
+- credential entities still contain no secret material;
+- provisioning repositories accept protected secret material, never raw secret bytes;
+- explicit `overlap_seconds` rotation window;
+- direction-specific rotation so inbound/outbound credentials remain independent;
+- rotation repository operation is explicitly atomic;
+- lifecycle snapshot construction is handled by a dedicated domain service;
+- Unix timestamp conversion is handled by a dedicated application mapper.
+
+Rotation behavior:
+
+```text
+same client + same direction + currently usable ACTIVE credentials
+    -> expiry shortened to overlap deadline
+opposite direction
+    -> untouched
+new credential
+    -> ACTIVE and independently managed
+```
+
+A zero-second overlap is supported while preserving domain timestamp invariants.
+
+Tests mirror:
+
+- `domain/services`;
+- `domain/policies`;
+- `application/dto/provisioning`;
+- `application/mappers/time`;
+- `application/security`;
+- `application/services/provisioning`;
+- `infrastructure/security`;
+- dedicated provisioning fakes/builders/factories under `tests/support/application/provisioning`.
+
+The host provides the `CredentialSecretProtector` implementation appropriate for its key-management
+system. Persistence stores only `ProtectedCredentialSecret`.
 
 ## Stage 7 — Async SQLAlchemy persistence
 
 **Status: COMPLETE**
 
-Implemented host-session-owned repository adapters, dedicated mappers, protected-secret persistence,
-atomic nonce consumption, atomic rotation transactions, authentication-path indexes, and async
-integration/concurrency tests.
+Implemented repository adapters using a host-provided async session factory.
+
+Requirements delivered:
+
+- table prefix `integration_auth_`;
+- no global Engine/SessionMaker;
+- repository contracts remain in application layer;
+- dedicated persistence mappers;
+- real atomic nonce consumption under concurrency;
+- real atomic credential rotation transaction;
+- protected secret persistence only; never raw plaintext secrets;
+- transient verification-secret recovery through a host-provided unprotector;
+- indexes for authentication hot paths;
+- no FK to Identity/Store/Organization tables;
+- real async SQLite integration/concurrency tests.
 
 ## Stage 8 — Host-owned Alembic integration
 
 **Status: COMPLETE**
 
-Implemented package metadata/filter helpers while keeping the Alembic revision graph owned by the
-consuming host.
+Implemented public migration helpers:
+
+- `INTEGRATION_AUTH_TABLE_PREFIX`;
+- `integration_auth_metadata()`;
+- `include_integration_auth_name(...)`.
+
+The package exposes SQLAlchemy metadata plus an Alembic-compatible name filter while keeping
+`alembic.ini`, `env.py`, revision IDs, revision files, ordering, version directories, and the full
+revision graph in the consuming host application.
+
+Real Alembic autogenerate tests verify discovery of all integration-auth tables and verify that
+unrelated host-owned tables are ignored by the package filter.
 
 ## Stage 9 — FastAPI adapter
 
 **Status: COMPLETE**
 
-Implemented signed-header parsing, request mapping, authentication/authorization dependencies,
-generic 401/403 mapping, optional FastAPI dependency packaging, and real dependency-route tests.
+Implemented presentation-layer integration:
+
+- fixed signed-request header parsing for client ID, timestamp, nonce, and signature;
+- dedicated required-header validation;
+- FastAPI request -> `AuthenticateIntegrationRequest` mapping;
+- raw URL path preservation when ASGI supplies `raw_path`;
+- canonical duplicate-query handling through the existing canonical query encoder;
+- request-body hashing through the `BodyHasher` contract;
+- authentication dependency returning `IntegrationPrincipal`;
+- permission dependency factory with optional host-provided resource resolver;
+- explicit application contracts for request authentication and authorization;
+- generic 401 mapping for malformed/failed machine authentication and replay rejection;
+- generic 403 mapping for authenticated integrations lacking permission/scope;
+- signature values excluded from presentation/application DTO `repr`;
+- optional `fastapi` package extra rather than a mandatory core dependency;
+- real FastAPI `Depends(...)` route tests using `TestClient`.
+
+Required semantics are enforced:
+
+```text
+failed authentication -> 401
+authenticated principal lacking authorization -> 403
+```
+
+Routes remain host-owned and thin. The adapter does not add persistence, crypto, replay, or
+authorization logic to route handlers.
 
 ## Stage 10 — External protocol interoperability example
 
 **Status: COMPLETE**
 
-Implemented shared Python/PHP known-answer vectors for inbound/outbound signing plus executable
-rotation and exact permission/resource-scope examples.
+Implemented executable interoperability examples:
+
+- one shared deterministic `vectors.json` fixture;
+- Python HMAC-SHA256 signing and verification using the package implementations;
+- PHP canonicalization and HMAC-SHA256 verification against the same vectors;
+- separate inbound and outbound credentials/secrets to demonstrate bidirectional isolation;
+- duplicate-query and RFC3986 encoding coverage;
+- executable Python rotation example showing same-direction overlap behavior;
+- executable exact permission and resource-scope allow/deny examples;
+- subprocess tests for Python examples;
+- real PHP CLI execution when PHP is available, with an explicit skip otherwise.
+
+Example fixture credentials are documentation/test-only and must never be reused in real integrations.
 
 ## Stage 11 — Multi-auth host composition example
 
 **Status: COMPLETE**
 
-Implemented a host-owned `HostActor` composition example that maps `hamresan-identity` human
-principals and `hamresan-integration-auth` machine principals without coupling the packages.
+Implemented a host-owned actor composition example that uses both `hamresan-identity` and
+`hamresan-integration-auth` without package coupling. The host maps each package principal into its
+own actor abstraction, and downstream host services depend only on that host-owned abstraction.
 
 ## Stage 12 — Security hardening and release readiness
 
 **Status: IN REVIEW**
 
-Hardening work includes:
+Hardening review covers:
 
-- explicit canonicalization ambiguity regression tests for plus/space, percent literals, duplicate
-  parameters, and UTF-8 input;
-- retained constant-time HMAC verification and existing signature tampering tests;
-- retained atomic replay/concurrency and rotation rollback tests;
-- retained revocation/expiration, secret representation, exact permission/scope, clock-skew, and
-  persistence-index tests;
-- isolated built-wheel installation/public-import smoke check;
-- `make release-check` release gate;
-- explicit security/deployment checklist in `SECURITY_REVIEW.md`.
+- canonicalization ambiguity with explicit plus/space, percent-literal, duplicate-query, and UTF-8
+  regression vectors;
+- timing-safe HMAC verification and signature tampering behavior;
+- replay/concurrency and atomic nonce consumption;
+- rotation rollback, revocation, and expiration behavior;
+- raw/protected secret and signature exposure boundaries;
+- exact permission/scope behavior with no implicit escalation;
+- clock-skew edge cases;
+- persistence indexes and replay uniqueness constraints;
+- built-wheel installation/public-import smoke testing in a clean virtual environment;
+- deployment and release checklist in `SECURITY_REVIEW.md`;
+- `make release-check` as the final package release gate.
 
 No new authentication protocol or storage provider is introduced in this stage.
 
