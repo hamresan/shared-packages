@@ -5,9 +5,11 @@ from integration_auth.application.dto.authorization import (
     AuthorizationDecisionReason,
     AuthorizationResult,
 )
+from integration_auth.application.dto.provisioning import IssuedCredential
 
 __all__ = (
     "AuthenticateIntegrationRequest",
     "AuthorizationDecisionReason",
     "AuthorizationResult",
+    "IssuedCredential",
 )
