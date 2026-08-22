@@ -8,6 +8,7 @@ from subscription.application.services.subscription import (
     ActivateSubscriptionService,
     CancelSubscriptionService,
     CreateSubscriptionService,
+    GetSubscriptionService,
     RenewSubscriptionService,
     StartTrialService,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "CreateSubscriptionService",
     "EvaluateTrialService",
     "GetPlanService",
+    "GetSubscriptionService",
     "GetUsageCounterService",
     "RecordUsageService",
     "RenewSubscriptionService",
