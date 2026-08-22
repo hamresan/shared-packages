@@ -53,3 +53,21 @@ def test_rejects_signature_when_body_hash_changes() -> None:
     assert not HmacVerifierFactory().build().verify(
         builder.build(), TEST_SECRET, EXPECTED_SIGNATURE
     )
+
+
+def test_rejects_signature_when_nonce_changes() -> None:
+    builder = CanonicalRequestBuilder()
+    builder.nonce = "different-nonce"
+
+    assert not HmacVerifierFactory().build().verify(
+        builder.build(), TEST_SECRET, EXPECTED_SIGNATURE
+    )
+
+
+def test_rejects_signature_when_method_changes() -> None:
+    builder = CanonicalRequestBuilder()
+    builder.method = "PUT"
+
+    assert not HmacVerifierFactory().build().verify(
+        builder.build(), TEST_SECRET, EXPECTED_SIGNATURE
+    )
