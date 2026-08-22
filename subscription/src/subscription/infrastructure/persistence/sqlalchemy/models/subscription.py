@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from subscription.infrastructure.persistence.sqlalchemy.base import SubscriptionBase
+from subscription.infrastructure.persistence.sqlalchemy.column_types import UtcDateTime
 
 
 class SubscriptionModel(SubscriptionBase):
@@ -16,15 +17,12 @@ class SubscriptionModel(SubscriptionBase):
     subscription_type: Mapped[str] = mapped_column(String(20), index=True)
     source: Mapped[str] = mapped_column(String(30))
     status: Mapped[str] = mapped_column(String(20), index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    trial_started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    expired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    started_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    trial_started_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    expired_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
 
 class TrialPolicyModel(SubscriptionBase):
