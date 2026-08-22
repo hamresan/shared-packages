@@ -6,18 +6,17 @@ from integration_auth.application.contracts.authentication import (
     IntegrationClientRepository,
     IntegrationCredentialRepository,
 )
-from integration_auth.application.contracts.crypto.request_verifier import RequestVerifier
-from integration_auth.application.dto.authentication import (
-    AuthenticateIntegrationRequest,
+from integration_auth.application.contracts.authentication.request_authenticator import (
+    IntegrationRequestAuthenticator,
 )
+from integration_auth.application.contracts.crypto.request_verifier import RequestVerifier
+from integration_auth.application.dto.authentication import AuthenticateIntegrationRequest
 from integration_auth.application.errors.authentication import (
     IntegrationClientNotFoundError,
     InvalidIntegrationSignatureError,
     NoUsableCredentialError,
 )
-from integration_auth.application.mappers.authentication import (
-    IntegrationPrincipalMapper,
-)
+from integration_auth.application.mappers.authentication import IntegrationPrincipalMapper
 from integration_auth.application.services.replay.replay_protector import ReplayProtector
 from integration_auth.domain.entities.integration_principal import IntegrationPrincipal
 from integration_auth.domain.policies.credential_authentication_policy import (
@@ -25,7 +24,7 @@ from integration_auth.domain.policies.credential_authentication_policy import (
 )
 
 
-class AuthenticateIntegrationRequestService:
+class AuthenticateIntegrationRequestService(IntegrationRequestAuthenticator):
     """Orchestrate integration request authentication without infrastructure details."""
 
     def __init__(
