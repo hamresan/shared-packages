@@ -36,15 +36,20 @@ PROTECTED_SECRET = b"rotation-protected-secret"
 
 def test_rotates_same_direction_credentials_with_explicit_overlap() -> None:
     async def run() -> None:
-        previous = RotationCredentialBuilder(
-            current_timestamp=NOW,
-            client_id=CLIENT_ID,
-        ).build()
+        previous = (
+            RotationCredentialBuilder(
+                current_timestamp=NOW,
+                client_id=CLIENT_ID,
+            )
+            .with_credential_id("credential-inbound")
+            .build()
+        )
         outbound = (
             RotationCredentialBuilder(
                 current_timestamp=NOW,
                 client_id=CLIENT_ID,
             )
+            .with_credential_id("credential-outbound")
             .with_direction(CredentialDirection.OUTBOUND)
             .build()
         )
