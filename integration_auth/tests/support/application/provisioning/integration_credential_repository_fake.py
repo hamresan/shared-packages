@@ -17,6 +17,10 @@ class IntegrationCredentialProvisioningRepositoryFake(IntegrationCredentialProvi
     """Store credential metadata and protected material for provisioning tests."""
 
     def __init__(self, credentials: tuple[IntegrationCredential, ...] = ()) -> None:
+        credential_ids = [credential.credential_id for credential in credentials]
+        if len(credential_ids) != len(set(credential_ids)):
+            raise ValueError("credential IDs must be unique in repository fake")
+
         self._credentials = {credential.credential_id: credential for credential in credentials}
         self.added: list[tuple[IntegrationCredential, ProtectedCredentialSecret]] = []
         self.updated: list[IntegrationCredential] = []
