@@ -17,7 +17,7 @@ class CreatePlanRequest(BaseModel):
     description: str | None = Field(default=None, max_length=1000)
     subscription_type: SubscriptionType
     status: PlanStatus = PlanStatus.ACTIVE
-    entitlements: list[PlanEntitlementRequest] = Field(default_factory=list)
+    entitlements: tuple[PlanEntitlementRequest, ...] = ()
 
 
 class ChangePlanStatusRequest(BaseModel):
