@@ -2,7 +2,9 @@
 
 import pytest
 
-from integration_auth.presentation.mappers.signed_request_header_parser import SignedRequestHeaderParser
+from integration_auth.presentation.mappers.signed_request_header_parser import (
+    SignedRequestHeaderParser,
+)
 from integration_auth.presentation.validators.required_header_reader import (
     InvalidSignedRequestHeadersError,
     RequiredHeaderReader,

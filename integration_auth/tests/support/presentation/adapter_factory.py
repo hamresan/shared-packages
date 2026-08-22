@@ -3,7 +3,10 @@
 from integration_auth.application.contracts.authentication import IntegrationRequestAuthenticator
 from integration_auth.application.contracts.authorization import IntegrationRequestAuthorizer
 from integration_auth.infrastructure.crypto.hashing.sha256_body_hasher import Sha256BodyHasher
-from integration_auth.presentation.factory import FastApiIntegrationAuth, FastApiIntegrationAuthFactory
+from integration_auth.presentation.factory import (
+    FastApiIntegrationAuth,
+    FastApiIntegrationAuthFactory,
+)
 from integration_auth.protocol.canonicalization.canonical_query import CanonicalQueryEncoder
 
 

@@ -19,7 +19,9 @@ from integration_auth.presentation.errors.http_error_mapper import FastApiIntegr
 from integration_auth.presentation.mappers.authentication_request_mapper import (
     FastApiAuthenticationRequestMapper,
 )
-from integration_auth.presentation.mappers.signed_request_header_parser import SignedRequestHeaderParser
+from integration_auth.presentation.mappers.signed_request_header_parser import (
+    SignedRequestHeaderParser,
+)
 from integration_auth.presentation.validators.required_header_reader import RequiredHeaderReader
 from integration_auth.protocol.canonicalization.canonical_query import CanonicalQueryEncoder
 
