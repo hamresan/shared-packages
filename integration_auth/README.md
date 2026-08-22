@@ -28,15 +28,82 @@ The package is deliberately separate from `hamresan-identity`:
 
 The package must not depend on WordPress, WooCommerce, Identity, Store, Subscription, or any provider-specific SDK.
 
-> Status: package foundation and architecture contract. Public APIs shown below are the target API implemented incrementally according to `ROADMAP.md`.
+> Status: Stage 1 core domain is implemented. Authentication, HMAC signing, replay protection, persistence, authorization services, credential provisioning, and FastAPI integration shown below remain target APIs implemented incrementally according to `ROADMAP.md`.
+
+## Available API — Stage 1
+
+The current public API provides the domain model only:
+
+```python
+from integration_auth import (
+    CredentialDirection,
+    CredentialLifecyclePolicy,
+    CredentialStatus,
+    IntegrationClient,
+    IntegrationClientId,
+    IntegrationCredential,
+    IntegrationCredentialId,
+    IntegrationPrincipal,
+    IntegrationResource,
+    IntegrationScope,
+    Permission,
+)
+```
+
+Example authorization facts:
+
+```python
+client = IntegrationClient(
+    client_id=IntegrationClientId("wp_store_123"),
+    permissions=frozenset(
+        {
+            Permission("catalog.read"),
+            Permission("catalog.write"),
+            Permission("orders.read"),
+        }
+    ),
+    scopes=frozenset(
+        {
+            IntegrationScope("store", "store-123"),
+        }
+    ),
+)
+```
+
+Credential metadata is intentionally separate from cryptographic material:
+
+```python
+credential = IntegrationCredential(
+    credential_id=IntegrationCredentialId("credential-1"),
+    client_id=IntegrationClientId("wp_store_123"),
+    direction=CredentialDirection.INBOUND,
+    status=CredentialStatus.ACTIVE,
+    issued_at=issued_at,
+)
+```
+
+`IntegrationCredential` does not contain a raw secret. Cryptographic material and signing/verifying behavior belong to later crypto/application stages.
+
+Credential direction is defined from the Python host application's perspective:
+
+```text
+INBOUND  = external integration signs; Python host verifies
+OUTBOUND = Python host signs; external integration verifies
+```
+
+The current lifecycle policy permits:
+
+```text
+ACTIVE → REVOKED
+ACTIVE → EXPIRED
+```
+
+`REVOKED` and `EXPIRED` are terminal states in the Stage 1 domain model.
 
 ## Core concepts
 
 ```text
 IntegrationClient
-    │
-    ├── credentials
-    │      └── signing / verification material
     │
     ├── permissions
     │      ├── catalog.read
@@ -46,6 +113,11 @@ IntegrationClient
     └── scopes
            ├── store:store-123
            └── organization:org-42
+
+IntegrationCredential
+    ├── client_id
+    ├── direction
+    └── lifecycle status
 ```
 
 Authentication answers:
@@ -63,11 +135,11 @@ On which resource or scope may it do it?
 
 Those are separate responsibilities.
 
-## Recommended request authentication
+## Planned request authentication
 
-The first supported mechanism is HMAC-SHA256 request signing.
+The first planned request-authentication mechanism is HMAC-SHA256 signing. It is not implemented in Stage 1.
 
-A signed request carries values such as:
+A signed request will carry values such as:
 
 ```text
 X-Integration-Client-Id: wp_store_123
@@ -76,7 +148,7 @@ X-Integration-Nonce: 7e488fb0...
 X-Integration-Signature: ...
 ```
 
-The signature is calculated over a canonical request rather than only the body:
+The signature will be calculated over a canonical request rather than only the body:
 
 ```text
 HTTP_METHOD
@@ -92,7 +164,7 @@ Conceptually:
 signature = HMAC_SHA256(secret, canonical_request)
 ```
 
-Timestamp validation plus one-time nonce consumption provides replay protection.
+Timestamp validation plus one-time nonce consumption will provide replay protection.
 
 The architecture keeps signing behind contracts so Ed25519 or another asymmetric implementation can be added later without changing application services.
 
@@ -127,7 +199,7 @@ This prevents machine-auth concerns from leaking into reusable business packages
 
 ## 1. Authenticate an incoming integration request
 
-The target application API will expose a request authenticator that produces an integration principal.
+The target application API will expose a request authenticator that produces an integration principal. The authentication service is not implemented yet.
 
 Target usage:
 
@@ -138,21 +210,23 @@ from integration_auth.application import AuthenticateIntegrationRequestService
 principal: IntegrationPrincipal = await authenticator.authenticate(request_data)
 ```
 
-A principal represents the authenticated machine identity, not a user:
+`IntegrationPrincipal` itself is available now and represents the authenticated machine identity, not a user:
 
 ```python
-IntegrationPrincipal(
-    client_id="wp_store_123",
+from integration_auth import IntegrationClientId, IntegrationPrincipal, IntegrationScope, Permission
+
+principal = IntegrationPrincipal(
+    client_id=IntegrationClientId("wp_store_123"),
     permissions=frozenset(
         {
-            "catalog.read",
-            "catalog.write",
-            "orders.read",
+            Permission("catalog.read"),
+            Permission("catalog.write"),
+            Permission("orders.read"),
         }
     ),
     scopes=frozenset(
         {
-            "store:store-123",
+            IntegrationScope("store", "store-123"),
         }
     ),
 )
@@ -162,7 +236,7 @@ The principal contains authorization facts; it does not contain WordPress-specif
 
 ## 2. Protect a route by permission
 
-For route-level authorization, the host requires a permission before calling its use case.
+Route-level authorization and FastAPI dependencies are target APIs for later roadmap stages.
 
 Target FastAPI usage:
 
@@ -196,6 +270,8 @@ scope:      store:store-123
 ```
 
 An integration with `orders.read` for `store-123` must not automatically read orders owned by `store-456`.
+
+`IntegrationResource` is available in Stage 1. The authorization service shown below is planned for the authorization stage.
 
 Target authorization usage:
 
@@ -295,7 +371,7 @@ WordPressPermission
 
 Instead it exposes generic integration concepts.
 
-A host may provision credentials for a WordPress plugin:
+A host may eventually provision credentials for a WordPress plugin:
 
 ```text
 client_id: wp_store_123
@@ -309,11 +385,11 @@ permissions:
     orders.read
 ```
 
-The plugin stores its secret securely in WordPress and signs outbound requests.
+Credential provisioning and secret storage are not implemented in Stage 1.
 
 ### Plugin → backend
 
-Example request:
+Planned request example:
 
 ```http
 POST /api/catalog/products
@@ -326,7 +402,7 @@ Content-Type: application/json
 {"sku":"SKU-1","stock":5}
 ```
 
-The backend performs:
+The backend will eventually perform:
 
 ```text
 1. resolve client_id
@@ -344,7 +420,7 @@ The backend performs:
 
 ### PHP signing concept
 
-The WordPress plugin can use PHP's HMAC functions. Conceptually:
+The future canonical protocol is intended to interoperate with PHP HMAC functions. Conceptually:
 
 ```php
 $bodyHash = hash('sha256', $body);
@@ -364,25 +440,27 @@ The final implementation will define exact encoding, header names, query canonic
 
 Communication is two-way, so the backend must not reuse the plugin's incoming credential blindly.
 
-Recommended model:
+The Stage 1 `CredentialDirection` model supports separate credentials from the host perspective:
 
 ```text
-WordPress → Backend credential
-    purpose/direction: plugin signs, backend verifies
+INBOUND
+    external integration signs
+    Python backend verifies
 
-Backend → WordPress credential
-    purpose/direction: backend signs, plugin verifies
+OUTBOUND
+    Python backend signs
+    external integration verifies
 ```
 
-Each direction can be rotated or revoked independently.
+Each direction can later be rotated or revoked independently.
 
-The receiving WordPress endpoint applies the same verification steps: timestamp, nonce, canonical request, signature and permission/scope policy appropriate to that endpoint.
+The receiving external endpoint will apply the same verification concerns: timestamp, nonce, canonical request, signature, and permission/scope policy appropriate to that endpoint.
 
 ## Replay protection
 
 A valid captured request must not be reusable.
 
-The verifier therefore checks both:
+The future verifier will therefore check both:
 
 ```text
 timestamp tolerance
@@ -396,11 +474,11 @@ accepted clock skew: ±5 minutes
 nonce: usable once per client inside replay window
 ```
 
-Exact defaults will be established in the domain/application stages and remain configurable through explicit policy objects rather than hidden constants.
+Exact defaults will be established in the relevant roadmap stages and remain configurable through explicit policy objects rather than hidden constants.
 
 ## Credential rotation
 
-A credential must have an explicit lifecycle:
+Stage 1 defines lifecycle states and valid terminal transitions:
 
 ```text
 ACTIVE
@@ -408,7 +486,7 @@ REVOKED
 EXPIRED
 ```
 
-Rotation should support overlap where necessary:
+Provisioning and rotation behavior belongs to a later roadmap stage and should support overlap where necessary:
 
 ```text
 credential v1 ───── active ─────┐
@@ -416,9 +494,9 @@ credential v1 ───── active ─────┐
 credential v2             ──────┴──── active
 ```
 
-This allows a plugin and backend to deploy a new secret without downtime.
+This allows an integration and backend to deploy a new secret without downtime.
 
-The package should never log raw secrets or signatures.
+The package must never log raw secrets or signatures.
 
 ## Permissions and scopes
 
@@ -444,20 +522,20 @@ organization:org-42
 workspace:workspace-a
 ```
 
-The package manages generic permission and scope values. It does not need to understand what a Store or Organization actually is.
+Stage 1 implements generic validated `Permission`, `IntegrationScope`, and `IntegrationResource` value objects. The package does not need to understand what a Store or Organization actually is.
 
-# Planned package architecture
+# Package architecture
 
 ```text
 integration_auth/
-├── domain/
+├── domain/                       # Stage 1 implemented
 │   ├── entities/
 │   ├── enums/
 │   ├── policies/
 │   ├── validators/
 │   └── value_objects/
 │
-├── application/
+├── application/                  # later stages
 │   ├── contracts/
 │   ├── dto/
 │   ├── mappers/
@@ -466,15 +544,15 @@ integration_auth/
 │       ├── authorization/
 │       └── credentials/
 │
-├── infrastructure/
+├── infrastructure/               # later stages
 │   ├── crypto/
 │   │   └── hmac/
 │   └── persistence/
 │       └── sqlalchemy/
 │
-├── migrations/
+├── migrations/                   # later stage
 │
-└── presentation/
+└── presentation/                 # later stage
     ├── dependencies/
     ├── mappers/
     ├── routes/
