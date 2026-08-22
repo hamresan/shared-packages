@@ -14,7 +14,7 @@ def test_credential_contains_no_secret_material_and_preserves_metadata() -> None
 
     assert credential.direction is CredentialDirection.INBOUND
     assert credential.status is CredentialStatus.ACTIVE
-    assert "secret" not in credential.__dataclass_fields__
+    assert not hasattr(credential, "secret")
 
 
 def test_credential_enforces_lifecycle_snapshot_invariants() -> None:
