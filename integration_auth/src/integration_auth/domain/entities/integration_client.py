@@ -1,6 +1,6 @@
 """Integration client domain entity."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from integration_auth.domain.value_objects.identifiers import IntegrationClientId
 from integration_auth.domain.value_objects.integration_scope import IntegrationScope
@@ -12,5 +12,5 @@ class IntegrationClient:
     """Machine integration identity and its authorization grants."""
 
     client_id: IntegrationClientId
-    permissions: frozenset[Permission] = field(default_factory=frozenset)
-    scopes: frozenset[IntegrationScope] = field(default_factory=frozenset)
+    permissions: frozenset[Permission] = frozenset()
+    scopes: frozenset[IntegrationScope] = frozenset()
