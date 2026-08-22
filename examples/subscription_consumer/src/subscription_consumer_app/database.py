@@ -1,8 +1,12 @@
 from collections.abc import Sequence
 
 from sqlalchemy import MetaData
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
-
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from subscription.migrations import subscription_metadata
 
 
