@@ -1,6 +1,6 @@
 """Signed integration request header schema."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True, slots=True)
@@ -10,4 +10,4 @@ class SignedRequestHeaders:
     client_id: str
     timestamp: int
     nonce: str
-    signature: str
+    signature: str = field(repr=False)
