@@ -1,1 +1,1 @@
-"""Package namespace reserved for staged integration-auth implementation."""
+"""Internal domain validation components for integration-auth."""
