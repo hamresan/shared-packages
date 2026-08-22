@@ -5,9 +5,9 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+from subscription.migrations import subscription_metadata
 
 from subscription_consumer_app.database import include_consumer_name
-from subscription.migrations import subscription_metadata
 
 config = context.config
 if config.config_file_name is not None:
