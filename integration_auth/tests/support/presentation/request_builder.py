@@ -19,9 +19,10 @@ class FastApiRequestBuilder:
         headers: Mapping[str, str] | None = None,
         body: bytes = b"",
     ) -> Request:
-        encoded_headers = []
+        encoded_headers: list[tuple[bytes, bytes]] = []
         for name, value in (headers or {}).items():
             encoded_headers.append((name.lower().encode("latin-1"), value.encode("latin-1")))
+
         scope: Scope = {
             "type": "http",
             "asgi": {"version": "3.0", "spec_version": "2.3"},
