@@ -13,10 +13,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+fastapi = [
+  "fastapi>=0.115,<1.0",
+]
 test = [
   "aiosqlite>=0.20,<1.0",
   "alembic>=1.14,<2.0",
   "build>=1.2,<2.0",
+  "fastapi>=0.115,<1.0",
+  "httpx>=0.28,<1.0",
   "pyright>=1.1,<2.0",
   "pytest>=8.0,<9.0",
   "pytest-cov>=6.0,<7.0",
