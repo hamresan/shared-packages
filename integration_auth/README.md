@@ -8,66 +8,66 @@ Import:       integration_auth
 Python:       >= 3.12
 ```
 
-`hamresan-integration-auth` is generic integration infrastructure for internal services, external plugins, partner applications, connectors, workers, agents, and backend-to-backend communication.
+The package is generic integration infrastructure for internal services, external plugins,
+partner applications, connectors, workers, agents, and backend-to-backend communication.
+It has no direct dependency on `hamresan-identity`, WordPress, WooCommerce, Store,
+Subscription, or provider-specific SDKs.
 
-It is deliberately separate from `hamresan-identity`:
-
-- `hamresan-identity` owns human users, sessions, and user access tokens;
-- `hamresan-integration-auth` owns machine/integration identity, credentials, signed requests, permissions, scopes, replay protection, and credential lifecycle;
-- a host application may use both and map them into its own actor abstraction.
-
-The package has no direct dependency on Identity, WordPress, WooCommerce, Store, Subscription, or provider-specific SDKs.
+`hamresan-identity` authenticates humans. `hamresan-integration-auth` authenticates
+machine/integration clients. A host may compose both into its own actor abstraction.
 
 ## Current implementation status
 
 Implemented:
 
 - **Stage 1 — Core domain**
-  - `IntegrationClient`;
-  - `IntegrationCredential` metadata without raw secret material;
-  - `IntegrationPrincipal`;
+  - integration clients, credentials, principals, permissions and scopes;
   - typed client/credential identifiers;
-  - `Permission`, `IntegrationScope`, `IntegrationResource`;
   - inbound/outbound credential direction;
-  - active/revoked/expired lifecycle and transition policy.
-- **Stage 2 — Signing protocol and cryptographic contracts**
-  - `CanonicalRequest`;
-  - deterministic canonical query encoding;
-  - exact canonical request serialization;
-  - `BodyHasher`, `RequestSigner`, and `RequestVerifier` contracts;
+  - active/revoked/expired lifecycle rules.
+- **Stage 2 — Signing protocol and crypto contracts**
+  - deterministic `CanonicalRequest`;
+  - RFC3986 query canonicalization;
   - SHA-256 body hashing;
-  - HMAC-SHA256 request signing;
-  - constant-time HMAC verification;
-  - configurable timestamp-tolerance policy;
-  - fixed known-answer vectors suitable for cross-language interoperability tests.
-- **Stage 3 — Replay protection core**
+  - `RequestSigner` / `RequestVerifier` contracts;
+  - HMAC-SHA256 signer and constant-time verifier;
+  - timestamp-tolerance policy;
+  - fixed cross-language known-answer vectors.
+- **Stage 3 — Replay protection**
   - atomic `NonceStore` contract;
   - `ReplayWindowPolicy`;
-  - `ReplayProtector` application service;
-  - stale/future timestamp rejection before nonce consumption;
-  - client-scoped nonce uniqueness;
-  - explicit replay/timestamp errors.
+  - `ReplayProtector`;
+  - stale/future timestamp rejection;
+  - client-scoped nonce consumption and replay errors.
+- **Stage 4 — Application authentication**
+  - `IntegrationClientRepository` contract;
+  - `IntegrationCredentialRepository` contract;
+  - `CredentialSecretProvider` contract;
+  - `Clock` contract;
+  - inbound credential eligibility policy;
+  - `AuthenticateIntegrationRequest` DTO;
+  - `AuthenticateIntegrationRequestService`;
+  - `IntegrationPrincipalMapper`;
+  - fail-closed authentication errors;
+  - support for multiple credential candidates during rotation overlap.
 
 Not implemented yet:
 
-- persistent nonce/replay storage;
-- complete request-authentication application services;
-- authorization services;
-- credential issuance/rotation services;
-- SQLAlchemy persistence;
+- authorization services for permissions/scopes;
+- credential issuance/rotation use cases;
+- persistent SQLAlchemy repositories and nonce store;
+- host-owned Alembic integration;
 - FastAPI adapters/dependencies.
 
 See `ROADMAP.md` for staged delivery.
 
-# Installation
-
-From a package index when published:
+## Installation
 
 ```bash
 pip install hamresan-integration-auth
 ```
 
-For development in this repository:
+Development:
 
 ```bash
 cd integration_auth
@@ -75,14 +75,11 @@ python -m pip install -e ".[test]"
 make check
 ```
 
-# Stage 1 domain API
-
-The package distinguishes machine identity from human identity.
+## Core domain
 
 ```python
 from integration_auth import (
     CredentialDirection,
-    CredentialLifecyclePolicy,
     CredentialStatus,
     IntegrationClient,
     IntegrationClientId,
@@ -95,55 +92,30 @@ from integration_auth import (
 )
 ```
 
-Example client grants:
+Authentication answers **who is calling**. Authorization answers **what that integration may
+do and on which resource**. Those responsibilities remain separate.
 
-```python
-client = IntegrationClient(
-    client_id=IntegrationClientId("wp_store_123"),
-    permissions=frozenset(
-        {
-            Permission("catalog.read"),
-            Permission("catalog.write"),
-            Permission("orders.read"),
-        }
-    ),
-    scopes=frozenset({IntegrationScope("store", "store-123")}),
-)
-```
-
-Credential direction is defined from the Python host application's perspective:
+Permission vocabulary is consumer-defined:
 
 ```text
-INBOUND  = external integration signs; Python host verifies
-OUTBOUND = Python host signs; external integration verifies
+catalog.read
+catalog.write
+orders.read
 ```
 
-A credential does not contain a raw signing secret:
-
-```python
-credential = IntegrationCredential(
-    credential_id=IntegrationCredentialId("credential-1"),
-    client_id=IntegrationClientId("wp_store_123"),
-    direction=CredentialDirection.INBOUND,
-    status=CredentialStatus.ACTIVE,
-    issued_at=issued_at,
-)
-```
-
-The Stage 1 lifecycle allows:
+Scopes are generic resource grants:
 
 ```text
-ACTIVE -> REVOKED
-ACTIVE -> EXPIRED
+store:store-123
+organization:org-42
 ```
 
-`REVOKED` and `EXPIRED` are terminal states at this stage.
+`IntegrationScope` represents a grant. `IntegrationResource` represents the target of an
+authorization decision.
 
-# Stage 2 signed-request protocol
+## Signed-request protocol
 
-The initial protocol uses HMAC-SHA256 over one exact canonical request representation.
-
-The signed fields are exactly:
+The initial protocol signs exactly:
 
 ```text
 HTTP_METHOD
@@ -153,90 +125,24 @@ NONCE
 BODY_SHA256
 ```
 
-There is **no trailing newline** after `BODY_SHA256`.
+There is no trailing newline.
 
-## Canonical query rules
+Canonical query rules:
 
-Use `CanonicalQueryEncoder` to construct the query portion.
+1. UTF-8 percent-encoding uses RFC3986 unreserved characters.
+2. Space is `%20`, never `+`.
+3. Encoded `(key, value)` pairs are sorted lexicographically.
+4. Duplicate query keys are preserved.
+5. The canonical query has no leading `?`.
 
 ```python
 from integration_auth.protocol import CanonicalQueryEncoder
 
-canonical_query = CanonicalQueryEncoder().encode(
-    [
-        ("tag", "sale"),
-        ("page", "2"),
-        ("tag", "blue sky"),
-    ]
-)
-
-assert canonical_query == "page=2&tag=blue%20sky&tag=sale"
+query = CanonicalQueryEncoder().encode([("tag", "sale"), ("page", "2"), ("tag", "blue sky")])
+assert query == "page=2&tag=blue%20sky&tag=sale"
 ```
 
-Rules:
-
-1. Keys and values are UTF-8 percent-encoded using RFC 3986 unreserved characters as safe characters: `A-Z a-z 0-9 - . _ ~`.
-2. Space is encoded as `%20`, never `+`.
-3. Encoded `(key, value)` pairs are sorted lexicographically by encoded key and then encoded value.
-4. Duplicate query keys are preserved.
-5. The canonical query string does not include a leading `?`.
-6. An empty query is represented by an empty string.
-
-The request path is supplied separately as an origin-form path such as `/api/catalog/products`. It must not contain a query string or fragment. Stage 2 does not silently normalize or rewrite the path.
-
-## Body hash
-
-```python
-from integration_auth.infrastructure.crypto import Sha256BodyHasher
-
-body = b'{"sku":"SKU-1","stock":5}'
-body_hash = Sha256BodyHasher().hash(body)
-```
-
-The result is lowercase 64-character SHA-256 hexadecimal text.
-
-## Canonical request
-
-```python
-from integration_auth.protocol import CanonicalRequest, CanonicalRequestSerializer
-
-request = CanonicalRequest(
-    method="POST",
-    path="/api/catalog/products",
-    canonical_query="page=2&tag=blue%20sky&tag=sale",
-    timestamp=1787390042,
-    nonce="7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3",
-    body_sha256=body_hash,
-)
-
-canonical_text = CanonicalRequestSerializer().serialize(request)
-```
-
-`method` must already be uppercase. The protocol fails closed on invalid canonical values instead of silently normalizing them.
-
-For the example above, the canonical request is:
-
-```text
-POST
-/api/catalog/products?page=2&tag=blue%20sky&tag=sale
-1787390042
-7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3
-541dffad76efde94986c635a29f19b29df65fc7d07b44da2576ce9fec007a802
-```
-
-## Crypto contracts
-
-Application code depends on explicit contracts rather than HMAC implementations:
-
-```python
-from integration_auth.application.contracts.crypto import (
-    BodyHasher,
-    RequestSigner,
-    RequestVerifier,
-)
-```
-
-Concrete HMAC/SHA-256 adapters live in infrastructure:
+Body hashing and HMAC adapters live in infrastructure:
 
 ```python
 from integration_auth.infrastructure.crypto import (
@@ -250,91 +156,76 @@ signer = HmacSha256RequestSigner(CanonicalRequestSerializer())
 verifier = HmacSha256RequestVerifier(signer)
 ```
 
-Implementations explicitly implement their contracts. Application services added in later stages should depend on `RequestSigner` / `RequestVerifier`, not on the HMAC classes.
+Verification uses `hmac.compare_digest` for constant-time signature comparison. Secrets and
+signatures must never be logged.
 
-## Signing
+## Replay protection
 
-```python
-signature = signer.sign(request, secret)
-```
-
-The Stage 2 HMAC signature is lowercase hexadecimal HMAC-SHA256.
-
-Known-answer vector:
-
-```text
-secret:
-stage-2-test-secret
-
-body:
-{"sku":"SKU-1","stock":5}
-
-body SHA-256:
-541dffad76efde94986c635a29f19b29df65fc7d07b44da2576ce9fec007a802
-
-signature:
-2c1d0ec86ff34e7d057d2004df2ff4e88745b393938984d956658d748f5f104a
-```
-
-This vector is stored under `tests/support/protocol` so later PHP/WordPress interoperability tests can reuse exactly the same values.
-
-## Verification
-
-```python
-is_valid = verifier.verify(request, secret, signature)
-```
-
-HMAC verification uses `hmac.compare_digest` for constant-time signature comparison.
-
-Changing any signed value changes verification, including:
-
-- path;
-- canonical query;
-- timestamp;
-- nonce;
-- body hash;
-- signature.
-
-Secrets and signatures must not be logged.
-
-# Timestamp tolerance and replay protection
-
-Stage 2 provides the clock-skew policy and Stage 3 adds replay protection around atomic nonce consumption.
-
-```python
-from integration_auth.application.contracts import NonceStore
-from integration_auth.application.services import ReplayProtector
-from integration_auth.protocol import ReplayWindowPolicy, TimestampTolerancePolicy
-```
-
-`TimestampTolerancePolicy` accepts timestamps at both positive and negative skew boundaries and rejects values outside the configured tolerance.
-
-`NonceStore` defines the persistence-boundary contract:
+Stage 3 requires an atomic nonce-store boundary:
 
 ```text
 consume_once(client_id, nonce, expires_at_timestamp) -> bool
 ```
 
-The operation must be atomic. The first consumption of a `(client_id, nonce)` pair succeeds; concurrent/later attempts must fail while the nonce is protected.
+A `(client_id, nonce)` pair may succeed only once while protected. Timestamp validation runs
+before nonce consumption, so invalid stale/future requests do not pollute the replay store.
+A real database-backed atomic implementation belongs to the persistence stage.
 
-`ReplayProtector` performs the Stage 3 flow:
+## Application authentication
 
-```text
-1. validate request timestamp against configured clock skew
-2. calculate a safe nonce expiry
-3. atomically consume the client-scoped nonce
-4. reject the request when the nonce was already consumed
+Stage 4 composes the previous primitives without depending on SQLAlchemy or FastAPI.
+
+Public application API:
+
+```python
+from integration_auth.application import (
+    AuthenticateIntegrationRequest,
+    AuthenticateIntegrationRequestService,
+    IntegrationAuthenticationError,
+)
 ```
 
-Timestamp validation runs before nonce consumption, so stale/future requests do not pollute the replay store.
+Authentication infrastructure is provided through explicit contracts:
 
-`ReplayWindowPolicy` keeps a nonce for at least the configured retention period and never expires it before the signed request can no longer be accepted by the timestamp policy.
+```python
+from integration_auth.application.contracts import (
+    Clock,
+    CredentialSecretProvider,
+    IntegrationClientRepository,
+    IntegrationCredentialRepository,
+)
+```
 
-Stage 3 intentionally defines the contract and application boundary only. A real persistent/SQLAlchemy nonce store is implemented in the persistence stage, where atomicity must be enforced by the database adapter.
+The authentication flow is:
 
-# External integration usage
+```text
+1. resolve client_id
+2. load credential candidates
+3. reject credentials that are not active, inbound, owned by the client, issued, and unexpired
+4. obtain transient verification material through CredentialSecretProvider
+5. verify the HMAC signature
+6. apply timestamp/replay protection
+7. map the client identity + grants to IntegrationPrincipal
+```
 
-A future incoming request may carry headers such as:
+The service supports multiple usable credential candidates, which allows future credential
+rotation to have a controlled overlap without changing the authentication orchestration.
+
+`IntegrationCredential` still contains no raw secret. Secret retrieval is a separate boundary.
+A later persistence/security adapter is responsible for obtaining verification material without
+storing plaintext secrets.
+
+Stage 4 intentionally does **not** add a Unit of Work because this read/authenticate flow has no
+multi-repository transaction boundary. Atomic nonce consumption is already owned by
+`NonceStore`. A UoW should be introduced later only if a concrete transactional use case needs it.
+
+Application errors are intentionally separate from HTTP. A future presentation adapter should
+map authentication failures to a generic `401 Unauthorized` without leaking client/credential
+existence details.
+
+## External integration example
+
+An incoming integration may eventually send:
 
 ```text
 X-Integration-Client-Id: wp_store_123
@@ -343,114 +234,68 @@ X-Integration-Nonce: 7e488fb0-a1c8-4eca-9d7e-b82d7486f4c3
 X-Integration-Signature: <signature>
 ```
 
-Header parsing and complete request authentication orchestration belong to later application/presentation stages. Stages 2 and 3 provide signing, timestamp and replay-protection building blocks.
+HTTP header parsing belongs to the later FastAPI/presentation stage. Stage 4 expects already
+translated application-level authentication input.
 
-## PHP / WordPress interoperability
+### PHP / WordPress interoperability
 
-WordPress is an example consumer, not a package domain concept.
-
-Once PHP has built the exact canonical string using the same query rules, signing is compatible with PHP's standard HMAC function:
+WordPress is only an example consumer. After constructing the same canonical request byte for
+byte, PHP can sign with:
 
 ```php
 $signature = hash_hmac('sha256', $canonicalRequest, $secret);
 ```
 
-The output must be lowercase hexadecimal and the canonical request must match the Stage 2 representation byte-for-byte.
+The output must be lowercase hexadecimal. A later interoperability stage will execute shared
+Python/PHP vectors instead of relying only on documentation.
 
-A later interoperability stage will add executable/shared Python-PHP vectors rather than relying only on documentation snippets.
+## Bidirectional integrations
 
-# Bidirectional integrations
-
-The architecture supports both directions:
+Both directions are supported architecturally:
 
 ```text
 External integration -> Python backend
 Python backend -> external integration
 ```
 
-Do not assume the same credential is used in both directions.
-
-Use Stage 1 credential direction to model separate credentials:
+Credential direction is defined from the Python host perspective:
 
 ```text
-INBOUND
-    external side signs
-    Python host verifies
-
-OUTBOUND
-    Python host signs
-    external side verifies
+INBOUND  = external side signs; Python host verifies
+OUTBOUND = Python host signs; external side verifies
 ```
 
-Each credential can later be revoked or rotated independently.
+Do not assume the same credential is used in both directions. Incoming and outgoing credentials
+must be independently revocable/rotatable.
 
-# Permissions and resource scopes
+## Credential rotation
 
-Authentication answers:
+Provisioning and rotation are not implemented yet. The current authentication service already
+accepts multiple eligible credential candidates so a future rotation window can overlap old and
+new verification credentials without rewriting the service.
 
-```text
-Who is calling?
-```
+Raw secrets must only cross an issuance/rotation boundary when required and must never be stored
+in plaintext when persistence is implemented.
 
-Authorization answers:
+## Protecting routes
 
-```text
-What may this integration do?
-On which resource may it do it?
-```
-
-Permission vocabulary is consumer-defined:
-
-```text
-catalog.read
-catalog.write
-orders.read
-```
-
-Scopes constrain where permissions apply:
-
-```text
-store:store-123
-organization:org-42
-```
-
-`IntegrationScope` represents a grant. `IntegrationResource` represents the target resource of an authorization decision. They intentionally remain separate concepts.
-
-Authorization services are implemented in a later roadmap stage.
-
-# Protecting FastAPI routes
-
-FastAPI integration is **not implemented yet**. The eventual adapter should authenticate the signed request and then enforce permission/resource authorization without duplicating security logic in route handlers.
+FastAPI support is not implemented yet. The future adapter should translate HTTP requests into
+`AuthenticateIntegrationRequest`, call the authentication service, and later compose Stage 5
+authorization.
 
 Target behavior:
 
 ```text
-invalid or missing integration authentication -> 401 Unauthorized
+invalid/missing machine authentication -> 401 Unauthorized
 authenticated integration without permission -> 403 Forbidden
 ```
 
-Business routes must remain thin and must not parse HMAC signatures, inspect credential persistence, consume nonces directly, or implement resource-scope rules.
+Business routes must remain thin and must not parse HMAC signatures, consume nonces, inspect
+credential storage, or implement resource-scope rules directly.
 
-# Credential rotation and persistence
+## Integration with hamresan-identity
 
-Credential provisioning, rotation, revocation use cases, and persistence are later stages.
-
-When implemented:
-
-- secrets must never be stored in plaintext;
-- raw secrets should only cross the issuance/rotation boundary when required;
-- incoming and outgoing credentials can rotate independently;
-- overlap windows must be explicit;
-- persistence uses async SQLAlchemy repositories;
-- the host application owns Engine/SessionMaker;
-- the host owns the Alembic revision graph;
-- nonce consumption must implement the Stage 3 atomic `NonceStore` contract under concurrency.
-
-# Integration with hamresan-identity
-
-Do not introduce a package dependency between the two authentication systems.
-
-A host may compose both:
+Do not add a package dependency between the two authentication systems.
 
 ```text
 Bearer user token
@@ -459,50 +304,31 @@ Bearer user token
 
 Signed machine request
     -> hamresan-integration-auth
-    -> IntegrationActor
+    -> IntegrationPrincipal
 ```
 
-The host may then map both into its own application-specific `Actor` abstraction. Reusable business modules should depend on the host/domain actor contract rather than directly coupling themselves to either authentication package.
+The host may map both into its own application-specific actor abstraction.
 
-# Architecture
+## Persistence roadmap
 
-```text
-integration_auth/
-├── domain/                         # Stage 1
-│   ├── entities/
-│   ├── enums/
-│   ├── policies/
-│   ├── validators/
-│   └── value_objects/
-├── protocol/                       # Stage 2 + Stage 3 replay policy
-│   ├── canonicalization/
-│   ├── policies/
-│   ├── validators/
-│   └── value_objects/
-├── application/
-│   ├── contracts/
-│   │   ├── crypto/                 # Stage 2 contracts
-│   │   └── replay/                 # Stage 3 NonceStore
-│   ├── errors/                     # Stage 3 replay errors
-│   └── services/
-│       └── replay/                 # Stage 3 ReplayProtector
-├── infrastructure/
-│   └── crypto/
-│       ├── hashing/                # Stage 2 SHA-256
-│       └── hmac/                   # Stage 2 HMAC-SHA256
-├── migrations/                     # later stage
-└── presentation/                   # later stage
-```
+When persistence is introduced:
 
-Tests mirror production responsibility paths. Reusable Builders, Factories, Fakes, and Test Helpers belong under `tests/support/...` rather than inside test functions/files.
+- use async SQLAlchemy;
+- repositories depend on application contracts;
+- the host owns Engine/SessionMaker;
+- the host owns the Alembic revision graph;
+- mapping/hydration stays outside repositories;
+- nonce consumption must implement the atomic `NonceStore` contract;
+- no FK to Identity/Store/Organization tables;
+- secrets are never stored in plaintext.
 
-# Quality gates
+## Quality gates
 
 ```bash
 make check
 ```
 
-The package requires:
+Required:
 
 - Ruff lint;
 - Ruff format check;
