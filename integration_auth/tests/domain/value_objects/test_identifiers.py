@@ -1,5 +1,7 @@
 """Tests for integration identifier value objects."""
 
+from collections.abc import Callable
+
 import pytest
 
 from integration_auth.domain.value_objects.identifiers import (
@@ -26,6 +28,9 @@ def test_credential_id_preserves_valid_value() -> None:
     ("factory", "value"),
     [(IntegrationClientId, "bad id"), (IntegrationCredentialId, "")],
 )
-def test_identifiers_reject_invalid_values(factory: type[object], value: str) -> None:
+def test_identifiers_reject_invalid_values(
+    factory: Callable[[str], object],
+    value: str,
+) -> None:
     with pytest.raises(ValueError):
         factory(value)
