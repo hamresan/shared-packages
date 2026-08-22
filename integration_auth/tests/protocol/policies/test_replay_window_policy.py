@@ -13,21 +13,27 @@ def test_rejects_non_positive_retention() -> None:
 def test_uses_retention_deadline_when_it_is_later() -> None:
     policy = ReplayWindowPolicy(600)
 
-    assert policy.nonce_expires_at(
-        request_timestamp=1000,
-        current_timestamp=1000,
-        max_clock_skew_seconds=300,
-    ) == 1600
+    assert (
+        policy.nonce_expires_at(
+            request_timestamp=1000,
+            current_timestamp=1000,
+            max_clock_skew_seconds=300,
+        )
+        == 1600
+    )
 
 
 def test_keeps_nonce_until_request_can_no_longer_be_accepted() -> None:
     policy = ReplayWindowPolicy(60)
 
-    assert policy.nonce_expires_at(
-        request_timestamp=1000,
-        current_timestamp=700,
-        max_clock_skew_seconds=300,
-    ) == 1300
+    assert (
+        policy.nonce_expires_at(
+            request_timestamp=1000,
+            current_timestamp=700,
+            max_clock_skew_seconds=300,
+        )
+        == 1300
+    )
 
 
 @pytest.mark.parametrize(
