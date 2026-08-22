@@ -2,11 +2,11 @@
 
 from fastapi import Request
 
+from integration_auth.application.contracts.authentication.request_authenticator import (
+    IntegrationRequestAuthenticator,
+)
 from integration_auth.application.errors.authentication import IntegrationAuthenticationError
 from integration_auth.application.errors.replay import ReplayProtectionError
-from integration_auth.application.services.authentication.authenticate_integration_request import (
-    AuthenticateIntegrationRequestService,
-)
 from integration_auth.domain.entities.integration_principal import IntegrationPrincipal
 from integration_auth.presentation.errors.http_error_mapper import FastApiIntegrationErrorMapper
 from integration_auth.presentation.mappers.authentication_request_mapper import (
@@ -24,7 +24,7 @@ class IntegrationAuthenticationDependency:
     def __init__(
         self,
         *,
-        authenticator: AuthenticateIntegrationRequestService,
+        authenticator: IntegrationRequestAuthenticator,
         header_parser: SignedRequestHeaderParser,
         request_mapper: FastApiAuthenticationRequestMapper,
         error_mapper: FastApiIntegrationErrorMapper,
