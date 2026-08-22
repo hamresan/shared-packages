@@ -25,9 +25,8 @@ def main() -> None:
     vectors = json.loads(VECTORS_PATH.read_text(encoding="utf-8"))
     encoder = CanonicalQueryEncoder()
     hasher = Sha256BodyHasher()
-    serializer = CanonicalRequestSerializer()
-    signer = HmacSha256RequestSigner(serializer)
-    verifier = HmacSha256RequestVerifier(serializer)
+    signer = HmacSha256RequestSigner(CanonicalRequestSerializer())
+    verifier = HmacSha256RequestVerifier(signer)
 
     results: dict[str, bool] = {}
     for name in ("inbound", "outbound"):
@@ -42,12 +41,13 @@ def main() -> None:
             nonce=vector["nonce"],
             body_sha256=hasher.hash(body),
         )
-        signature = signer.sign(request, vector["secret"].encode("utf-8"))
+        secret = vector["secret"].encode("utf-8")
+        signature = signer.sign(request, secret)
         results[name] = (
             canonical_query == vector["canonical_query"]
             and request.body_sha256 == vector["body_sha256"]
             and signature == vector["signature"]
-            and verifier.verify(request, vector["secret"].encode("utf-8"), signature)
+            and verifier.verify(request, secret, signature)
         )
 
     print(json.dumps(results, sort_keys=True))
