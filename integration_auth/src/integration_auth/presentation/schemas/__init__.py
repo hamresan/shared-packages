@@ -1,1 +1,5 @@
-"""Package namespace reserved for staged integration-auth implementation."""
+"""FastAPI presentation schemas."""
+
+from .signed_request_headers import SignedRequestHeaders
+
+__all__ = ("SignedRequestHeaders",)
