@@ -22,13 +22,7 @@ class CanonicalRequestValidator:
     ) -> None:
         if not _HTTP_METHOD_PATTERN.fullmatch(method):
             raise ValueError("method must be a non-empty uppercase HTTP token")
-        if (
-            not path.startswith("/")
-            or "?" in path
-            or "#" in path
-            or "\n" in path
-            or "\r" in path
-        ):
+        if not path.startswith("/") or "?" in path or "#" in path or "\n" in path or "\r" in path:
             raise ValueError(
                 "path must be an origin-form path without query, fragment, or newlines"
             )
