@@ -10,7 +10,14 @@ from subscription.application import (
     RecordUsageCommand,
     RenewSubscriptionCommand,
 )
-from subscription.domain import SubjectReference, TimeCondition, TrialPolicy, UsageCondition, UsageMetric
+from subscription.domain import (
+    SubjectReference,
+    TimeCondition,
+    TrialPolicy,
+    UsageCondition,
+    UsageMetric,
+    UsagePeriod,
+)
 from subscription.presentation.mappers.entitlement_value import EntitlementValuePresentationMapper
 from subscription.presentation.schemas.common import SubjectReferenceSchema
 from subscription.presentation.schemas.plan import CreatePlanRequest
@@ -80,12 +87,8 @@ class SubscriptionRequestMapper:
         self,
         subject: SubjectReference,
         metric: str,
-        period: object,
+        period: UsagePeriod,
     ) -> GetUsageCounterQuery:
-        from subscription.domain import UsagePeriod
-
-        if not isinstance(period, UsagePeriod):
-            raise TypeError("period must be a UsagePeriod")
         return GetUsageCounterQuery(subject, UsageMetric(metric), period)
 
     def trial_policy(self, request: TrialPolicyRequest | None) -> TrialPolicy | None:
