@@ -1,19 +1,16 @@
 """Tests for FastAPI integration authentication dependency."""
 
-from typing import Annotated
-
-from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from integration_auth.application.errors.authentication import InvalidIntegrationSignatureError
 from integration_auth.application.errors.replay import ReplayDetectedError
-from integration_auth.domain.entities.integration_principal import IntegrationPrincipal
 from integration_auth.infrastructure.crypto.hashing.sha256_body_hasher import Sha256BodyHasher
 from tests.support.presentation.adapter_factory import build_fastapi_integration_auth
 from tests.support.presentation.authenticator_fake import IntegrationRequestAuthenticatorFake
 from tests.support.presentation.authorizer_fake import IntegrationRequestAuthorizerFake
 from tests.support.presentation.principal_builder import IntegrationPrincipalBuilder
 from tests.support.presentation.signed_headers import SIGNED_HEADERS
+from tests.support.presentation.test_app_factory import FastApiTestAppFactory
 
 
 def test_authentication_dependency_maps_signed_request_and_returns_principal() -> None:
@@ -23,13 +20,7 @@ def test_authentication_dependency_maps_signed_request_and_returns_principal() -
         authenticator=authenticator,
         authorizer=IntegrationRequestAuthorizerFake(),
     )
-    app = FastAPI()
-
-    @app.post("/protected")
-    async def protected(
-        authenticated: Annotated[IntegrationPrincipal, Depends(adapter.authenticate)],
-    ) -> dict[str, str]:
-        return {"client_id": authenticated.client_id.value}
+    app = FastApiTestAppFactory().with_authentication(adapter.authenticate, method="POST")
 
     body = b'{"quantity":2}'
     response = TestClient(app).post(
@@ -59,13 +50,7 @@ def test_missing_authentication_header_fails_closed_with_401() -> None:
         authenticator=authenticator,
         authorizer=IntegrationRequestAuthorizerFake(),
     )
-    app = FastAPI()
-
-    @app.get("/protected")
-    async def protected(
-        authenticated: Annotated[IntegrationPrincipal, Depends(adapter.authenticate)],
-    ) -> dict[str, str]:
-        return {"client_id": authenticated.client_id.value}
+    app = FastApiTestAppFactory().with_authentication(adapter.authenticate)
 
     headers = dict(SIGNED_HEADERS)
     del headers["X-Integration-Signature"]
@@ -83,13 +68,7 @@ def test_invalid_timestamp_header_fails_closed_with_401() -> None:
         authenticator=authenticator,
         authorizer=IntegrationRequestAuthorizerFake(),
     )
-    app = FastAPI()
-
-    @app.get("/protected")
-    async def protected(
-        authenticated: Annotated[IntegrationPrincipal, Depends(adapter.authenticate)],
-    ) -> dict[str, str]:
-        return {"client_id": authenticated.client_id.value}
+    app = FastApiTestAppFactory().with_authentication(adapter.authenticate)
 
     headers = dict(SIGNED_HEADERS)
     headers["X-Integration-Timestamp"] = "not-an-integer"
@@ -109,13 +88,7 @@ def test_invalid_signature_is_mapped_to_401_without_exposing_reason() -> None:
         authenticator=authenticator,
         authorizer=IntegrationRequestAuthorizerFake(),
     )
-    app = FastAPI()
-
-    @app.get("/protected")
-    async def protected(
-        authenticated: Annotated[IntegrationPrincipal, Depends(adapter.authenticate)],
-    ) -> dict[str, str]:
-        return {"client_id": authenticated.client_id.value}
+    app = FastApiTestAppFactory().with_authentication(adapter.authenticate)
 
     response = TestClient(app).get("/protected", headers=SIGNED_HEADERS)
 
@@ -134,13 +107,7 @@ def test_replay_failure_is_mapped_to_401() -> None:
         authenticator=authenticator,
         authorizer=IntegrationRequestAuthorizerFake(),
     )
-    app = FastAPI()
-
-    @app.get("/protected")
-    async def protected(
-        authenticated: Annotated[IntegrationPrincipal, Depends(adapter.authenticate)],
-    ) -> dict[str, str]:
-        return {"client_id": authenticated.client_id.value}
+    app = FastApiTestAppFactory().with_authentication(adapter.authenticate)
 
     response = TestClient(app).get("/protected", headers=SIGNED_HEADERS)
 
