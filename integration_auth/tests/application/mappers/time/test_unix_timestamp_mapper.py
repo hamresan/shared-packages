@@ -12,8 +12,8 @@ def test_maps_unix_timestamp_to_aware_utc_datetime() -> None:
         2026,
         8,
         22,
-        10,
-        34,
+        9,
+        14,
         2,
         tzinfo=UTC,
     )
