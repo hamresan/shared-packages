@@ -26,21 +26,7 @@ Every stage must preserve:
 
 **Status: COMPLETE**
 
-Goals:
-
-- create installable `hamresan-integration-auth` package;
-- establish clean source/test folder structure;
-- add `README.md`, `ROADMAP.md`, `Makefile`, `pyproject.toml`;
-- add package import smoke test;
-- add GitHub Actions quality gate;
-- freeze initial terminology and ownership boundaries.
-
-Exit criteria completed:
-
-- package installs editable;
-- `make check` passes;
-- source/test structures support incremental implementation;
-- README explains internal-project and external-integration usage.
+Foundation, package structure, quality gates, README and terminology boundaries.
 
 ## Stage 1 — Core domain: integration identity and authorization model
 
@@ -49,35 +35,33 @@ Exit criteria completed:
 Implemented domain concepts:
 
 - `IntegrationClient`;
-- `IntegrationCredential` metadata without raw secret material;
+- `IntegrationCredential`;
+- credential lifecycle/status;
 - `IntegrationPrincipal`;
-- credential status/lifecycle enums;
 - `Permission`;
 - `IntegrationScope`;
 - `IntegrationResource`;
 - typed client/credential identifiers;
-- host-perspective inbound/outbound credential direction;
-- active/revoked/expired credential invariants;
-- permission and scope validation;
-- credential lifecycle transition policy.
-
-Key rules:
-
-- machine identity remains independent from user identity;
-- permissions and scopes remain generic value objects;
-- no WordPress-specific entities;
-- no cryptographic implementation in domain entities.
+- inbound/outbound credential direction;
+- credential snapshot invariants and lifecycle transitions.
 
 ## Stage 2 — Canonical request and cryptographic contracts
 
-**Status: IN REVIEW**
+**Status: COMPLETE**
 
-Implemented in this stage:
+Implemented:
 
 - `CanonicalRequest`;
-- exact canonical request validation;
-- deterministic RFC3986 query canonicalization;
-- exact canonical serialization of:
+- deterministic RFC3986 canonical query rules;
+- exact canonical request serialization;
+- `BodyHasher`, `RequestSigner`, `RequestVerifier` contracts;
+- SHA-256 body hashing;
+- HMAC-SHA256 signer/verifier;
+- constant-time signature comparison;
+- timestamp tolerance policy;
+- fixed known-answer vectors for future PHP interoperability.
+
+Canonical representation:
 
 ```text
 HTTP_METHOD
@@ -87,59 +71,41 @@ NONCE
 BODY_SHA256
 ```
 
-- `BodyHasher` contract;
-- `RequestSigner` contract;
-- `RequestVerifier` contract;
-- SHA-256 body hasher;
-- HMAC-SHA256 signer;
-- HMAC-SHA256 verifier using constant-time comparison;
-- configurable timestamp-tolerance policy;
-- fixed known-answer SHA-256/HMAC vectors suitable for future PHP interoperability tests.
-
-Canonicalization rules are documented in `README.md`. Stage 2 intentionally does not consume/store nonces and does not authenticate complete incoming requests.
-
-Tests cover:
-
-- canonical query ordering/encoding and duplicate parameters;
-- canonical serialization with and without query parameters;
-- invalid method/path/query/timestamp/nonce/body-hash inputs;
-- timestamp skew boundaries;
-- fixed body-hash/signature vectors;
-- changed path/query/timestamp/body hash;
-- invalid signature;
-- empty HMAC secret.
-
 ## Stage 3 — Replay protection
 
-**Status: PLANNED**
+**Status: IN REVIEW**
 
-Implement replay defense as a first-class application boundary.
+Current implementation scope:
 
-Planned contracts/components:
+- atomic `NonceStore` contract;
+- `ReplayWindowPolicy` with explicit retention configuration;
+- `ReplayProtector` application service;
+- stale/future timestamp rejection;
+- nonce uniqueness scoped by integration client;
+- explicit replay/timestamp errors;
+- concurrent duplicate-request behavior verified with an atomic test fake.
 
-- `NonceRepository` / replay store contract;
-- nonce uniqueness policy;
-- `ReplayProtector` service or equivalent focused component;
-- explicit replay window configuration;
-- reuse the Stage 2 timestamp-tolerance policy where appropriate.
+Rules:
 
-Requirements:
-
-- reject stale/future timestamps outside configured tolerance;
-- reject repeated nonce per integration client within replay window;
-- nonce consumption must be atomic at the persistence boundary;
-- concurrent duplicate requests must not both succeed.
+- timestamp validation happens before nonce consumption;
+- first `(client_id, nonce)` consumption succeeds;
+- repeated consumption must fail while protected;
+- nonce expiry must be at least long enough for the request to age outside the accepted timestamp window;
+- storage implementations must provide atomic check-and-consume semantics;
+- no SQLAlchemy/persistent nonce adapter is added in this stage.
 
 Tests:
 
-- unit policy tests;
-- concurrent replay tests at persistence/integration stage once SQLAlchemy exists.
+- first-use success;
+- duplicate rejection;
+- client-scoped uniqueness;
+- stale/future timestamp rejection without nonce consumption;
+- replay-window expiry calculations;
+- concurrent duplicate requests do not both succeed.
 
 ## Stage 4 — Application authentication services
 
-**Status: PLANNED**
-
-Implement machine-request authentication use cases.
+**Status: NOT STARTED**
 
 Planned contracts:
 
@@ -157,23 +123,21 @@ Planned services:
 - apply timestamp/replay checks;
 - build `IntegrationPrincipal`.
 
-Service rules:
+Rules:
 
 - orchestration only;
 - no SQLAlchemy/FastAPI in application layer;
-- no cryptographic private helper logic inside services.
+- no crypto helper logic hidden inside services.
 
 ## Stage 5 — Authorization: permissions and scopes
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Implement authorization independent of HTTP framework.
-
-Planned API:
+Implement authorization independently from HTTP:
 
 - `IntegrationAuthorizer`;
 - permission requirement policy;
-- resource/scope authorization policy;
+- resource/scope policy;
 - authorization result/errors.
 
 Support:
@@ -181,166 +145,112 @@ Support:
 1. route/action-level permission checks;
 2. resource-level permission + scope checks.
 
-Examples:
-
-```text
-catalog.write
-orders.read + store:store-123
-```
-
-The package must not know what Catalog, Order or Store objects are.
+No implicit privilege escalation or wildcard semantics unless explicitly designed and tested.
 
 ## Stage 6 — Credential lifecycle and provisioning
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
 Planned services:
 
-- register/create integration client;
+- register integration client;
 - issue credential;
 - rotate credential;
 - revoke credential;
 - expire credential;
 - update permissions/scopes where appropriate.
 
-Security requirements:
+Security:
 
-- secrets generated with strong entropy;
-- raw secret returned only at issuance/rotation boundary if required;
-- stored representation must follow the chosen verification design safely;
-- overlap/rotation window explicitly modeled;
-- incoming and outgoing credentials managed independently;
-- no raw secret in logs or ordinary response DTOs after issuance.
+- strong secret entropy;
+- raw secret returned only at issuance/rotation boundary when necessary;
+- no plaintext persistence;
+- explicit overlap/rotation window;
+- incoming/outgoing credentials independently manageable.
 
 ## Stage 7 — Async SQLAlchemy persistence
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Implement persistence adapters with host-provided `AsyncSessionFactory`.
-
-Planned tables use prefix:
-
-```text
-integration_auth_
-```
-
-Likely persistence areas:
-
-- integration clients;
-- credentials;
-- permissions;
-- scopes;
-- consumed nonces/replay records.
+Tables use the `integration_auth_` prefix.
 
 Requirements:
 
-- no global engine/sessionmaker;
-- explicit repository implementations;
-- mapper/hydrator components separated from repositories;
-- atomic nonce/replay protection;
+- host-provided async session infrastructure;
+- explicit repositories;
+- dedicated mappers/hydrators;
+- atomic nonce consumption at persistence boundary;
 - indexes for authentication hot paths;
 - no FK to Identity/Store/Organization tables.
 
+Tests include real async SQLAlchemy transactions and concurrent nonce consumption.
+
 ## Stage 8 — Host-owned Alembic integration
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Expose migration metadata/filter helpers while keeping revision history in the host.
+Expose metadata/filter helpers while keeping revision history in the host application.
 
-Requirements:
-
-- `integration_auth_metadata()`;
-- `include_integration_auth_name()` or equivalent;
-- package table prefix ownership tests;
-- real Alembic autogenerate integration test;
-- no `alembic.ini`, package revision graph, or package-owned migration ordering.
+No package-owned Alembic revision graph.
 
 ## Stage 9 — FastAPI adapter
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Planned responsibilities:
+Presentation/integration responsibilities only:
 
-- signed-request header schemas/dependencies;
-- `AuthenticatedIntegrationDependency`;
-- permission dependency/factory for route-level authorization;
+- signed-request headers/dependencies;
+- authenticated integration dependency;
+- permission dependency/factory;
 - presentation mappers;
-- HTTP error mapping;
-- credential-management routes only if package ownership justifies them;
-- router installer/factory.
+- HTTP error mapping.
 
-Requirements:
+Expected HTTP behavior:
 
-- 401 for failed authentication;
-- 403 for authenticated principal lacking authorization;
-- routes remain thin;
-- resource authorization stays outside simplistic route conditionals;
-- no Identity implementation dependency.
+```text
+failed authentication -> 401
+authenticated but unauthorized -> 403
+```
+
+Routes remain thin.
 
 ## Stage 10 — External protocol interoperability example
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Create a real consumer example for Python backend ↔ WordPress-style external plugin.
+Deliver executable Python backend ↔ WordPress/PHP interoperability examples using the Stage 2 known-answer vectors.
 
-Deliverables:
-
-- Python host consumer app;
-- exact canonical request specification;
-- PHP signing reference snippet or fixture;
-- known-answer signature vectors shared between Python and PHP tests;
-- plugin → backend signed request example;
-- backend → plugin signed request example;
-- credential rotation example;
-- permission/scope example.
-
-At minimum, interoperability must be proven with deterministic vectors rather than documentation-only pseudocode.
+Include both directions, credential rotation and permission/scope examples.
 
 ## Stage 11 — Multi-auth host composition example
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Demonstrate a project using both:
+Demonstrate a host using both:
 
 ```text
 hamresan-identity
 hamresan-integration-auth
 ```
 
-Show:
-
-- user Bearer authentication;
-- integration signed-request authentication;
-- host-owned canonical Actor mapping;
-- same business use case callable through different actor types without coupling business modules to either auth package.
-
-This is an example/composition concern, not a dependency between the packages.
+Show host-owned Actor mapping without introducing dependency between the packages.
 
 ## Stage 12 — Security hardening and release readiness
 
-**Status: PLANNED**
+**Status: NOT STARTED**
 
-Required checks:
+Required review areas:
 
-- canonicalization ambiguity review;
-- signature timing/constant-time verification review;
-- replay/concurrency review;
-- credential rotation/revocation review;
-- secret exposure/logging review;
-- permission/scope escalation review;
-- request body/path/query tamper tests;
+- canonicalization ambiguity;
+- constant-time verification;
+- replay/concurrency;
+- rotation/revocation;
+- secret/log exposure;
+- permission/scope escalation;
+- body/path/query tampering;
 - clock-skew edge cases;
-- DB index/hot-path review;
-- package build and built-wheel smoke test;
-- README production deployment checklist;
-- release checklist.
+- DB hot paths/indexes;
+- built-wheel smoke tests;
+- deployment/release checklist.
 
-Optional future work remains demand-driven:
-
-- Ed25519 signer/verifier;
-- alternative replay stores such as Redis;
-- key identifiers and multiple simultaneous verification keys;
-- audit/event hooks;
-- caching of non-secret client metadata.
-
-Do not add these abstractions prematurely unless a concrete consumer needs them.
+Future work such as Ed25519, Redis replay stores, multiple key identifiers, audit hooks, or caching remains demand-driven and must not be added prematurely.
