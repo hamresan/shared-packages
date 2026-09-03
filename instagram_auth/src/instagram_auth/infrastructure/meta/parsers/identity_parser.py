@@ -12,14 +12,21 @@ class MetaIdentityPayloadParser:
         user_id = payload.get("user_id")
         username = payload.get("username")
         account_type = payload.get("account_type")
-        values = (user_id, username, account_type)
-        if not all(isinstance(value, str) and value for value in values):
-            raise InstagramProviderError(
-                kind=InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR,
-                message="Instagram provider error: unexpected_provider_error",
-            )
+        if not isinstance(user_id, str) or not user_id:
+            raise self.invalid_payload_error()
+        if not isinstance(username, str) or not username:
+            raise self.invalid_payload_error()
+        if not isinstance(account_type, str) or not account_type:
+            raise self.invalid_payload_error()
         return MetaInstagramIdentityDto(
             user_id=user_id,
             username=username,
             account_type=account_type,
+        )
+
+    @staticmethod
+    def invalid_payload_error() -> InstagramProviderError:
+        return InstagramProviderError(
+            kind=InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR,
+            message="Instagram provider error: unexpected_provider_error",
         )
