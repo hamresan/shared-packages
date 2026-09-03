@@ -20,3 +20,7 @@ class InstagramConnection:
     permissions: frozenset[InstagramPermission]
     status: InstagramConnectionStatus
     connected_at: datetime
+    credential_expires_at: datetime | None = None
+    revoked_at: datetime | None = None
+    last_validated_at: datetime | None = None
+    version: int = 1

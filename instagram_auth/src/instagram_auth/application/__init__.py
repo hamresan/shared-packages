@@ -17,16 +17,26 @@ from instagram_auth.application.authorization import (
 from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
+    InstagramAuthUnitOfWork,
     InstagramAuthorizationProvider,
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
     InstagramConnectionLister,
     InstagramConnectionReader,
     InstagramConnectionRepository,
+    InstagramCredentialRepository,
     StateGenerator,
 )
-from instagram_auth.application.errors import InstagramProviderError
-from instagram_auth.application.models import InstagramAuthorizationGrant
+from instagram_auth.application.credentials import StoreInstagramConnectionCredential
+from instagram_auth.application.errors import (
+    DuplicateInstagramConnectionError,
+    InstagramConnectionConcurrencyError,
+    InstagramProviderError,
+)
+from instagram_auth.application.models import (
+    InstagramAuthorizationGrant,
+    InstagramProtectedCredential,
+)
 from instagram_auth.application.permissions import (
     ApplyInstagramPermissionSnapshot,
     InstagramPermissionEvaluation,
@@ -37,7 +47,9 @@ from instagram_auth.application.permissions import (
 __all__ = [
     "ApplyInstagramPermissionSnapshot",
     "Clock",
+    "DuplicateInstagramConnectionError",
     "InstagramAccessTokenProtector",
+    "InstagramAuthUnitOfWork",
     "InstagramAuthorizationCorrelation",
     "InstagramAuthorizationFlow",
     "InstagramAuthorizationGrant",
@@ -50,16 +62,20 @@ __all__ = [
     "InstagramAuthorizationStateValidationFailure",
     "InstagramAuthorizationStateValidator",
     "InstagramAuthorizationUrlBuilder",
+    "InstagramConnectionConcurrencyError",
     "InstagramConnectionLister",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
+    "InstagramCredentialRepository",
     "InstagramPermissionEvaluation",
     "InstagramPermissionPolicy",
     "InstagramPermissionStatus",
+    "InstagramProtectedCredential",
     "InstagramProviderError",
     "StartInstagramAuthorization",
     "StartInstagramAuthorizationCommand",
     "StateGenerator",
+    "StoreInstagramConnectionCredential",
     "ValidateInstagramAuthorizationCallback",
     "ValidatedInstagramAuthorization",
 ]
