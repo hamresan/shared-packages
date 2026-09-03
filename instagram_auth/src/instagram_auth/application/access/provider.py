@@ -2,10 +2,12 @@
 
 from collections.abc import Collection
 
-from instagram_auth.application.contracts import (
-    InstagramAccessTokenProtector,
-    InstagramConnectionReader,
+from instagram_auth.application.contracts.connection_reader import InstagramConnectionReader
+from instagram_auth.application.contracts.credential_repository import (
     InstagramCredentialRepository,
+)
+from instagram_auth.application.contracts.token_protector import (
+    InstagramAccessTokenProtector,
 )
 from instagram_auth.application.errors.access import InstagramConnectionUnavailableError
 from instagram_auth.baseline import InstagramPermission
