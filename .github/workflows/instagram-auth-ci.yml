@@ -1,0 +1,31 @@
+name: Instagram Auth CI
+
+on:
+  pull_request:
+    paths:
+      - "instagram_auth/**"
+      - ".github/workflows/instagram-auth-ci.yml"
+  push:
+    branches:
+      - main
+      - feature/instagram-packages
+    paths:
+      - "instagram_auth/**"
+      - ".github/workflows/instagram-auth-ci.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: instagram_auth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: instagram_auth/pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: make check
