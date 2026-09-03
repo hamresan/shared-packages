@@ -6,7 +6,9 @@ from instagram_auth.application.authorization.validation import (
     InstagramAuthorizationStateValidationFailure,
     InstagramAuthorizationStateValidator,
 )
-from instagram_auth.application.contracts import InstagramAuthorizationStateStore
+from instagram_auth.application.contracts.authorization_state_store import (
+    InstagramAuthorizationStateStore,
+)
 
 
 class ValidateInstagramAuthorizationCallback:
