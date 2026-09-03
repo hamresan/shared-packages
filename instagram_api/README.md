@@ -26,16 +26,18 @@ It consumes an authorized Instagram connection/access-token boundary supplied by
 
 The package does **not** authenticate local application users, own local user sessions, or decide what an LLM should say. Authentication/authorization belongs to `hamresan-instagram-auth` and the host identity layer. AI/automation orchestration belongs to the consuming application or a separate automation/AI package.
 
+The package must be **connection-aware**. A local user may have multiple authorized Instagram accounts, so every account-scoped operation must target a specific Instagram connection rather than assuming one Instagram account per user.
+
 ## Target end-to-end product flow
 
 ```text
-User connects Instagram
+User connects one or more Instagram accounts
         ↓
 hamresan-instagram-auth
         ↓
-authorized Instagram connection
+authorized Instagram connections
         ↓
-host application
+host selects a connection
         ↓
 hamresan-instagram-api
         ├── read account/media
@@ -54,11 +56,11 @@ Instagram webhook
       ↓
 hamresan-instagram-api
       ↓
-normalized inbound event
+normalized inbound event + connection identity
       ↓
 host automation / LLM
       ↓
-reply command
+reply command for the same connection
       ↓
 hamresan-instagram-api
       ↓
@@ -87,19 +89,21 @@ InstagramAccessTokenProvider
 InstagramConnectionReader
 ```
 
-The host composition root adapts its authorization/connection storage to these contracts.
+Token/access lookup must be keyed by an explicit connection identifier. The host composition root adapts its authorization/connection storage to these contracts.
+
+The package must not infer a globally active Instagram account from the current user. Selecting the connection for inbox, comments, media, or any other account-scoped operation belongs to the host application.
 
 ## Initial capabilities
 
 ### Account/profile
 
-- resolve/read the connected professional account;
+- resolve/read the selected connected professional account;
 - read supported profile/account fields;
-- validate that the account connection is usable.
+- validate that the selected connection is usable.
 
 ### Media
 
-- list owned media/posts;
+- list owned media/posts for a selected connection;
 - read supported media details;
 - handle pagination;
 - support posts/reels and other media types exposed by the current API;
@@ -107,20 +111,20 @@ The host composition root adapts its authorization/connection storage to these c
 
 ### Messaging
 
-- list supported conversations;
+- list supported conversations for a selected connection;
 - list messages in a conversation;
 - read supported message metadata/details;
-- send supported messages/replies;
-- receive and normalize messaging webhook events;
+- send supported messages/replies using the same selected connection;
+- receive and normalize messaging webhook events with enough connection/account identity for host routing;
 - support pagination and provider constraints.
 
 Important platform rule: the package must not promise arbitrary proactive DMs. Instagram messaging conversations are subject to Meta's current messaging policies and recipient/conversation eligibility rules.
 
 ### Comments
 
-- list/read comments on owned supported media;
-- receive and normalize comment webhook events;
-- publish supported public replies;
+- list/read comments on owned supported media for a selected connection;
+- receive and normalize comment webhook events with account/connection correlation data;
+- publish supported public replies through the correct connection;
 - support Meta's private-reply flow where allowed;
 - expose explicit failure reasons for expired or ineligible reply windows.
 
@@ -130,6 +134,7 @@ Important platform rule: the package must not promise arbitrary proactive DMs. I
 - validate provider signatures where applicable;
 - parse Meta payloads through dedicated provider DTOs/mappers;
 - normalize inbound events into package-owned event contracts;
+- preserve enough provider account identity for the host to resolve the owning `InstagramConnection`;
 - expose idempotency/deduplication boundaries;
 - avoid invoking host business/AI logic inside the webhook parser.
 
@@ -141,6 +146,8 @@ InstagramCommentCreated
 InstagramCommentUpdated
 InstagramConnectionChanged
 ```
+
+Normalized events should carry the provider account/connection correlation required to route an event to the correct authorized account when one local user owns multiple Instagram connections.
 
 Only events actually supported by the current provider API should be implemented.
 
@@ -201,6 +208,8 @@ Tests should mirror the package's internal responsibility/layer structure.
 - No direct dependency on host application modules.
 - No direct dependency on `hamresan-identity`.
 - No direct persistence coupling to `hamresan-instagram-auth`.
+- No one-user/one-Instagram-account assumption.
+- Account-scoped operations require explicit connection context.
 - No LLM calls or AI prompt logic inside this package.
 
 ## Security and reliability requirements
@@ -213,7 +222,8 @@ Tests should mirror the package's internal responsibility/layer structure.
 - Retry only safe/idempotent operations according to operation semantics.
 - Preserve provider error codes internally while returning normalized application errors.
 - Respect current Meta rate limits, messaging policies, reply windows, and permission requirements.
-- Fail closed when the connection lacks the required permission.
+- Fail closed when the selected connection lacks the required permission or is unusable.
+- Never allow an operation intended for one connection to fall back silently to another connection.
 
 ## Relationship with other packages
 
@@ -222,13 +232,13 @@ hamresan-identity
     local user/session
 
 hamresan-instagram-auth
-    Instagram OAuth + permission + connection authorization
+    Instagram OAuth + permission + multiple connection authorizations
 
 hamresan-instagram-api
-    Instagram data/actions + webhooks
+    connection-aware Instagram data/actions + webhooks
 
 host automation/AI
-    decides whether/how to reply
+    selects connection and decides whether/how to reply
 ```
 
 ## Status
