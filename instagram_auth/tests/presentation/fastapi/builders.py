@@ -28,6 +28,7 @@ from instagram_auth.presentation.fastapi import (
     InstagramConnectionResponseMapper,
     InstagramFastApiConfig,
     InstagramFastApiDependencies,
+    InstagramFastApiErrorMapper,
     create_instagram_auth_router,
 )
 from tests.application.authorization.fakes import (
@@ -103,6 +104,7 @@ def build_test_context(
         owner_context=FakeInstagramFastApiOwnerContext(owner_user_id),
         callback_responder=callback_responder,
         connection_mapper=InstagramConnectionResponseMapper(),
+        error_mapper=InstagramFastApiErrorMapper(),
     )
 
     app = FastAPI()
