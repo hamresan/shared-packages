@@ -3,13 +3,13 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from instagram_auth.application.authorization import (
+from instagram_auth.application.authorization.factory import InstagramAuthorizationStateFactory
+from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
     InstagramAuthorizationFlow,
-    InstagramAuthorizationStateFactory,
-    StartInstagramAuthorization,
     StartInstagramAuthorizationCommand,
 )
+from instagram_auth.application.authorization.start import StartInstagramAuthorization
 from instagram_auth.baseline import CORE_PERMISSIONS, InstagramPermission
 from tests.application.authorization.fakes import (
     FakeInstagramAuthorizationStateStore,
