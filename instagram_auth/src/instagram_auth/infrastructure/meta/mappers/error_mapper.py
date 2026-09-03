@@ -10,28 +10,38 @@ class MetaProviderErrorMapper:
 
     def token_exchange_error(self, response: MetaHttpResponse) -> InstagramProviderError:
         if response.status_code == 429:
-            return self._error(InstagramProviderErrorKind.RATE_LIMITED, response.status_code)
-        if response.status_code >= 500:
-            return self._error(InstagramProviderErrorKind.PROVIDER_UNAVAILABLE, response.status_code)
-        if response.status_code == 400:
-            return self._error(InstagramProviderErrorKind.INVALID_AUTHORIZATION_CODE, 400)
-        return self._error(InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR, response.status_code)
+            kind = InstagramProviderErrorKind.RATE_LIMITED
+        elif response.status_code >= 500:
+            kind = InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
+        elif response.status_code == 400:
+            kind = InstagramProviderErrorKind.INVALID_AUTHORIZATION_CODE
+        else:
+            kind = InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR
+        return InstagramProviderError(
+            kind=kind,
+            message=f"Instagram provider error: {kind.value}",
+            status_code=response.status_code,
+        )
 
     def identity_error(self, response: MetaHttpResponse) -> InstagramProviderError:
         if response.status_code == 429:
-            return self._error(InstagramProviderErrorKind.RATE_LIMITED, response.status_code)
-        if response.status_code >= 500:
-            return self._error(InstagramProviderErrorKind.PROVIDER_UNAVAILABLE, response.status_code)
-        if response.status_code in {400, 401}:
-            return self._error(InstagramProviderErrorKind.INVALID_TOKEN, response.status_code)
-        return self._error(InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR, response.status_code)
+            kind = InstagramProviderErrorKind.RATE_LIMITED
+        elif response.status_code >= 500:
+            kind = InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
+        elif response.status_code in {400, 401}:
+            kind = InstagramProviderErrorKind.INVALID_TOKEN
+        else:
+            kind = InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR
+        return InstagramProviderError(
+            kind=kind,
+            message=f"Instagram provider error: {kind.value}",
+            status_code=response.status_code,
+        )
 
     def timeout_error(self) -> InstagramProviderError:
-        return self._error(InstagramProviderErrorKind.TIMEOUT, None)
+        kind = InstagramProviderErrorKind.TIMEOUT
+        return InstagramProviderError(kind=kind, message=f"Instagram provider error: {kind.value}")
 
     def transport_error(self) -> InstagramProviderError:
-        return self._error(InstagramProviderErrorKind.PROVIDER_UNAVAILABLE, None)
-
-    @staticmethod
-    def _error(kind: InstagramProviderErrorKind, status_code: int | None) -> InstagramProviderError:
-        return InstagramProviderError(kind=kind, message=f"Instagram provider error: {kind.value}", status_code=status_code)
+        kind = InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
+        return InstagramProviderError(kind=kind, message=f"Instagram provider error: {kind.value}")
