@@ -105,9 +105,7 @@ def test_get_connection_uses_explicit_connection_id_and_rejects_cross_owner_acce
 def test_get_connection_returns_not_found_for_unknown_connection_id() -> None:
     context = build_test_context()
 
-    response = context.client.get(
-        "/instagram/connections/00000000-0000-0000-0000-000000000099"
-    )
+    response = context.client.get("/instagram/connections/00000000-0000-0000-0000-000000000099")
 
     assert response.status_code == 404
 
@@ -117,9 +115,7 @@ def test_disconnect_changes_only_selected_connection() -> None:
     sibling = build_connection(7, "owner-1")
     context = build_test_context(connections=(selected, sibling))
 
-    response = context.client.post(
-        f"/instagram/connections/{selected.id.value}/disconnect"
-    )
+    response = context.client.post(f"/instagram/connections/{selected.id.value}/disconnect")
 
     assert response.status_code == 200
     assert response.json()["status"] == InstagramConnectionState.DISCONNECTED.value
@@ -132,9 +128,7 @@ def test_reconnect_updates_selected_connection_without_creating_duplicate() -> N
     sibling = build_connection(9, "owner-1")
     context = build_test_context(connections=(selected, sibling))
 
-    response = context.client.post(
-        f"/instagram/connections/{selected.id.value}/reconnect"
-    )
+    response = context.client.post(f"/instagram/connections/{selected.id.value}/reconnect")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(selected.id.value)

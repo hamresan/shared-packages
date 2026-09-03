@@ -4,7 +4,11 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from instagram_auth.baseline import InstagramAccountType, InstagramConnectionState, InstagramPermission
+from instagram_auth.baseline import (
+    InstagramAccountType,
+    InstagramConnectionState,
+    InstagramPermission,
+)
 
 
 class InstagramAuthorizationStartResponse(BaseModel):
