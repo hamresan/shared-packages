@@ -6,6 +6,7 @@ from uuid import UUID
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx import Client
 
 from instagram_auth.application.authorization.callback import ValidateInstagramAuthorizationCallback
 from instagram_auth.application.authorization.factory import InstagramAuthorizationStateFactory
@@ -48,7 +49,7 @@ REDIRECT_URI = "https://app.example/instagram/callback"
 
 @dataclass(frozen=True, slots=True)
 class FastApiTestContext:
-    client: TestClient
+    client: Client
     store: FakeConnectionStore
     state_store: FakeInstagramAuthorizationStateStore
     callback_responder: FakeInstagramFastApiCallbackResponder
