@@ -1,6 +1,9 @@
 """Async SQLAlchemy repositories for Instagram authorization persistence."""
 
+from typing import cast
+
 from sqlalchemy import select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,7 +63,7 @@ class SqlAlchemyInstagramConnectionRepository(InstagramConnectionRepository):
                 version=connection.version + 1,
             )
         )
-        result = await self._session.execute(statement)
+        result = cast(CursorResult[object], await self._session.execute(statement))
         if result.rowcount != 1:
             raise InstagramConnectionConcurrencyError("Instagram connection update is stale")
         await self._session.flush()
@@ -108,7 +111,7 @@ class SqlAlchemyInstagramCredentialRepository(InstagramCredentialRepository):
                 last_validated_at=credential.last_validated_at,
             )
         )
-        result = await self._session.execute(statement)
+        result = cast(CursorResult[object], await self._session.execute(statement))
         if result.rowcount != 1:
             raise LookupError("Instagram connection not found")
         await self._session.flush()
