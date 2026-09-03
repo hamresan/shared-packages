@@ -21,6 +21,14 @@ from tests.application.contracts.fakes import FixedClock, FixedStateGenerator
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
 
 
+def build_factory(*, lifetime: timedelta = timedelta(minutes=10)) -> InstagramAuthorizationStateFactory:
+    return InstagramAuthorizationStateFactory(
+        state_generator=FixedStateGenerator("state"),
+        clock=FixedClock(NOW),
+        lifetime=lifetime,
+    )
+
+
 def test_start_persists_state_and_builds_least_privilege_authorization_url() -> None:
     store = FakeInstagramAuthorizationStateStore()
     url_builder = FakeInstagramAuthorizationUrlBuilder()
@@ -53,15 +61,22 @@ def test_start_persists_state_and_builds_least_privilege_authorization_url() -> 
     assert run(store.consume("secure-state")) is not None
 
 
-def test_connect_account_requires_owner_correlation() -> None:
-    factory = InstagramAuthorizationStateFactory(
-        state_generator=FixedStateGenerator("state"),
-        clock=FixedClock(NOW),
-        lifetime=timedelta(minutes=10),
-    )
+def test_state_factory_rejects_non_positive_lifetime() -> None:
+    with pytest.raises(ValueError, match="lifetime must be positive"):
+        build_factory(lifetime=timedelta(0))
 
+
+def test_state_factory_rejects_missing_redirect_uri() -> None:
+    with pytest.raises(ValueError, match="redirect_uri is required"):
+        build_factory().create(
+            redirect_uri="",
+            correlation=InstagramAuthorizationCorrelation(flow=InstagramAuthorizationFlow.LOGIN),
+        )
+
+
+def test_connect_account_requires_owner_correlation() -> None:
     with pytest.raises(ValueError, match="owner_user_id"):
-        factory.create(
+        build_factory().create(
             redirect_uri="https://app.example/callback",
             correlation=InstagramAuthorizationCorrelation(
                 flow=InstagramAuthorizationFlow.CONNECT_ACCOUNT
@@ -70,14 +85,8 @@ def test_connect_account_requires_owner_correlation() -> None:
 
 
 def test_login_rejects_owner_correlation() -> None:
-    factory = InstagramAuthorizationStateFactory(
-        state_generator=FixedStateGenerator("state"),
-        clock=FixedClock(NOW),
-        lifetime=timedelta(minutes=10),
-    )
-
     with pytest.raises(ValueError, match="must not be set"):
-        factory.create(
+        build_factory().create(
             redirect_uri="https://app.example/callback",
             correlation=InstagramAuthorizationCorrelation(
                 flow=InstagramAuthorizationFlow.LOGIN,

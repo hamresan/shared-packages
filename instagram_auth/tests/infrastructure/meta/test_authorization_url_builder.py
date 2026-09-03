@@ -1,5 +1,7 @@
 from urllib.parse import parse_qs, urlparse
 
+import pytest
+
 from instagram_auth.baseline import InstagramPermission
 from instagram_auth.infrastructure.meta import MetaInstagramAuthorizationUrlBuilder
 
@@ -29,3 +31,16 @@ def test_meta_authorization_url_contains_encoded_oauth_parameters() -> None:
         "instagram_business_basic",
         "instagram_business_manage_messages",
     }
+
+
+def test_meta_authorization_url_builder_rejects_missing_client_id() -> None:
+    with pytest.raises(ValueError, match="client_id is required"):
+        MetaInstagramAuthorizationUrlBuilder(client_id="")
+
+
+def test_meta_authorization_url_builder_rejects_missing_endpoint() -> None:
+    with pytest.raises(ValueError, match="authorization_endpoint is required"):
+        MetaInstagramAuthorizationUrlBuilder(
+            client_id="app-123",
+            authorization_endpoint="",
+        )
