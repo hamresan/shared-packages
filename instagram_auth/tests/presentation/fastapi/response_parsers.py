@@ -1,21 +1,33 @@
 """Typed response parsing helpers for FastAPI adapter tests."""
 
-from typing import cast
-
-from httpx import Response
+from typing import Protocol, cast
 
 
-def response_json_object(response: Response) -> dict[str, object]:
+class JsonResponse(Protocol):
+    """Minimal response contract required by JSON parsing test helpers."""
+
+    def json(self) -> object:
+        """Return the decoded response payload."""
+        ...
+
+
+def response_json_object(response: JsonResponse) -> dict[str, object]:
     """Return a JSON object with an explicit test-facing type."""
-    return cast(dict[str, object], response.json())
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise AssertionError("Expected response JSON payload to be an object")
+    return cast(dict[str, object], payload)
 
 
-def response_json_object_list(response: Response) -> list[dict[str, object]]:
+def response_json_object_list(response: JsonResponse) -> list[dict[str, object]]:
     """Return a JSON object list with an explicit test-facing type."""
-    return cast(list[dict[str, object]], response.json())
+    payload = response.json()
+    if not isinstance(payload, list):
+        raise AssertionError("Expected response JSON payload to be a list")
+    return cast(list[dict[str, object]], payload)
 
 
-def response_json_string(response: Response, key: str) -> str:
+def response_json_string(response: JsonResponse, key: str) -> str:
     """Read one required string field from a JSON object response."""
     value = response_json_object(response)[key]
     if not isinstance(value, str):
