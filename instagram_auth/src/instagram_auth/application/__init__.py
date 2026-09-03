@@ -25,6 +25,7 @@ from instagram_auth.application.contracts import (
     InstagramConnectionRepository,
     StateGenerator,
 )
+from instagram_auth.application.errors import InstagramProviderError
 from instagram_auth.application.models import InstagramAuthorizationGrant
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     "InstagramConnectionLister",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
+    "InstagramProviderError",
     "StartInstagramAuthorization",
     "StartInstagramAuthorizationCommand",
     "StateGenerator",
