@@ -84,9 +84,7 @@ class InstagramFastApiRouteHandlers:
 
     async def list_connections(self, request: Request) -> list[InstagramConnectionResponse]:
         owner_user_id = await self._dependencies.owner_context.require_owner_user_id(request)
-        connections = await self._dependencies.list_connections.execute(
-            owner_user_id=owner_user_id
-        )
+        connections = await self._dependencies.list_connections.execute(owner_user_id=owner_user_id)
         return [self._dependencies.connection_mapper.map(connection) for connection in connections]
 
     async def get_connection(
