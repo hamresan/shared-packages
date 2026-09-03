@@ -1,6 +1,7 @@
 """SQLAlchemy connection reader/lister tests."""
 
 from asyncio import run
+from pathlib import Path
 
 from instagram_auth.infrastructure.persistence import (
     SqlAlchemyInstagramConnectionLister,
@@ -11,7 +12,7 @@ from tests.infrastructure.persistence.builders import build_connection
 from tests.infrastructure.persistence.database import build_database
 
 
-def test_sqlalchemy_reader_and_lister_are_connection_and_owner_scoped(tmp_path) -> None:
+def test_sqlalchemy_reader_and_lister_are_connection_and_owner_scoped(tmp_path: Path) -> None:
     async def scenario() -> None:
         engine, session_factory = await build_database(tmp_path / "reader.db")
         try:
