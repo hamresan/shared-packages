@@ -17,7 +17,7 @@ from instagram_auth.application.errors.connection_access import (
     InstagramConnectionOwnershipError,
 )
 from instagram_auth.baseline import InstagramPermission
-from instagram_auth.domain import InstagramConnectionId
+from instagram_auth.domain import InstagramConnection, InstagramConnectionId
 
 from .config import InstagramFastApiConfig
 from .dependencies import InstagramFastApiDependencies
@@ -147,7 +147,7 @@ async def _execute_connection_read(
     dependencies: InstagramFastApiDependencies,
     owner_user_id: str,
     connection_id: InstagramConnectionId,
-):
+) -> InstagramConnection:
     try:
         return await dependencies.get_connection.execute(
             owner_user_id=owner_user_id,
