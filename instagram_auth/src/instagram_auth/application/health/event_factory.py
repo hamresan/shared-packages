@@ -1,11 +1,11 @@
 """Security-event factory for connection-health changes."""
 
-from instagram_auth.application.health.models import (
-    InstagramConnectionHealth,
-    InstagramConnectionHealthReason,
+from instagram_auth.application.models.security_event import (
     InstagramSecurityEvent,
     InstagramSecurityEventKind,
 )
+
+from .models import InstagramConnectionHealth, InstagramConnectionHealthReason
 
 
 class InstagramHealthSecurityEventFactory:
