@@ -2,7 +2,7 @@
 
 from asyncio import run
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
@@ -15,6 +15,7 @@ from instagram_auth.application.errors import (
     InstagramConnectionPermissionError,
     InstagramConnectionUnavailableError,
 )
+from instagram_auth.application.health import InstagramConnectionHealthPolicy
 from instagram_auth.application.models import InstagramProtectedCredential
 from instagram_auth.baseline import (
     InstagramAccountType,
@@ -27,6 +28,7 @@ from tests.application.access.fakes import (
     FakeInstagramConnectionReader,
     FakeInstagramCredentialRepository,
 )
+from tests.application.contracts.fakes import FixedClock
 
 NOW = datetime(2026, 9, 3, tzinfo=UTC)
 
@@ -52,7 +54,7 @@ def build_provider(
         FakeInstagramConnectionReader(connections),
         FakeInstagramCredentialRepository(credentials),
         FakeInstagramAccessTokenProtector(),
-        InstagramConnectionAccessPolicy(),
+        InstagramConnectionAccessPolicy(FixedClock(NOW), InstagramConnectionHealthPolicy()),
     )
 
 
@@ -116,6 +118,20 @@ def test_provider_fails_closed_for_revoked_credential() -> None:
                 revoked_at=NOW,
             ),
         ),
+    )
+
+    with pytest.raises(InstagramConnectionUnavailableError):
+        run(provider.get_access_token(connection_id=connection.id))
+
+
+def test_provider_fails_closed_for_expired_connection_credential() -> None:
+    connection = replace(
+        build_connection("00000000-0000-0000-0000-000000000207"),
+        credential_expires_at=NOW - timedelta(seconds=1),
+    )
+    provider = build_provider(
+        (connection,),
+        (InstagramProtectedCredential(connection.id, "protected:token"),),
     )
 
     with pytest.raises(InstagramConnectionUnavailableError):
