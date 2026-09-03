@@ -65,18 +65,20 @@ def test_exchange_authorization_code_posts_expected_form_without_retry() -> None
 
 
 def test_exchange_authorization_code_normalizes_invalid_code() -> None:
+    authorization_code = "sensitive-authorization-code-123"
     transport = FakeMetaHttpTransport()
     transport.post_results.append(MetaHttpResponse(400, {"error": "invalid"}))
 
     with pytest.raises(InstagramProviderError) as exc_info:
         run(
             build_client(transport).exchange_authorization_code(
-                authorization_code="code", redirect_uri="uri"
+                authorization_code=authorization_code,
+                redirect_uri="uri",
             )
         )
 
     assert exc_info.value.kind is InstagramProviderErrorKind.INVALID_AUTHORIZATION_CODE
-    assert "code" not in str(exc_info.value)
+    assert authorization_code not in str(exc_info.value)
     assert len(transport.post_calls) == 1
 
 
