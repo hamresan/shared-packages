@@ -1,7 +1,7 @@
 """Instagram permission registry and least-privilege request semantics."""
 
+from collections.abc import Collection
 from enum import StrEnum
-from typing import Collection
 
 
 class InstagramPermission(StrEnum):
