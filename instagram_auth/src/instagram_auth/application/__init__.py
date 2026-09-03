@@ -21,17 +21,30 @@ from instagram_auth.application.contracts import (
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
     InstagramAuthUnitOfWork,
+    InstagramConnectionIdGenerator,
     InstagramConnectionLister,
     InstagramConnectionReader,
     InstagramConnectionRepository,
     InstagramCredentialRepository,
     StateGenerator,
 )
-from instagram_auth.application.credentials import StoreInstagramConnectionCredential
+from instagram_auth.application.credentials import (
+    InstagramProtectedCredentialFactory,
+    StoreInstagramConnectionCredential,
+)
 from instagram_auth.application.errors import (
     DuplicateInstagramConnectionError,
     InstagramConnectionConcurrencyError,
     InstagramProviderError,
+)
+from instagram_auth.application.linking import (
+    InstagramConnectionFactory,
+    InstagramConnectionLinkResult,
+    InstagramHostIdentityHandoff,
+    InstagramHostLinkAction,
+    LinkInstagramAuthorization,
+    LinkInstagramAuthorizationCommand,
+    PrepareInstagramHostIdentityHandoff,
 )
 from instagram_auth.application.models import (
     InstagramAuthorizationGrant,
@@ -63,15 +76,24 @@ __all__ = [
     "InstagramAuthorizationStateValidator",
     "InstagramAuthorizationUrlBuilder",
     "InstagramConnectionConcurrencyError",
+    "InstagramConnectionFactory",
+    "InstagramConnectionIdGenerator",
+    "InstagramConnectionLinkResult",
     "InstagramConnectionLister",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
     "InstagramCredentialRepository",
+    "InstagramHostIdentityHandoff",
+    "InstagramHostLinkAction",
     "InstagramPermissionEvaluation",
     "InstagramPermissionPolicy",
     "InstagramPermissionStatus",
     "InstagramProtectedCredential",
+    "InstagramProtectedCredentialFactory",
     "InstagramProviderError",
+    "LinkInstagramAuthorization",
+    "LinkInstagramAuthorizationCommand",
+    "PrepareInstagramHostIdentityHandoff",
     "StartInstagramAuthorization",
     "StartInstagramAuthorizationCommand",
     "StateGenerator",

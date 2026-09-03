@@ -10,6 +10,9 @@ from instagram_auth.application.contracts.authorization_url_builder import (
     InstagramAuthorizationUrlBuilder,
 )
 from instagram_auth.application.contracts.clock import Clock
+from instagram_auth.application.contracts.connection_id_generator import (
+    InstagramConnectionIdGenerator,
+)
 from instagram_auth.application.contracts.connection_lister import InstagramConnectionLister
 from instagram_auth.application.contracts.connection_reader import InstagramConnectionReader
 from instagram_auth.application.contracts.connection_repository import InstagramConnectionRepository
@@ -25,6 +28,7 @@ __all__ = [
     "InstagramAuthorizationProvider",
     "InstagramAuthorizationStateStore",
     "InstagramAuthorizationUrlBuilder",
+    "InstagramConnectionIdGenerator",
     "InstagramConnectionLister",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
