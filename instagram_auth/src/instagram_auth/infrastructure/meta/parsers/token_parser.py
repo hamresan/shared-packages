@@ -1,5 +1,7 @@
 """Parse Meta token exchange payloads."""
 
+from typing import cast
+
 from instagram_auth.application.errors import InstagramProviderError
 from instagram_auth.baseline import InstagramProviderErrorKind
 from instagram_auth.infrastructure.meta.dto import MetaInstagramTokenDto
@@ -27,14 +29,19 @@ class MetaTokenPayloadParser:
             return frozenset()
         if isinstance(value, str):
             return frozenset(item.strip() for item in value.split(",") if item.strip())
-        if isinstance(value, (list, tuple)):
-            permissions: set[str] = set()
-            for item in value:
-                if not isinstance(item, str) or not item:
-                    raise self._unexpected_payload()
-                permissions.add(item)
-            return frozenset(permissions)
+        if isinstance(value, list):
+            return self._parse_permission_items(cast(list[object], value))
+        if isinstance(value, tuple):
+            return self._parse_permission_items(cast(tuple[object, ...], value))
         raise self._unexpected_payload()
+
+    def _parse_permission_items(self, items: list[object] | tuple[object, ...]) -> frozenset[str]:
+        permissions: set[str] = set()
+        for item in items:
+            if not isinstance(item, str) or not item:
+                raise self._unexpected_payload()
+            permissions.add(item)
+        return frozenset(permissions)
 
     def _unexpected_payload(self) -> InstagramProviderError:
         return InstagramProviderError(
