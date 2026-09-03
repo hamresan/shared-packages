@@ -38,9 +38,7 @@ def build_connection(value: str, *, owner_user_id: str = "owner-1") -> Instagram
         instagram_account_id=value,
         username=value,
         account_type=InstagramAccountType.BUSINESS,
-        permissions=frozenset(
-            {InstagramPermission.BASIC, InstagramPermission.MANAGE_MESSAGES}
-        ),
+        permissions=frozenset({InstagramPermission.BASIC, InstagramPermission.MANAGE_MESSAGES}),
         status=InstagramConnectionState.CONNECTED,
         connected_at=NOW,
     )
