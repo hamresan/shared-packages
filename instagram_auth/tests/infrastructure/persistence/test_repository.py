@@ -30,12 +30,18 @@ def test_repository_supports_multiple_connections_for_one_owner(tmp_path: Path) 
             await repository.add(second)
             await session.commit()
 
-            assert await repository.find_by_owner_and_account(
-                owner_user_id="owner-1", instagram_account_id="ig-1"
-            ) == first
-            assert await repository.find_by_owner_and_account(
-                owner_user_id="owner-1", instagram_account_id="ig-2"
-            ) == second
+            assert (
+                await repository.find_by_owner_and_account(
+                    owner_user_id="owner-1", instagram_account_id="ig-1"
+                )
+                == first
+            )
+            assert (
+                await repository.find_by_owner_and_account(
+                    owner_user_id="owner-1", instagram_account_id="ig-2"
+                )
+                == second
+            )
         await engine.dispose()
 
     run(execute())

@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from instagram_auth.infrastructure.persistence import InstagramAuthBase
 

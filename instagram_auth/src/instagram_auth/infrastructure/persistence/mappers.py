@@ -3,7 +3,11 @@
 from uuid import UUID
 
 from instagram_auth.application.models import InstagramProtectedCredential
-from instagram_auth.baseline import InstagramAccountType, InstagramConnectionState, InstagramPermission
+from instagram_auth.baseline import (
+    InstagramAccountType,
+    InstagramConnectionState,
+    InstagramPermission,
+)
 from instagram_auth.domain import InstagramConnection, InstagramConnectionId
 from instagram_auth.infrastructure.persistence.models import InstagramConnectionRecord
 

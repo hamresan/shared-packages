@@ -17,10 +17,10 @@ from instagram_auth.application.authorization import (
 from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
-    InstagramAuthUnitOfWork,
     InstagramAuthorizationProvider,
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
+    InstagramAuthUnitOfWork,
     InstagramConnectionLister,
     InstagramConnectionReader,
     InstagramConnectionRepository,
