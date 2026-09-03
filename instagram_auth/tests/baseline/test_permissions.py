@@ -9,18 +9,18 @@ from instagram_auth.baseline import (
 
 
 def test_core_permissions_match_stage_zero_contract() -> None:
-    assert CORE_PERMISSIONS == {
+    assert {
         InstagramPermission.BASIC,
         InstagramPermission.MANAGE_MESSAGES,
         InstagramPermission.MANAGE_COMMENTS,
-    }
+    } == CORE_PERMISSIONS
 
 
 def test_optional_registry_does_not_expand_default_request() -> None:
-    assert OPTIONAL_PERMISSIONS == {
+    assert {
         InstagramPermission.MANAGE_INSIGHTS,
         InstagramPermission.CONTENT_PUBLISH,
-    }
+    } == OPTIONAL_PERMISSIONS
     assert build_requested_permissions() == CORE_PERMISSIONS
 
 
