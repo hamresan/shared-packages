@@ -6,6 +6,10 @@ from instagram_auth.infrastructure.persistence.alembic import (
 )
 from instagram_auth.infrastructure.persistence.base import InstagramAuthBase
 from instagram_auth.infrastructure.persistence.models import InstagramConnectionRecord
+from instagram_auth.infrastructure.persistence.readers import (
+    SqlAlchemyInstagramConnectionLister,
+    SqlAlchemyInstagramConnectionReader,
+)
 from instagram_auth.infrastructure.persistence.repositories import (
     SqlAlchemyInstagramConnectionRepository,
     SqlAlchemyInstagramCredentialRepository,
@@ -18,6 +22,8 @@ __all__ = [
     "InstagramAuthBase",
     "InstagramConnectionRecord",
     "SqlAlchemyInstagramAuthUnitOfWork",
+    "SqlAlchemyInstagramConnectionLister",
+    "SqlAlchemyInstagramConnectionReader",
     "SqlAlchemyInstagramConnectionRepository",
     "SqlAlchemyInstagramCredentialRepository",
     "get_instagram_auth_metadata",
