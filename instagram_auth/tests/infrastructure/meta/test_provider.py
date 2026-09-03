@@ -16,7 +16,10 @@ from instagram_auth.infrastructure.meta.mappers import (
     MetaExternalIdentityMapper,
     MetaProviderErrorMapper,
 )
-from instagram_auth.infrastructure.meta.parsers import MetaIdentityPayloadParser, MetaTokenPayloadParser
+from instagram_auth.infrastructure.meta.parsers import (
+    MetaIdentityPayloadParser,
+    MetaTokenPayloadParser,
+)
 from instagram_auth.infrastructure.meta.retry import MetaIdentityRetryPolicy
 from tests.application.contracts.fakes import FixedClock
 from tests.infrastructure.meta.fakes import FakeMetaHttpTransport
@@ -46,7 +49,9 @@ def build_provider(transport: FakeMetaHttpTransport) -> MetaInstagramAuthorizati
 
 def test_provider_maps_token_to_transient_application_grant() -> None:
     transport = FakeMetaHttpTransport()
-    transport.post_results.append(MetaHttpResponse(200, {"access_token": "token", "expires_in": 3600}))
+    transport.post_results.append(
+        MetaHttpResponse(200, {"access_token": "token", "expires_in": 3600})
+    )
 
     result = run(
         build_provider(transport).exchange_authorization_code(

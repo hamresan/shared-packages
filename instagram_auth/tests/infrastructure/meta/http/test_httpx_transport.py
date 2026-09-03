@@ -33,7 +33,9 @@ def test_httpx_transport_maps_timeout_without_request_content() -> None:
     async def execute() -> None:
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
             with pytest.raises(MetaTransportTimeoutError) as exc_info:
-                await HttpxMetaHttpTransport(client).get(url="https://graph.instagram.com/me", params={})
+                await HttpxMetaHttpTransport(client).get(
+                    url="https://graph.instagram.com/me", params={}
+                )
         assert "secret-token" not in str(exc_info.value)
 
     run(execute())
@@ -46,6 +48,8 @@ def test_httpx_transport_maps_request_error() -> None:
     async def execute() -> None:
         async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
             with pytest.raises(MetaTransportError):
-                await HttpxMetaHttpTransport(client).get(url="https://graph.instagram.com/me", params={})
+                await HttpxMetaHttpTransport(client).get(
+                    url="https://graph.instagram.com/me", params={}
+                )
 
     run(execute())

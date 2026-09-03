@@ -1,7 +1,10 @@
 import pytest
 
 from instagram_auth.application.errors import InstagramProviderError
-from instagram_auth.infrastructure.meta.parsers import MetaIdentityPayloadParser, MetaTokenPayloadParser
+from instagram_auth.infrastructure.meta.parsers import (
+    MetaIdentityPayloadParser,
+    MetaTokenPayloadParser,
+)
 
 
 def test_token_parser_accepts_token_without_expiry() -> None:
