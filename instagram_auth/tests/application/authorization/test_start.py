@@ -17,11 +17,12 @@ from tests.application.authorization.fakes import (
 )
 from tests.application.contracts.fakes import FixedClock, FixedStateGenerator
 
-
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
 
 
-def build_factory(*, lifetime: timedelta = timedelta(minutes=10)) -> InstagramAuthorizationStateFactory:
+def build_factory(
+    *, lifetime: timedelta = timedelta(minutes=10)
+) -> InstagramAuthorizationStateFactory:
     return InstagramAuthorizationStateFactory(
         state_generator=FixedStateGenerator("state"),
         clock=FixedClock(NOW),

@@ -21,8 +21,8 @@ from instagram_auth.application import (
     StartInstagramAuthorization,
     StartInstagramAuthorizationCommand,
     StateGenerator,
-    ValidateInstagramAuthorizationCallback,
     ValidatedInstagramAuthorization,
+    ValidateInstagramAuthorizationCallback,
 )
 from instagram_auth.baseline import (
     CORE_PERMISSIONS,

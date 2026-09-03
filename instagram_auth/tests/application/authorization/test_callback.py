@@ -15,7 +15,6 @@ from instagram_auth.application.authorization import (
 from tests.application.authorization.fakes import FakeInstagramAuthorizationStateStore
 from tests.application.contracts.fakes import FixedClock
 
-
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
 REDIRECT_URI = "https://app.example/callback"
 

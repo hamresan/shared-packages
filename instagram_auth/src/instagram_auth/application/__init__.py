@@ -11,8 +11,8 @@ from instagram_auth.application.authorization import (
     InstagramAuthorizationStateValidator,
     StartInstagramAuthorization,
     StartInstagramAuthorizationCommand,
-    ValidateInstagramAuthorizationCallback,
     ValidatedInstagramAuthorization,
+    ValidateInstagramAuthorizationCallback,
 )
 from instagram_auth.application.contracts import (
     Clock,
