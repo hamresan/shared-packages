@@ -1,4 +1,4 @@
-"""OAuth authorization models."""
+"""OAuth authorization start and callback validation use cases."""
 
 from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
