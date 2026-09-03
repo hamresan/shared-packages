@@ -3,7 +3,10 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from instagram_auth.application.contracts import InstagramConnectionLister, InstagramConnectionReader
+from instagram_auth.application.contracts import (
+    InstagramConnectionLister,
+    InstagramConnectionReader,
+)
 from instagram_auth.domain import InstagramConnection, InstagramConnectionId
 from instagram_auth.infrastructure.persistence.mappers import InstagramConnectionRecordMapper
 from instagram_auth.infrastructure.persistence.models import InstagramConnectionRecord

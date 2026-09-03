@@ -5,8 +5,10 @@ from instagram_auth.application.authorization.models import (
     InstagramAuthorizationStartResult,
     StartInstagramAuthorizationCommand,
 )
-from instagram_auth.application.contracts import (
+from instagram_auth.application.contracts.authorization_state_store import (
     InstagramAuthorizationStateStore,
+)
+from instagram_auth.application.contracts.authorization_url_builder import (
     InstagramAuthorizationUrlBuilder,
 )
 from instagram_auth.baseline import build_requested_permissions

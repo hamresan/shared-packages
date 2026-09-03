@@ -1,5 +1,10 @@
 """Application error contracts."""
 
+from instagram_auth.application.errors.access import (
+    InstagramConnectionAccessError,
+    InstagramConnectionPermissionError,
+    InstagramConnectionUnavailableError,
+)
 from instagram_auth.application.errors.connection_access import (
     InstagramConnectionNotFoundError,
     InstagramConnectionOwnershipError,
@@ -12,8 +17,11 @@ from instagram_auth.application.errors.provider_error import InstagramProviderEr
 
 __all__ = [
     "DuplicateInstagramConnectionError",
+    "InstagramConnectionAccessError",
     "InstagramConnectionConcurrencyError",
     "InstagramConnectionNotFoundError",
     "InstagramConnectionOwnershipError",
+    "InstagramConnectionPermissionError",
+    "InstagramConnectionUnavailableError",
     "InstagramProviderError",
 ]

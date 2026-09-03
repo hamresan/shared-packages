@@ -1,18 +1,28 @@
 """Application layer for Instagram authentication."""
 
-from instagram_auth.application.authorization import (
+from instagram_auth.application.access import (
+    AuthorizedInstagramAccessTokenProvider,
+    InstagramConnectionAccessPolicy,
+)
+from instagram_auth.application.authorization.callback import (
+    ValidateInstagramAuthorizationCallback,
+)
+from instagram_auth.application.authorization.factory import (
+    InstagramAuthorizationStateFactory,
+)
+from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
     InstagramAuthorizationFlow,
     InstagramAuthorizationStartResult,
     InstagramAuthorizationState,
-    InstagramAuthorizationStateFactory,
+    StartInstagramAuthorizationCommand,
+    ValidatedInstagramAuthorization,
+)
+from instagram_auth.application.authorization.start import StartInstagramAuthorization
+from instagram_auth.application.authorization.validation import (
     InstagramAuthorizationStateValidationError,
     InstagramAuthorizationStateValidationFailure,
     InstagramAuthorizationStateValidator,
-    StartInstagramAuthorization,
-    StartInstagramAuthorizationCommand,
-    ValidatedInstagramAuthorization,
-    ValidateInstagramAuthorizationCallback,
 )
 from instagram_auth.application.connections import (
     DisconnectInstagramConnection,
@@ -24,6 +34,7 @@ from instagram_auth.application.connections import (
 from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
+    InstagramAccessTokenProvider,
     InstagramAuthorizationProvider,
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
@@ -41,9 +52,12 @@ from instagram_auth.application.credentials import (
 )
 from instagram_auth.application.errors import (
     DuplicateInstagramConnectionError,
+    InstagramConnectionAccessError,
     InstagramConnectionConcurrencyError,
     InstagramConnectionNotFoundError,
     InstagramConnectionOwnershipError,
+    InstagramConnectionPermissionError,
+    InstagramConnectionUnavailableError,
     InstagramProviderError,
 )
 from instagram_auth.application.linking import (
@@ -68,11 +82,13 @@ from instagram_auth.application.permissions import (
 
 __all__ = [
     "ApplyInstagramPermissionSnapshot",
+    "AuthorizedInstagramAccessTokenProvider",
     "Clock",
     "DisconnectInstagramConnection",
     "DuplicateInstagramConnectionError",
     "GetInstagramConnection",
     "InstagramAccessTokenProtector",
+    "InstagramAccessTokenProvider",
     "InstagramAuthUnitOfWork",
     "InstagramAuthorizationCorrelation",
     "InstagramAuthorizationFlow",
@@ -86,6 +102,8 @@ __all__ = [
     "InstagramAuthorizationStateValidationFailure",
     "InstagramAuthorizationStateValidator",
     "InstagramAuthorizationUrlBuilder",
+    "InstagramConnectionAccessError",
+    "InstagramConnectionAccessPolicy",
     "InstagramConnectionConcurrencyError",
     "InstagramConnectionFactory",
     "InstagramConnectionIdGenerator",
@@ -94,8 +112,10 @@ __all__ = [
     "InstagramConnectionNotFoundError",
     "InstagramConnectionOwnershipError",
     "InstagramConnectionOwnershipPolicy",
+    "InstagramConnectionPermissionError",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
+    "InstagramConnectionUnavailableError",
     "InstagramCredentialRepository",
     "InstagramHostIdentityHandoff",
     "InstagramHostLinkAction",

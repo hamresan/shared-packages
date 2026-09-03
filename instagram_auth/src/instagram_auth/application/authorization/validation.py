@@ -7,7 +7,7 @@ from instagram_auth.application.authorization.models import (
     InstagramAuthorizationState,
     ValidatedInstagramAuthorization,
 )
-from instagram_auth.application.contracts import Clock
+from instagram_auth.application.contracts.clock import Clock
 
 
 class InstagramAuthorizationStateValidationFailure(StrEnum):
