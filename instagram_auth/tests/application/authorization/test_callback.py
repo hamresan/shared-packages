@@ -3,14 +3,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from instagram_auth.application.authorization import (
+from instagram_auth.application.authorization.callback import (
+    ValidateInstagramAuthorizationCallback,
+)
+from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
     InstagramAuthorizationFlow,
     InstagramAuthorizationState,
+)
+from instagram_auth.application.authorization.validation import (
     InstagramAuthorizationStateValidationError,
     InstagramAuthorizationStateValidationFailure,
     InstagramAuthorizationStateValidator,
-    ValidateInstagramAuthorizationCallback,
 )
 from tests.application.authorization.fakes import FakeInstagramAuthorizationStateStore
 from tests.application.contracts.fakes import FixedClock
