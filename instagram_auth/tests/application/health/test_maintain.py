@@ -8,10 +8,10 @@ from uuid import UUID
 from instagram_auth.application.health import (
     InstagramConnectionHealthPolicy,
     InstagramConnectionHealthStatus,
-    InstagramConnectionHealthUpdater,
-    InstagramHealthSecurityEventFactory,
-    MaintainInstagramConnectionHealth,
 )
+from instagram_auth.application.health.event_factory import InstagramHealthSecurityEventFactory
+from instagram_auth.application.health.maintain import MaintainInstagramConnectionHealth
+from instagram_auth.application.health.updater import InstagramConnectionHealthUpdater
 from instagram_auth.application.models import InstagramSecurityEventKind
 from instagram_auth.baseline import (
     InstagramAccountType,
