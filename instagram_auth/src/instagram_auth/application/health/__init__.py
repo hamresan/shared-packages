@@ -7,8 +7,6 @@ from .models import (
     InstagramConnectionHealth,
     InstagramConnectionHealthReason,
     InstagramConnectionHealthStatus,
-    InstagramSecurityEvent,
-    InstagramSecurityEventKind,
 )
 from .policy import InstagramConnectionHealthPolicy
 from .updater import InstagramConnectionHealthUpdater
@@ -21,7 +19,5 @@ __all__ = [
     "InstagramConnectionHealthStatus",
     "InstagramConnectionHealthUpdater",
     "InstagramHealthSecurityEventFactory",
-    "InstagramSecurityEvent",
-    "InstagramSecurityEventKind",
     "MaintainInstagramConnectionHealth",
 ]
