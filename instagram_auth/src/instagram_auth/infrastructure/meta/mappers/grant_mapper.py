@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from instagram_auth.application import Clock, InstagramAuthorizationGrant
+from instagram_auth.baseline import InstagramPermission
 from instagram_auth.infrastructure.meta.dto import MetaInstagramTokenDto
 
 
@@ -16,4 +17,11 @@ class MetaAuthorizationGrantMapper:
         expires_at = None
         if dto.expires_in is not None:
             expires_at = self._clock.now() + timedelta(seconds=dto.expires_in)
-        return InstagramAuthorizationGrant(access_token=dto.access_token, expires_at=expires_at)
+        granted_permissions = frozenset(
+            permission for permission in InstagramPermission if permission.value in dto.permissions
+        )
+        return InstagramAuthorizationGrant(
+            access_token=dto.access_token,
+            expires_at=expires_at,
+            granted_permissions=granted_permissions,
+        )

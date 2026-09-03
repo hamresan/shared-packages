@@ -27,8 +27,15 @@ from instagram_auth.application.contracts import (
 )
 from instagram_auth.application.errors import InstagramProviderError
 from instagram_auth.application.models import InstagramAuthorizationGrant
+from instagram_auth.application.permissions import (
+    ApplyInstagramPermissionSnapshot,
+    InstagramPermissionEvaluation,
+    InstagramPermissionPolicy,
+    InstagramPermissionStatus,
+)
 
 __all__ = [
+    "ApplyInstagramPermissionSnapshot",
     "Clock",
     "InstagramAccessTokenProtector",
     "InstagramAuthorizationCorrelation",
@@ -46,6 +53,9 @@ __all__ = [
     "InstagramConnectionLister",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
+    "InstagramPermissionEvaluation",
+    "InstagramPermissionPolicy",
+    "InstagramPermissionStatus",
     "InstagramProviderError",
     "StartInstagramAuthorization",
     "StartInstagramAuthorizationCommand",
