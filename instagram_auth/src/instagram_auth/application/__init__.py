@@ -1,5 +1,9 @@
 """Application layer for Instagram authentication."""
 
+from instagram_auth.application.access import (
+    AuthorizedInstagramAccessTokenProvider,
+    InstagramConnectionAccessPolicy,
+)
 from instagram_auth.application.authorization import (
     InstagramAuthorizationCorrelation,
     InstagramAuthorizationFlow,
@@ -24,6 +28,7 @@ from instagram_auth.application.connections import (
 from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
+    InstagramAccessTokenProvider,
     InstagramAuthorizationProvider,
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
@@ -41,9 +46,12 @@ from instagram_auth.application.credentials import (
 )
 from instagram_auth.application.errors import (
     DuplicateInstagramConnectionError,
+    InstagramConnectionAccessError,
     InstagramConnectionConcurrencyError,
     InstagramConnectionNotFoundError,
     InstagramConnectionOwnershipError,
+    InstagramConnectionPermissionError,
+    InstagramConnectionUnavailableError,
     InstagramProviderError,
 )
 from instagram_auth.application.linking import (
@@ -68,11 +76,13 @@ from instagram_auth.application.permissions import (
 
 __all__ = [
     "ApplyInstagramPermissionSnapshot",
+    "AuthorizedInstagramAccessTokenProvider",
     "Clock",
     "DisconnectInstagramConnection",
     "DuplicateInstagramConnectionError",
     "GetInstagramConnection",
     "InstagramAccessTokenProtector",
+    "InstagramAccessTokenProvider",
     "InstagramAuthUnitOfWork",
     "InstagramAuthorizationCorrelation",
     "InstagramAuthorizationFlow",
@@ -86,6 +96,8 @@ __all__ = [
     "InstagramAuthorizationStateValidationFailure",
     "InstagramAuthorizationStateValidator",
     "InstagramAuthorizationUrlBuilder",
+    "InstagramConnectionAccessError",
+    "InstagramConnectionAccessPolicy",
     "InstagramConnectionConcurrencyError",
     "InstagramConnectionFactory",
     "InstagramConnectionIdGenerator",
@@ -94,8 +106,10 @@ __all__ = [
     "InstagramConnectionNotFoundError",
     "InstagramConnectionOwnershipError",
     "InstagramConnectionOwnershipPolicy",
+    "InstagramConnectionPermissionError",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
+    "InstagramConnectionUnavailableError",
     "InstagramCredentialRepository",
     "InstagramHostIdentityHandoff",
     "InstagramHostLinkAction",
