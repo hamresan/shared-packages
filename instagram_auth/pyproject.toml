@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hamresan-instagram-auth"
+version = "0.1.0"
+description = "Reusable Instagram OAuth and authorization package for Python applications."
+readme = "README.md"
+requires-python = ">=3.12"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/instagram_auth"]
