@@ -1,8 +1,9 @@
 """Thin FastAPI routes over transport-independent Instagram auth use cases."""
 
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Query, Request, Response
 
 from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
@@ -17,7 +18,7 @@ from instagram_auth.application.errors.connection_access import (
     InstagramConnectionOwnershipError,
 )
 from instagram_auth.baseline import InstagramPermission
-from instagram_auth.domain import InstagramConnection, InstagramConnectionId
+from instagram_auth.domain import InstagramConnectionId
 
 from .config import InstagramFastApiConfig
 from .dependencies import InstagramFastApiDependencies
@@ -36,7 +37,7 @@ def create_instagram_auth_router(
     async def start_authorization(
         request: Request,
         flow: InstagramAuthorizationFlow = InstagramAuthorizationFlow.LOGIN,
-        optional_permissions: list[InstagramPermission] = Query(default=[]),
+        optional_permissions: Annotated[list[InstagramPermission] | None, Query()] = None,
     ) -> InstagramAuthorizationStartResponse:
         owner_user_id = None
         if flow is InstagramAuthorizationFlow.CONNECT_ACCOUNT:
@@ -49,7 +50,7 @@ def create_instagram_auth_router(
                     flow=flow,
                     owner_user_id=owner_user_id,
                 ),
-                optional_permissions=optional_permissions,
+                optional_permissions=optional_permissions or (),
             )
         )
         return InstagramAuthorizationStartResponse(
@@ -61,7 +62,7 @@ def create_instagram_auth_router(
     async def authorization_callback(
         request: Request,
         code: str,
-        state_value: str | None = Query(default=None, alias="state"),
+        state_value: Annotated[str | None, Query(alias="state")] = None,
     ) -> Response:
         owner_user_id = await dependencies.owner_context.optional_owner_user_id(request)
         try:
@@ -71,10 +72,7 @@ def create_instagram_auth_router(
                 authenticated_owner_user_id=owner_user_id,
             )
         except InstagramAuthorizationStateValidationError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Instagram authorization callback",
-            ) from exc
+            raise dependencies.error_mapper.authorization_callback(exc) from exc
         return await dependencies.callback_responder.respond(
             authorization_code=code,
             authorization=authorization,
@@ -92,11 +90,13 @@ def create_instagram_auth_router(
     )
     async def get_connection(request: Request, connection_id: UUID) -> InstagramConnectionResponse:
         owner_user_id = await dependencies.owner_context.require_owner_user_id(request)
-        connection = await _execute_connection_read(
-            dependencies=dependencies,
-            owner_user_id=owner_user_id,
-            connection_id=InstagramConnectionId(connection_id),
-        )
+        try:
+            connection = await dependencies.get_connection.execute(
+                owner_user_id=owner_user_id,
+                connection_id=InstagramConnectionId(connection_id),
+            )
+        except (InstagramConnectionNotFoundError, InstagramConnectionOwnershipError) as exc:
+            raise dependencies.error_mapper.connection_access(exc) from exc
         return dependencies.connection_mapper.map(connection)
 
     @router.post(
@@ -113,10 +113,8 @@ def create_instagram_auth_router(
                 owner_user_id=owner_user_id,
                 connection_id=InstagramConnectionId(connection_id),
             )
-        except InstagramConnectionNotFoundError as exc:
-            raise _not_found_http_exception() from exc
-        except InstagramConnectionOwnershipError as exc:
-            raise _forbidden_http_exception() from exc
+        except (InstagramConnectionNotFoundError, InstagramConnectionOwnershipError) as exc:
+            raise dependencies.error_mapper.connection_access(exc) from exc
         return dependencies.connection_mapper.map(connection)
 
     @router.post(
@@ -133,41 +131,8 @@ def create_instagram_auth_router(
                 owner_user_id=owner_user_id,
                 connection_id=InstagramConnectionId(connection_id),
             )
-        except InstagramConnectionNotFoundError as exc:
-            raise _not_found_http_exception() from exc
-        except InstagramConnectionOwnershipError as exc:
-            raise _forbidden_http_exception() from exc
+        except (InstagramConnectionNotFoundError, InstagramConnectionOwnershipError) as exc:
+            raise dependencies.error_mapper.connection_access(exc) from exc
         return dependencies.connection_mapper.map(connection)
 
     return router
-
-
-async def _execute_connection_read(
-    *,
-    dependencies: InstagramFastApiDependencies,
-    owner_user_id: str,
-    connection_id: InstagramConnectionId,
-) -> InstagramConnection:
-    try:
-        return await dependencies.get_connection.execute(
-            owner_user_id=owner_user_id,
-            connection_id=connection_id,
-        )
-    except InstagramConnectionNotFoundError as exc:
-        raise _not_found_http_exception() from exc
-    except InstagramConnectionOwnershipError as exc:
-        raise _forbidden_http_exception() from exc
-
-
-def _not_found_http_exception() -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Instagram connection not found",
-    )
-
-
-def _forbidden_http_exception() -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Instagram connection access denied",
-    )
