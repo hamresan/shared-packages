@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from instagram_auth.application.health.models import InstagramSecurityEvent
+from instagram_auth.application.models.security_event import InstagramSecurityEvent
 
 
 class InstagramSecurityEventSink(Protocol):
