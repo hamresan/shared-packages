@@ -10,6 +10,7 @@ from instagram_auth.application.connections.list_connections import ListInstagra
 from instagram_auth.application.connections.reconnect import ReconnectInstagramConnection
 
 from .contracts import InstagramFastApiCallbackResponder, InstagramFastApiOwnerContext
+from .errors import InstagramFastApiErrorMapper
 from .mappers import InstagramConnectionResponseMapper
 
 
@@ -26,3 +27,4 @@ class InstagramFastApiDependencies:
     owner_context: InstagramFastApiOwnerContext
     callback_responder: InstagramFastApiCallbackResponder
     connection_mapper: InstagramConnectionResponseMapper
+    error_mapper: InstagramFastApiErrorMapper
