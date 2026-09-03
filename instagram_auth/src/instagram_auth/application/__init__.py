@@ -14,6 +14,13 @@ from instagram_auth.application.authorization import (
     ValidatedInstagramAuthorization,
     ValidateInstagramAuthorizationCallback,
 )
+from instagram_auth.application.connections import (
+    DisconnectInstagramConnection,
+    GetInstagramConnection,
+    InstagramConnectionOwnershipPolicy,
+    ListInstagramConnections,
+    ReconnectInstagramConnection,
+)
 from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
@@ -35,6 +42,8 @@ from instagram_auth.application.credentials import (
 from instagram_auth.application.errors import (
     DuplicateInstagramConnectionError,
     InstagramConnectionConcurrencyError,
+    InstagramConnectionNotFoundError,
+    InstagramConnectionOwnershipError,
     InstagramProviderError,
 )
 from instagram_auth.application.linking import (
@@ -60,7 +69,9 @@ from instagram_auth.application.permissions import (
 __all__ = [
     "ApplyInstagramPermissionSnapshot",
     "Clock",
+    "DisconnectInstagramConnection",
     "DuplicateInstagramConnectionError",
+    "GetInstagramConnection",
     "InstagramAccessTokenProtector",
     "InstagramAuthUnitOfWork",
     "InstagramAuthorizationCorrelation",
@@ -80,6 +91,9 @@ __all__ = [
     "InstagramConnectionIdGenerator",
     "InstagramConnectionLinkResult",
     "InstagramConnectionLister",
+    "InstagramConnectionNotFoundError",
+    "InstagramConnectionOwnershipError",
+    "InstagramConnectionOwnershipPolicy",
     "InstagramConnectionReader",
     "InstagramConnectionRepository",
     "InstagramCredentialRepository",
@@ -93,7 +107,9 @@ __all__ = [
     "InstagramProviderError",
     "LinkInstagramAuthorization",
     "LinkInstagramAuthorizationCommand",
+    "ListInstagramConnections",
     "PrepareInstagramHostIdentityHandoff",
+    "ReconnectInstagramConnection",
     "StartInstagramAuthorization",
     "StartInstagramAuthorizationCommand",
     "StateGenerator",
