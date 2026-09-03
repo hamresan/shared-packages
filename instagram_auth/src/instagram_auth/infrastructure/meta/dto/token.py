@@ -9,4 +9,4 @@ class MetaInstagramTokenDto:
 
     access_token: str
     expires_in: int | None
-    permissions: frozenset[str]
+    permissions: frozenset[str] = frozenset()
