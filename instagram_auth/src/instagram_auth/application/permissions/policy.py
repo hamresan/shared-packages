@@ -20,9 +20,7 @@ class InstagramPermissionPolicy:
         granted = frozenset(granted_permissions)
         missing = required - granted
         status = (
-            InstagramPermissionStatus.COMPLETE
-            if not missing
-            else InstagramPermissionStatus.PARTIAL
+            InstagramPermissionStatus.COMPLETE if not missing else InstagramPermissionStatus.PARTIAL
         )
         return InstagramPermissionEvaluation(
             status=status,

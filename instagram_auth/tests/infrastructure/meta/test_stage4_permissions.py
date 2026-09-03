@@ -42,9 +42,7 @@ def test_grant_mapper_keeps_only_known_instagram_permissions() -> None:
         MetaInstagramTokenDto(
             access_token="token",
             expires_in=None,
-            permissions=frozenset(
-                {"instagram_business_basic", "future_provider_permission"}
-            ),
+            permissions=frozenset({"instagram_business_basic", "future_provider_permission"}),
         )
     )
 

@@ -47,7 +47,9 @@ def test_partial_snapshot_marks_only_selected_connection_for_reauthorization() -
     )
 
     assert result.requires_reauthorization is True
-    assert repository.connections[first.id].status is InstagramConnectionState.REAUTHORIZATION_REQUIRED
+    assert (
+        repository.connections[first.id].status is InstagramConnectionState.REAUTHORIZATION_REQUIRED
+    )
     assert repository.connections[second.id] == second
 
 

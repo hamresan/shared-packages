@@ -18,9 +18,7 @@ class MetaAuthorizationGrantMapper:
         if dto.expires_in is not None:
             expires_at = self._clock.now() + timedelta(seconds=dto.expires_in)
         granted_permissions = frozenset(
-            permission
-            for permission in InstagramPermission
-            if permission.value in dto.permissions
+            permission for permission in InstagramPermission if permission.value in dto.permissions
         )
         return InstagramAuthorizationGrant(
             access_token=dto.access_token,
