@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 from instagram_auth.application.models import InstagramAuthorizationGrant
-from instagram_auth.baseline import CORE_PERMISSIONS
 
 
 def test_authorization_grant_keeps_transient_provider_data_outside_domain_entity() -> None:
@@ -10,9 +9,7 @@ def test_authorization_grant_keeps_transient_provider_data_outside_domain_entity
     grant = InstagramAuthorizationGrant(
         access_token="transient-provider-token",
         expires_at=expires_at,
-        granted_permissions=CORE_PERMISSIONS,
     )
 
     assert grant.access_token == "transient-provider-token"
     assert grant.expires_at == expires_at
-    assert grant.granted_permissions == CORE_PERMISSIONS

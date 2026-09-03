@@ -3,8 +3,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from instagram_auth.baseline import InstagramPermission
-
 
 @dataclass(frozen=True, slots=True)
 class InstagramAuthorizationGrant:
@@ -12,4 +10,3 @@ class InstagramAuthorizationGrant:
 
     access_token: str
     expires_at: datetime | None = None
-    granted_permissions: frozenset[InstagramPermission] = frozenset()
