@@ -35,14 +35,34 @@ class MetaJsonExecutor(Protocol):
 class MetaHttpObserver(Protocol):
     """Receives structured provider HTTP lifecycle metadata without secrets."""
 
-    def request_started(self, *, method: str, url: str) -> None:
+    def request_started(
+        self,
+        *,
+        connection_id: InstagramConnectionId,
+        method: str,
+        url: str,
+    ) -> None:
         """Record a request-start event."""
         ...
 
-    def response_received(self, *, method: str, url: str, status_code: int) -> None:
+    def response_received(
+        self,
+        *,
+        connection_id: InstagramConnectionId,
+        method: str,
+        url: str,
+        status_code: int,
+    ) -> None:
         """Record a response event."""
         ...
 
-    def request_failed(self, *, method: str, url: str, error_type: str) -> None:
+    def request_failed(
+        self,
+        *,
+        connection_id: InstagramConnectionId,
+        method: str,
+        url: str,
+        error_type: str,
+    ) -> None:
         """Record a request-failure event."""
         ...

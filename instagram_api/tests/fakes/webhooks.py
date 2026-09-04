@@ -3,7 +3,10 @@
 from instagram_api.application.contracts.webhooks import (
     InstagramWebhookConnectionResolver,
     InstagramWebhookEventDispatcher,
+    InstagramWebhookFailureDecision,
+    InstagramWebhookFailureHandler,
     InstagramWebhookIdempotencyStore,
+    InstagramWebhookOperationalObserver,
     InstagramWebhookParser,
     InstagramWebhookVerifier,
 )
@@ -96,3 +99,80 @@ class FakeInstagramWebhookEventDispatcher(InstagramWebhookEventDispatcher):
         if event.event_id == self._fail_event_id:
             raise RuntimeError("dispatch failed")
         self.events.append((connection_id, event))
+
+
+class FakeInstagramWebhookFailureHandler(InstagramWebhookFailureHandler):
+    """Fake poison-event handler with a configurable decision."""
+
+    def __init__(
+        self,
+        decision: InstagramWebhookFailureDecision,
+    ) -> None:
+        self._decision = decision
+        self.calls: list[tuple[InstagramWebhookEvent, InstagramConnectionId | None, Exception]] = []
+
+    async def handle(
+        self,
+        event: InstagramWebhookEvent,
+        connection_id: InstagramConnectionId | None,
+        error: Exception,
+    ) -> InstagramWebhookFailureDecision:
+        self.calls.append((event, connection_id, error))
+        return self._decision
+
+
+class FakeInstagramWebhookOperationalObserver(InstagramWebhookOperationalObserver):
+    """Records structured webhook operational events."""
+
+    def __init__(self) -> None:
+        self.signature_rejections = 0
+        self.duplicates: list[tuple[str, InstagramAccountId]] = []
+        self.dispatched: list[tuple[str, InstagramAccountId, InstagramConnectionId]] = []
+        self.failures: list[
+            tuple[
+                str,
+                InstagramAccountId,
+                InstagramConnectionId | None,
+                str,
+                InstagramWebhookFailureDecision,
+            ]
+        ] = []
+
+    def signature_rejected(self) -> None:
+        self.signature_rejections += 1
+
+    def duplicate_suppressed(
+        self,
+        *,
+        event_id: str,
+        provider_account_id: InstagramAccountId,
+    ) -> None:
+        self.duplicates.append((event_id, provider_account_id))
+
+    def event_dispatched(
+        self,
+        *,
+        event_id: str,
+        provider_account_id: InstagramAccountId,
+        connection_id: InstagramConnectionId,
+    ) -> None:
+        self.dispatched.append((event_id, provider_account_id, connection_id))
+
+    def event_failed(
+        self,
+        *,
+        event_id: str,
+        provider_account_id: InstagramAccountId,
+        connection_id: InstagramConnectionId | None,
+        error_type: str,
+        decision: InstagramWebhookFailureDecision,
+    ) -> None:
+        self.failures.append(
+            (
+                event_id,
+                provider_account_id,
+                connection_id,
+                error_type,
+                decision,
+            )
+        )

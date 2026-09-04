@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from instagram_api.application.contracts.webhooks import InstagramWebhookFailureDecision
 from instagram_api.application.webhooks import (
     InstagramWebhookAuthenticationError,
     InstagramWebhookProcessor,
@@ -17,7 +18,9 @@ from instagram_api.domain import (
 from tests.fakes import (
     FakeInstagramWebhookConnectionResolver,
     FakeInstagramWebhookEventDispatcher,
+    FakeInstagramWebhookFailureHandler,
     FakeInstagramWebhookIdempotencyStore,
+    FakeInstagramWebhookOperationalObserver,
     FakeInstagramWebhookParser,
     FakeInstagramWebhookVerifier,
 )
@@ -36,26 +39,31 @@ def build_event(
 
 
 def test_processor_rejects_unauthentic_delivery_before_parsing() -> None:
-    parser = FakeInstagramWebhookParser((build_event("event", "account"),))
+    observer = FakeInstagramWebhookOperationalObserver()
     processor = InstagramWebhookProcessor(
         FakeInstagramWebhookVerifier(False),
-        parser,
+        FakeInstagramWebhookParser((build_event("event", "account"),)),
         FakeInstagramWebhookIdempotencyStore(),
         FakeInstagramWebhookConnectionResolver(
             {InstagramAccountId("account"): InstagramConnectionId("connection")}
         ),
         FakeInstagramWebhookEventDispatcher(),
+        FakeInstagramWebhookFailureHandler(InstagramWebhookFailureDecision.RETRY),
+        observer,
     )
 
     with pytest.raises(InstagramWebhookAuthenticationError):
         asyncio.run(processor.process(b"payload", "signature"))
 
+    assert observer.signature_rejections == 1
 
-def test_processor_routes_multiple_accounts_and_suppresses_duplicate_event() -> None:
+
+def test_processor_routes_accounts_observes_success_and_suppresses_duplicate() -> None:
     first = build_event("event-a", "account-a")
     duplicate = build_event("event-a", "account-a")
     second = build_event("event-b", "account-b")
     store = FakeInstagramWebhookIdempotencyStore()
+    observer = FakeInstagramWebhookOperationalObserver()
     resolver = FakeInstagramWebhookConnectionResolver(
         {
             InstagramAccountId("account-a"): InstagramConnectionId("connection-a"),
@@ -69,6 +77,8 @@ def test_processor_routes_multiple_accounts_and_suppresses_duplicate_event() -> 
         store,
         resolver,
         dispatcher,
+        FakeInstagramWebhookFailureHandler(InstagramWebhookFailureDecision.RETRY),
+        observer,
     )
 
     dispatched = asyncio.run(processor.process(b"payload", "signature"))
@@ -79,15 +89,26 @@ def test_processor_routes_multiple_accounts_and_suppresses_duplicate_event() -> 
         (InstagramConnectionId("connection-b"), second),
     ]
     assert store.completed == {"event-a", "event-b"}
-    assert resolver.calls == [
-        InstagramAccountId("account-a"),
-        InstagramAccountId("account-b"),
+    assert observer.duplicates == [("event-a", InstagramAccountId("account-a"))]
+    assert observer.dispatched == [
+        (
+            "event-a",
+            InstagramAccountId("account-a"),
+            InstagramConnectionId("connection-a"),
+        ),
+        (
+            "event-b",
+            InstagramAccountId("account-b"),
+            InstagramConnectionId("connection-b"),
+        ),
     ]
 
 
-def test_processor_releases_idempotency_claim_when_dispatch_fails() -> None:
+def test_processor_releases_retryable_failure_and_records_correlation() -> None:
     event = build_event("event-a", "account-a")
     store = FakeInstagramWebhookIdempotencyStore()
+    observer = FakeInstagramWebhookOperationalObserver()
+    failure_handler = FakeInstagramWebhookFailureHandler(InstagramWebhookFailureDecision.RETRY)
     processor = InstagramWebhookProcessor(
         FakeInstagramWebhookVerifier(True),
         FakeInstagramWebhookParser((event,)),
@@ -96,6 +117,8 @@ def test_processor_releases_idempotency_claim_when_dispatch_fails() -> None:
             {InstagramAccountId("account-a"): InstagramConnectionId("connection-a")}
         ),
         FakeInstagramWebhookEventDispatcher(fail_event_id="event-a"),
+        failure_handler,
+        observer,
     )
 
     with pytest.raises(RuntimeError, match="dispatch failed"):
@@ -103,4 +126,36 @@ def test_processor_releases_idempotency_claim_when_dispatch_fails() -> None:
 
     assert store.release_calls == ["event-a"]
     assert store.completed == set()
-    assert store.in_progress == set()
+    assert observer.failures == [
+        (
+            "event-a",
+            InstagramAccountId("account-a"),
+            InstagramConnectionId("connection-a"),
+            "RuntimeError",
+            InstagramWebhookFailureDecision.RETRY,
+        )
+    ]
+
+
+def test_processor_completes_discarded_poison_event_without_raising() -> None:
+    event = build_event("event-a", "account-a")
+    store = FakeInstagramWebhookIdempotencyStore()
+    observer = FakeInstagramWebhookOperationalObserver()
+    processor = InstagramWebhookProcessor(
+        FakeInstagramWebhookVerifier(True),
+        FakeInstagramWebhookParser((event,)),
+        store,
+        FakeInstagramWebhookConnectionResolver(
+            {InstagramAccountId("account-a"): InstagramConnectionId("connection-a")}
+        ),
+        FakeInstagramWebhookEventDispatcher(fail_event_id="event-a"),
+        FakeInstagramWebhookFailureHandler(InstagramWebhookFailureDecision.DISCARD),
+        observer,
+    )
+
+    dispatched = asyncio.run(processor.process(b"payload", "signature"))
+
+    assert dispatched == 0
+    assert store.completed == {"event-a"}
+    assert store.release_calls == []
+    assert observer.failures[0][-1] is InstagramWebhookFailureDecision.DISCARD

@@ -50,10 +50,15 @@ class MetaRequestExecutor(MetaJsonExecutor):
         attempt = 1
 
         while True:
-            self._observer.request_started(method=request.method.value, url=request.url)
+            self._observer.request_started(
+                connection_id=connection_id,
+                method=request.method.value,
+                url=request.url,
+            )
             try:
                 response = await self._transport.send(request)
                 self._observer.response_received(
+                    connection_id=connection_id,
                     method=request.method.value,
                     url=request.url,
                     status_code=response.status_code,
@@ -61,6 +66,7 @@ class MetaRequestExecutor(MetaJsonExecutor):
                 return self._decoder.decode_json(response)
             except Exception as exc:
                 self._observer.request_failed(
+                    connection_id=connection_id,
                     method=request.method.value,
                     url=request.url,
                     error_type=type(exc).__name__,

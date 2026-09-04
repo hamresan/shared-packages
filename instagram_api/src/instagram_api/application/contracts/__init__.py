@@ -24,7 +24,10 @@ from .messaging import (
 from .webhooks import (
     InstagramWebhookConnectionResolver,
     InstagramWebhookEventDispatcher,
+    InstagramWebhookFailureDecision,
+    InstagramWebhookFailureHandler,
     InstagramWebhookIdempotencyStore,
+    InstagramWebhookOperationalObserver,
     InstagramWebhookParser,
     InstagramWebhookVerifier,
 )
@@ -52,7 +55,10 @@ __all__ = [
     "InstagramPublicCommentReplyProvider",
     "InstagramWebhookConnectionResolver",
     "InstagramWebhookEventDispatcher",
+    "InstagramWebhookFailureDecision",
+    "InstagramWebhookFailureHandler",
     "InstagramWebhookIdempotencyStore",
+    "InstagramWebhookOperationalObserver",
     "InstagramWebhookParser",
     "InstagramWebhookVerifier",
 ]
