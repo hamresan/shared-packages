@@ -277,6 +277,10 @@ Tests should mirror the package's internal responsibility/layer structure.
 - Do not couple the package to a specific host application.
 - Do not model a one-user/one-Instagram-account restriction in package contracts or persistence.
 
+## Production readiness
+
+See [`PRODUCTION.md`](PRODUCTION.md) for Meta App Review/Advanced Access guidance, secure production configuration, observability boundaries, and release verification.
+
 ## Status
 
-Initial package skeleton and roadmap only. See `ROADMAP.md` for implementation stages.
+Roadmap Stages 0-10 are implemented. Stage 11 production hardening is the final package-completion stage.
