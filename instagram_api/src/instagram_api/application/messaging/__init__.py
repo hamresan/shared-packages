@@ -17,6 +17,7 @@ from .send_errors import (
     InstagramMessageSendRejectedError,
 )
 from .send_policy import (
+    INSTAGRAM_SEND_BASIC_PERMISSION,
     INSTAGRAM_SEND_MESSAGE_PERMISSION,
     InstagramMessagePayloadPolicy,
     InstagramMessageSendAccessPolicy,
@@ -27,6 +28,7 @@ from .services import InstagramConversationService, InstagramMessageService
 __all__ = [
     "INSTAGRAM_BASIC_PERMISSION",
     "INSTAGRAM_MANAGE_MESSAGES_PERMISSION",
+    "INSTAGRAM_SEND_BASIC_PERMISSION",
     "INSTAGRAM_SEND_MESSAGE_PERMISSION",
     "InstagramConversationService",
     "InstagramMessagePayloadInvalidError",
