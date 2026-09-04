@@ -20,7 +20,11 @@ class MetaInstagramCommentWebhookFieldParser:
         return value if isinstance(value, str) and value else None
 
     def nested_id(self, value: object) -> str | None:
-        """Return an optional nested object ID."""
+        """Return an optional direct or nested object ID."""
+
+        direct_id = self.optional_string(value)
+        if direct_id is not None:
+            return direct_id
 
         mapping = self.mapping(value)
         if mapping is None:
