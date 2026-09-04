@@ -5,6 +5,7 @@ from instagram_api.domain import InstagramAccount, InstagramConnectionId
 from instagram_api.infrastructure.meta.http import MetaHttpMethod, MetaRequestExecutor
 
 from .mapper import MetaInstagramAccountMapper
+from .parser import MetaInstagramAccountPayloadParser
 
 ACCOUNT_PROFILE_FIELDS = (
     "id",
@@ -25,9 +26,11 @@ class MetaInstagramAccountProvider(InstagramAccountProvider):
     def __init__(
         self,
         executor: MetaRequestExecutor,
+        parser: MetaInstagramAccountPayloadParser,
         mapper: MetaInstagramAccountMapper,
     ) -> None:
         self._executor = executor
+        self._parser = parser
         self._mapper = mapper
 
     async def get_account(
@@ -40,4 +43,5 @@ class MetaInstagramAccountProvider(InstagramAccountProvider):
             path="me",
             params={"fields": ",".join(ACCOUNT_PROFILE_FIELDS)},
         )
-        return self._mapper.to_domain(payload)
+        dto = self._parser.parse(payload)
+        return self._mapper.to_domain(dto)
