@@ -42,9 +42,7 @@ class MetaInstagramMessagingMetadataMapper:
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(
-                    self._fields.required_message_id(postback)
-                ),
+                message_id=InstagramMessageId(self._fields.required_message_id(postback)),
                 title=self._fields.optional_string(postback.get("title")),
                 payload=self._fields.optional_string(postback.get("payload")),
             )
@@ -56,9 +54,7 @@ class MetaInstagramMessagingMetadataMapper:
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(
-                    self._fields.required_message_id(read)
-                ),
+                message_id=InstagramMessageId(self._fields.required_message_id(read)),
             )
 
         raw_reaction = item.get("reaction")
@@ -74,9 +70,7 @@ class MetaInstagramMessagingMetadataMapper:
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(
-                    self._fields.required_message_id(reaction)
-                ),
+                message_id=InstagramMessageId(self._fields.required_message_id(reaction)),
                 action=InstagramMessageReactionAction(action),
                 reaction=self._fields.optional_string(reaction.get("reaction")),
                 emoji=self._fields.optional_string(reaction.get("emoji")),
@@ -89,9 +83,7 @@ class MetaInstagramMessagingMetadataMapper:
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(
-                    self._fields.required_message_id(edited)
-                ),
+                message_id=InstagramMessageId(self._fields.required_message_id(edited)),
                 text=self._fields.optional_string(edited.get("text")),
                 edit_count=self._fields.optional_int(edited.get("num_edit")),
             )

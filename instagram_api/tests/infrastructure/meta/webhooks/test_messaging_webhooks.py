@@ -55,7 +55,7 @@ def test_parser_normalizes_postback_read_reaction_edit_and_referral() -> None:
         b'{"sender":{"id":"user"},"recipient":{"id":"account"},"timestamp":1788523200002,'
         b'"read":{"mid":"read-mid"}},'
         b'{"sender":{"id":"user"},"recipient":{"id":"account"},"timestamp":1788523200003,'
-        b'"reaction":{"mid":"reaction-mid","action":"react","reaction":"love","emoji":"❤"}},'
+        b'"reaction":{"mid":"reaction-mid","action":"react","reaction":"love","emoji":"\xe2\x9d\xa4"}},'
         b'{"sender":{"id":"user"},"recipient":{"id":"account"},"timestamp":1788523200004,'
         b'"message_edit":{"mid":"edit-mid","text":"edited","num_edit":2}},'
         b'{"sender":{"id":"user"},"recipient":{"id":"account"},"timestamp":1788523200005,'

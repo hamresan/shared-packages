@@ -31,19 +31,18 @@ def test_inbound_dm_reaches_host_with_resolved_connection_context() -> None:
         build_meta_webhook_parser(),
         FakeInstagramWebhookIdempotencyStore(),
         FakeInstagramWebhookConnectionResolver(
-            {
-                InstagramAccountId("account-a"): InstagramConnectionId(
-                    "connection-a"
-                )
-            }
+            {InstagramAccountId("account-a"): InstagramConnectionId("connection-a")}
         ),
         dispatcher,
     )
-    signature = "sha256=" + hmac.new(
-        b"secret",
-        payload,
-        hashlib.sha256,
-    ).hexdigest()
+    signature = (
+        "sha256="
+        + hmac.new(
+            b"secret",
+            payload,
+            hashlib.sha256,
+        ).hexdigest()
+    )
 
     dispatched = asyncio.run(processor.process(payload, signature))
 

@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 
 from instagram_api.domain import (
     InstagramAccountId,
-    InstagramWebhookPayload,
     InstagramWebhookEvent,
+    InstagramWebhookPayload,
 )
 
 from .event_id import MetaInstagramWebhookEventIdFactory

@@ -50,9 +50,7 @@ class MetaInstagramMessageWebhookMapper:
                 url = self._fields.optional_string(payload_mapping.get("url"))
             attachments.append(
                 InstagramInboundMessageAttachment(
-                    attachment_type=self._fields.optional_string(
-                        attachment.get("type")
-                    ),
+                    attachment_type=self._fields.optional_string(attachment.get("type")),
                     url=url,
                 )
             )

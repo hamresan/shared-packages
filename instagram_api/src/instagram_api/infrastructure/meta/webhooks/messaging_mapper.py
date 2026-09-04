@@ -31,12 +31,8 @@ class MetaInstagramMessagingWebhookMapper:
     ) -> InstagramMessagingWebhookPayload | None:
         """Map one supported messaging item or return None for an unknown variant."""
 
-        sender_id = InstagramUserId(
-            self._fields.required_id(item.get("sender"), "sender")
-        )
-        recipient_id = InstagramUserId(
-            self._fields.required_id(item.get("recipient"), "recipient")
-        )
+        sender_id = InstagramUserId(self._fields.required_id(item.get("sender"), "sender"))
+        recipient_id = InstagramUserId(self._fields.required_id(item.get("recipient"), "recipient"))
         occurred_at = self._fields.timestamp(item.get("timestamp"))
 
         raw_message = item.get("message")
