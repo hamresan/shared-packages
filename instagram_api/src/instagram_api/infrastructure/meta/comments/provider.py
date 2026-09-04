@@ -49,7 +49,7 @@ class MetaInstagramCommentProvider(InstagramCommentProvider):
         media_id: InstagramMediaId,
         cursor: PaginationCursor | None = None,
     ) -> Page[InstagramComment]:
-        params: dict[str, object] = {"fields": ",".join(COMMENT_FIELDS)}
+        params: dict[str, str] = {"fields": ",".join(COMMENT_FIELDS)}
         if cursor is not None:
             params["after"] = cursor
 
@@ -74,7 +74,7 @@ class MetaInstagramCommentProvider(InstagramCommentProvider):
         comment_id: InstagramCommentId,
         cursor: PaginationCursor | None = None,
     ) -> Page[InstagramComment]:
-        params: dict[str, object] = {"fields": ",".join(COMMENT_FIELDS)}
+        params: dict[str, str] = {"fields": ",".join(COMMENT_FIELDS)}
         if cursor is not None:
             params["after"] = cursor
 
