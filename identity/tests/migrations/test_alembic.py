@@ -9,6 +9,7 @@ from identity.migrations import identity_metadata, include_identity_name
 EXPECTED_IDENTITY_TABLES = {
     "identity_users",
     "identity_user_identities",
+    "identity_external_identities",
     "identity_otp_challenges",
     "identity_sessions",
 }
