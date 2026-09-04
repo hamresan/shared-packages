@@ -5,7 +5,9 @@ from .errors import (
     InstagramWebhookError,
     InstagramWebhookHandshakeError,
 )
+from .failure_handler import RetryInstagramWebhookFailureHandler
 from .handshake import InstagramWebhookHandshakeService
+from .observer import NullInstagramWebhookOperationalObserver
 from .processor import InstagramWebhookProcessor
 
 __all__ = [
@@ -14,4 +16,6 @@ __all__ = [
     "InstagramWebhookHandshakeError",
     "InstagramWebhookHandshakeService",
     "InstagramWebhookProcessor",
+    "NullInstagramWebhookOperationalObserver",
+    "RetryInstagramWebhookFailureHandler",
 ]
