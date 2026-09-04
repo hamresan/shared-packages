@@ -24,9 +24,7 @@ class MetaInstagramMessagingMapper:
 
     def conversation(self, dto: MetaInstagramConversationDto) -> InstagramConversation:
         updated_at = (
-            self._timestamp_parser.parse(dto.updated_time)
-            if dto.updated_time is not None
-            else None
+            self._timestamp_parser.parse(dto.updated_time) if dto.updated_time is not None else None
         )
         return InstagramConversation(
             id=InstagramConversationId(dto.id),

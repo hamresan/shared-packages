@@ -105,9 +105,7 @@ def test_services_keep_two_connections_isolated_and_forward_cursors() -> None:
 
     assert first_page.items == (first_conversation,)
     assert second_page.items == (second_message,)
-    assert conversation_provider.calls == [
-        (first_id, PaginationCursor("conversation-cursor"))
-    ]
+    assert conversation_provider.calls == [(first_id, PaginationCursor("conversation-cursor"))]
     assert message_provider.calls == [
         (
             second_id,
@@ -120,9 +118,7 @@ def test_services_keep_two_connections_isolated_and_forward_cursors() -> None:
 def test_service_rejects_missing_permission_before_provider_call() -> None:
     connection_id = InstagramConnectionId("connection")
     conversation_id = InstagramConversationId("conversation")
-    provider = FakeInstagramMessageProvider(
-        {(connection_id, conversation_id): Page(items=())}
-    )
+    provider = FakeInstagramMessageProvider({(connection_id, conversation_id): Page(items=())})
     service = InstagramMessageService(
         FakeInstagramConnectionReader(
             {
