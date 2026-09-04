@@ -2,7 +2,7 @@
 
 from instagram_api.application.contracts.accounts import InstagramAccountProvider
 from instagram_api.domain import InstagramAccount, InstagramConnectionId
-from instagram_api.infrastructure.meta.http import MetaHttpMethod, MetaRequestExecutor
+from instagram_api.infrastructure.meta.http import MetaHttpMethod, MetaJsonExecutor
 
 from .mapper import MetaInstagramAccountMapper
 from .parser import MetaInstagramAccountPayloadParser
@@ -25,7 +25,7 @@ class MetaInstagramAccountProvider(InstagramAccountProvider):
 
     def __init__(
         self,
-        executor: MetaRequestExecutor,
+        executor: MetaJsonExecutor,
         parser: MetaInstagramAccountPayloadParser,
         mapper: MetaInstagramAccountMapper,
     ) -> None:
