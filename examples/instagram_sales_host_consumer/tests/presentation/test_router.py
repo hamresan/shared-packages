@@ -3,8 +3,8 @@
 import asyncio
 from uuid import UUID
 
-from fastapi import FastAPI
 import httpx
+from fastapi import FastAPI
 
 from instagram_api.application.contracts import InstagramAccountReader
 from instagram_api.domain import (
