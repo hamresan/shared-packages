@@ -84,7 +84,7 @@ def test_service_keeps_two_connections_isolated_and_passes_cursor() -> None:
     ("usable", "permissions", "error_type"),
     [
         (False, frozenset({"instagram_business_basic"}), InstagramMediaConnectionUnavailableError),
-        (True, frozenset(), InstagramMediaPermissionRequiredError),
+        (True, frozenset[str](), InstagramMediaPermissionRequiredError),
     ],
 )
 def test_service_rejects_ineligible_connection_before_provider_call(
