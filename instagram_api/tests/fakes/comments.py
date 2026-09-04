@@ -1,6 +1,7 @@
 """Comment contract fakes."""
 
 from instagram_api.application.contracts.comments import (
+    InstagramCommentProvider,
     InstagramCommentReader,
     InstagramCommentReplier,
 )
@@ -75,3 +76,45 @@ class FakeInstagramCommentReplier(InstagramCommentReplier):
     ) -> InstagramCommentReplyResult:
         self.private_replies.append((connection_id, comment_id, text))
         return InstagramCommentReplyResult(InstagramCommentId("private-reply"))
+
+
+class FakeInstagramCommentProvider(InstagramCommentProvider):
+    """Fake comment provider that records connection-aware reads."""
+
+    def __init__(
+        self,
+        comment_pages: dict[
+            tuple[InstagramConnectionId, InstagramMediaId],
+            Page[InstagramComment],
+        ],
+        reply_pages: dict[
+            tuple[InstagramConnectionId, InstagramCommentId],
+            Page[InstagramComment],
+        ],
+    ) -> None:
+        self._comment_pages = comment_pages
+        self._reply_pages = reply_pages
+        self.comment_calls: list[
+            tuple[InstagramConnectionId, InstagramMediaId, PaginationCursor | None]
+        ] = []
+        self.reply_calls: list[
+            tuple[InstagramConnectionId, InstagramCommentId, PaginationCursor | None]
+        ] = []
+
+    async def list_comments(
+        self,
+        connection_id: InstagramConnectionId,
+        media_id: InstagramMediaId,
+        cursor: PaginationCursor | None = None,
+    ) -> Page[InstagramComment]:
+        self.comment_calls.append((connection_id, media_id, cursor))
+        return self._comment_pages[(connection_id, media_id)]
+
+    async def list_replies(
+        self,
+        connection_id: InstagramConnectionId,
+        comment_id: InstagramCommentId,
+        cursor: PaginationCursor | None = None,
+    ) -> Page[InstagramComment]:
+        self.reply_calls.append((connection_id, comment_id, cursor))
+        return self._reply_pages[(connection_id, comment_id)]
