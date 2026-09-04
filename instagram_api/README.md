@@ -265,6 +265,31 @@ Tests should mirror the package's internal responsibility/layer structure.
 - Account-scoped operations require explicit connection context.
 - No LLM calls or AI prompt logic inside this package.
 
+## Durable webhook deployment
+
+Stage 13 provides an optional SQLAlchemy-backed `InstagramWebhookIdempotencyStore` for
+multi-worker deployments:
+
+- install `hamresan-instagram-api[sqlalchemy]` when using the durable store;
+- all webhook workers/instances must share the same database and package-owned idempotency table;
+- the `event_id` primary key is the atomic duplicate-detection boundary;
+- processing claims use a lease so another worker can reclaim an event after a crashed worker stops
+  renewing/completing its claim;
+- choose a lease duration longer than the expected maximum synchronous webhook dispatch time;
+- production hosts should create/manage the table through their normal migration workflow;
+  `SqlAlchemyInstagramWebhookSchema.create()` is provided for simple hosts/tests, not as a
+  replacement for production migration ownership;
+- `RETRY` poison-event decisions release the claim and re-raise so provider delivery can retry;
+- `DISCARD` decisions complete the event so a permanently bad delivery does not loop forever.
+
+Webhook operational observers receive event ID, provider account ID, resolved connection ID when
+available, error type, duplicate suppression, signature rejection, and dispatch outcomes. They never
+receive access tokens, app secrets, or raw webhook bodies.
+
+Meta HTTP observers are also connection-aware. Hosts can derive structured provider-failure and
+rate-limit metrics from the sanitized method/URL/status/error metadata (for example status 429)
+without logging credentials.
+
 ## Security and reliability requirements
 
 - Never log raw access tokens or app secrets.
