@@ -1,16 +1,13 @@
 """Generic Meta Instagram webhook envelope parser."""
 
 import json
-from collections.abc import Mapping
-from datetime import UTC, datetime
-from typing import cast
 
 from instagram_api.application.contracts.webhooks import InstagramWebhookParser
-from instagram_api.domain import InstagramAccountId, InstagramWebhookEvent
+from instagram_api.domain import InstagramWebhookEvent
 from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
-from .event_id import MetaInstagramWebhookEventIdFactory
 from .fields import MetaInstagramWebhookFieldParser
+from .mapper import MetaInstagramWebhookEventMapper
 
 
 class MetaInstagramWebhookParser(InstagramWebhookParser):
@@ -19,10 +16,10 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
     def __init__(
         self,
         field_parser: MetaInstagramWebhookFieldParser,
-        event_id_factory: MetaInstagramWebhookEventIdFactory,
+        event_mapper: MetaInstagramWebhookEventMapper,
     ) -> None:
         self._field_parser = field_parser
-        self._event_id_factory = event_id_factory
+        self._event_mapper = event_mapper
 
     def parse(self, payload: bytes) -> tuple[InstagramWebhookEvent, ...]:
         """Return generic normalized events from a Meta Instagram envelope."""
@@ -46,11 +43,6 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                 "provider account id",
             )
             occurred_seconds = self._field_parser.optional_int(entry.get("time"))
-            occurred_at = (
-                datetime.fromtimestamp(occurred_seconds, tz=UTC)
-                if occurred_seconds is not None
-                else None
-            )
 
             changes = entry.get("changes")
             if changes is not None:
@@ -61,11 +53,10 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                         "change field",
                     )
                     events.append(
-                        self._event(
+                        self._event_mapper.to_domain(
                             account_id=account_id,
                             event_type=f"change:{field}",
-                            occurred_seconds=occurred_seconds,
-                            occurred_at=occurred_at,
+                            occurred_at_seconds=occurred_seconds,
                             item=change,
                         )
                     )
@@ -78,35 +69,12 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                 ):
                     message = self._field_parser.mapping(raw_message, "messaging item")
                     events.append(
-                        self._event(
+                        self._event_mapper.to_domain(
                             account_id=account_id,
                             event_type="messaging",
-                            occurred_seconds=occurred_seconds,
-                            occurred_at=occurred_at,
+                            occurred_at_seconds=occurred_seconds,
                             item=message,
                         )
                     )
 
         return tuple(events)
-
-    def _event(
-        self,
-        *,
-        account_id: str,
-        event_type: str,
-        occurred_seconds: int | None,
-        occurred_at: datetime | None,
-        item: Mapping[str, object],
-    ) -> InstagramWebhookEvent:
-        event_id = self._event_id_factory.create(
-            provider_account_id=account_id,
-            event_type=event_type,
-            occurred_at_seconds=occurred_seconds,
-            item=cast(Mapping[str, object], item),
-        )
-        return InstagramWebhookEvent(
-            event_id=event_id,
-            event_type=event_type,
-            provider_account_id=InstagramAccountId(account_id),
-            occurred_at=occurred_at,
-        )
