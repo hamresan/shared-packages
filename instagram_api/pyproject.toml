@@ -14,6 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 fastapi = [
+  "build>=1.2,<2.0",
   "fastapi>=0.115,<1.0",
 ]
 sqlalchemy = [

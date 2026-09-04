@@ -28,3 +28,15 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[test]"
       - run: make check
+      - name: Verify wheel excludes tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          wheel = next(Path("dist").glob("hamresan_instagram_api-*.whl"))
+          with ZipFile(wheel) as archive:
+              names = archive.namelist()
+          assert not any(name.startswith("tests/") for name in names)
+          assert any(name == "instagram_api/__init__.py" for name in names)
+          PY

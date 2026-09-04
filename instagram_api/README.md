@@ -290,6 +290,12 @@ Meta HTTP observers are also connection-aware. Hosts can derive structured provi
 rate-limit metrics from the sanitized method/URL/status/error metadata (for example status 429)
 without logging credentials.
 
+## Production readiness
+
+See [`PRODUCTION.md`](PRODUCTION.md) for Standard/Advanced Access and App Review guidance,
+permission-to-feature justification, provider API-version policy, rate-limit/backoff rules,
+structured masked observability, cross-account isolation, and the wheel/public-API release gate.
+
 ## Security and reliability requirements
 
 - Never log raw access tokens or app secrets.
@@ -335,5 +341,5 @@ and capability-gated Instagram Live behavior.
 
 ## Status
 
-Implementation progress is tracked stage by stage in `ROADMAP.md`. This package must not be
-considered complete beyond the latest merged roadmap stage and its passing quality gates.
+Roadmap Stages 0-14 are merged. Stage 15 production/App Review hardening is the final roadmap stage.
+The package is complete only after Stage 15 and its release gates are merged and passing.
