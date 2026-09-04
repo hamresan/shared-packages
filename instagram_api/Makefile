@@ -1,11 +1,11 @@
 .PHONY: format lint typecheck test coverage build wheel-smoke check
 
 format:
-	ruff format src tests
+	ruff format src tests examples
 
 lint:
-	ruff check src tests
-	ruff format --check src tests
+	ruff check src tests examples
+	ruff format --check src tests examples
 
 typecheck:
 	pyright

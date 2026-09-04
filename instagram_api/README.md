@@ -218,6 +218,66 @@ explicit active-broadcast state.
 
 Provider capability checks must be based on current Meta documentation rather than assumptions.
 
+## Installation and basic usage
+
+Install the package with the provider HTTP extra:
+
+```bash
+pip install "hamresan-instagram-api[httpx]"
+```
+
+This package does **not** authorize Instagram accounts itself. The consuming application should
+first obtain an authorized Instagram connection, normally through `hamresan-instagram-auth`, and
+adapt that package's public connection/token boundaries to:
+
+- `InstagramConnectionReader`;
+- `InstagramAccessTokenProvider`.
+
+Every account-scoped call requires an explicit `InstagramConnectionId`. There is no global or
+implicit active Instagram account.
+
+A minimal profile/media composition looks like this:
+
+```python
+connection_reader = HostInstagramConnectionReader(...)
+access_token_provider = HostInstagramAccessTokenProvider(...)
+
+request_builder = MetaRequestBuilder(
+    MetaApiConfig(api_version=meta_api_version),
+    access_token_provider,
+)
+executor = MetaRequestExecutor(
+    request_builder,
+    HttpxMetaHttpTransport(MetaTimeoutConfig()),
+    MetaResponseDecoder(MetaErrorDecoder()),
+    MetaRetryPolicy(),
+    NullMetaHttpObserver(),
+)
+
+account_service = InstagramAccountService(
+    connection_reader,
+    MetaInstagramAccountProvider(
+        executor,
+        MetaInstagramAccountPayloadParser(),
+        MetaInstagramAccountMapper(),
+    ),
+    InstagramAccountAccessPolicy(),
+)
+
+account = await account_service.get_account(connection_id)
+```
+
+The same composition model is used for media, messaging, comments, and webhooks: application
+services depend on public contracts while Meta-specific HTTP behavior stays in infrastructure
+providers.
+
+See [`examples/profile_and_media.py`](examples/profile_and_media.py) for a runnable profile/media
+sample and [`examples/README.md`](examples/README.md) for setup instructions.
+
+For a larger cross-package host example using identity, Instagram authorization, FastAPI,
+SQLAlchemy/Alembic, webhook routing, and automation, see
+`../examples/instagram_sales_host_consumer`.
+
 ## Suggested package structure
 
 ```text
@@ -341,5 +401,5 @@ and capability-gated Instagram Live behavior.
 
 ## Status
 
-Roadmap Stages 0-14 are merged. Stage 15 production/App Review hardening is the final roadmap stage.
-The package is complete only after Stage 15 and its release gates are merged and passing.
+Roadmap Stages 0-15 are merged and the current implementation roadmap is complete. The package
+includes production hardening, final consumer integration coverage, and maintained usage examples.

@@ -26,6 +26,7 @@ test = [
   "pyright>=1.1,<2.0",
   "pytest>=8.0,<9.0",
   "pytest-cov>=6.0,<7.0",
+  "build>=1.2,<2.0",
   "ruff>=0.9,<1.0",
   "sqlalchemy[asyncio]>=2.0,<3.0",
 ]
@@ -48,8 +49,8 @@ show_missing = true
 skip_covered = true
 
 [tool.pyright]
-include = ["src", "tests"]
-extraPaths = ["src"]
+include = ["src", "tests", "examples"]
+extraPaths = ["src", "examples"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 

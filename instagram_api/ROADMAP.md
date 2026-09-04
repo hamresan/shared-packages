@@ -412,3 +412,21 @@ The consuming application can then select a specific connection and:
 - handle verified Instagram Live comment capabilities without claiming unsupported Live-stream access.
 
 No operation may silently use a different Instagram connection because another connection belongs to the same local user.
+
+
+## Documentation follow-up — Consumer usage examples
+
+Completed after Stage 15 without expanding provider capability scope:
+
+- add a package-local `examples/` directory;
+- add a runnable profile/media composition example;
+- document installation and connection-aware usage in the package README;
+- keep the example based on public contracts and explicit connection selection;
+- keep authorization/token ownership outside `hamresan-instagram-api`;
+- keep credentials out of source control.
+
+Exit criteria:
+
+- a consumer can follow README instructions and the sample to compose a profile/media read;
+- the example does not introduce cross-package persistence coupling or an implicit active account;
+- roadmap status reflects completion of Stages 0-15.
