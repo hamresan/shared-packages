@@ -1,5 +1,7 @@
 """Stage 10 Meta messaging webhook normalization tests."""
 
+import pytest
+
 from instagram_api.domain import (
     InstagramInboundMessageAttachment,
     InstagramMessageEdited,
@@ -12,6 +14,7 @@ from instagram_api.domain import (
     InstagramMessagingReferralReceived,
     InstagramUserId,
 )
+from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 from tests.infrastructure.meta.webhooks.factories import build_meta_webhook_parser
 
 
@@ -115,3 +118,32 @@ def test_parser_keeps_unknown_messaging_variant_as_generic_event() -> None:
 
     assert event.event_type == "messaging"
     assert event.payload is None
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        (
+            b'{"entry":[{"id":"account","messaging":[{"recipient":{"id":"account"},'
+            b'"timestamp":1788523200123,"message":{"mid":"message"}}]}]}'
+        ),
+        (
+            b'{"entry":[{"id":"account","messaging":[{"sender":{"id":"sender"},'
+            b'"recipient":{"id":"account"},"timestamp":"invalid",'
+            b'"message":{"mid":"message"}}]}]}'
+        ),
+        (
+            b'{"entry":[{"id":"account","messaging":[{"sender":{"id":"sender"},'
+            b'"recipient":{"id":"account"},"timestamp":1788523200123,'
+            b'"message":{"text":"missing mid"}}]}]}'
+        ),
+        (
+            b'{"entry":[{"id":"account","messaging":[{"sender":{"id":"sender"},'
+            b'"recipient":{"id":"account"},"timestamp":1788523200123,'
+            b'"reaction":{"mid":"message","action":"unknown"}}]}]}'
+        ),
+    ],
+)
+def test_parser_rejects_invalid_messaging_payloads(payload: bytes) -> None:
+    with pytest.raises(MetaInvalidResponseError):
+        build_meta_webhook_parser().parse(payload)
