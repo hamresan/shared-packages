@@ -1,14 +1,13 @@
 """Host-owned Instagram connection association repository."""
 
-from sqlalchemy import insert, select
-from sqlalchemy.ext.asyncio import AsyncEngine
-
+from identity import AuthenticatedPrincipal
 from instagram_api.application.contracts import InstagramWebhookConnectionResolver
 from instagram_api.domain import (
     InstagramAccountId,
     InstagramConnectionId,
 )
-from identity import AuthenticatedPrincipal
+from sqlalchemy import insert, select
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from .models import instagram_connection_links
 
