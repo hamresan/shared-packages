@@ -26,6 +26,19 @@ def test_parser_uses_fallback_media_and_parent_ids_when_edges_omit_them() -> Non
     assert dto.media_id == "media"
     assert dto.parent_comment_id == "parent"
 
+    reply_without_media = parser.parse_comment(
+        {
+            "id": "reply-without-media",
+            "text": "hello",
+            "timestamp": "2026-09-04T10:00:00+0000",
+            "from": {"id": "author"},
+        },
+        fallback_parent_id="parent",
+    )
+
+    assert reply_without_media.media_id is None
+    assert reply_without_media.parent_comment_id == "parent"
+
 
 @pytest.mark.parametrize(
     "payload",
