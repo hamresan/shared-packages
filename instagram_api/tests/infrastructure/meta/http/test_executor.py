@@ -69,8 +69,12 @@ def test_executor_retries_safe_get_and_never_exposes_token_to_observer() -> None
     assert len(transport.requests) == 2
     assert len(observer.started) == 2
     assert len(observer.failures) == 1
-    assert all("top-secret" not in url for _, url in observer.started)
-    assert all("top-secret" not in url for _, url, _ in observer.responses)
+    assert all(
+        connection_id == InstagramConnectionId("connection-a")
+        for connection_id, _, _ in observer.started
+    )
+    assert all("top-secret" not in url for _, _, url in observer.started)
+    assert all("top-secret" not in url for _, _, url, _ in observer.responses)
 
 
 def test_executor_does_not_retry_non_idempotent_post() -> None:
