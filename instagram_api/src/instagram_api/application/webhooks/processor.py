@@ -41,9 +41,7 @@ class InstagramWebhookProcessor:
 
         if not self._verifier.verify(payload, signature):
             self._observer.signature_rejected()
-            raise InstagramWebhookAuthenticationError(
-                "Instagram webhook signature is invalid."
-            )
+            raise InstagramWebhookAuthenticationError("Instagram webhook signature is invalid.")
 
         dispatched = 0
         for event in self._parser.parse(payload):
@@ -57,9 +55,7 @@ class InstagramWebhookProcessor:
 
             connection_id: InstagramConnectionId | None = None
             try:
-                connection_id = await self._connection_resolver.resolve(
-                    event.provider_account_id
-                )
+                connection_id = await self._connection_resolver.resolve(event.provider_account_id)
                 await self._dispatcher.dispatch(connection_id, event)
             except Exception as exc:
                 decision = await self._failure_handler.handle(

@@ -109,9 +109,7 @@ class FakeInstagramWebhookFailureHandler(InstagramWebhookFailureHandler):
         decision: InstagramWebhookFailureDecision,
     ) -> None:
         self._decision = decision
-        self.calls: list[
-            tuple[InstagramWebhookEvent, InstagramConnectionId | None, Exception]
-        ] = []
+        self.calls: list[tuple[InstagramWebhookEvent, InstagramConnectionId | None, Exception]] = []
 
     async def handle(
         self,
@@ -129,9 +127,7 @@ class FakeInstagramWebhookOperationalObserver(InstagramWebhookOperationalObserve
     def __init__(self) -> None:
         self.signature_rejections = 0
         self.duplicates: list[tuple[str, InstagramAccountId]] = []
-        self.dispatched: list[
-            tuple[str, InstagramAccountId, InstagramConnectionId]
-        ] = []
+        self.dispatched: list[tuple[str, InstagramAccountId, InstagramConnectionId]] = []
         self.failures: list[
             tuple[
                 str,

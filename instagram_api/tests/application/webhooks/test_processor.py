@@ -89,9 +89,7 @@ def test_processor_routes_accounts_observes_success_and_suppresses_duplicate() -
         (InstagramConnectionId("connection-b"), second),
     ]
     assert store.completed == {"event-a", "event-b"}
-    assert observer.duplicates == [
-        ("event-a", InstagramAccountId("account-a"))
-    ]
+    assert observer.duplicates == [("event-a", InstagramAccountId("account-a"))]
     assert observer.dispatched == [
         (
             "event-a",
@@ -110,9 +108,7 @@ def test_processor_releases_retryable_failure_and_records_correlation() -> None:
     event = build_event("event-a", "account-a")
     store = FakeInstagramWebhookIdempotencyStore()
     observer = FakeInstagramWebhookOperationalObserver()
-    failure_handler = FakeInstagramWebhookFailureHandler(
-        InstagramWebhookFailureDecision.RETRY
-    )
+    failure_handler = FakeInstagramWebhookFailureHandler(InstagramWebhookFailureDecision.RETRY)
     processor = InstagramWebhookProcessor(
         FakeInstagramWebhookVerifier(True),
         FakeInstagramWebhookParser((event,)),
