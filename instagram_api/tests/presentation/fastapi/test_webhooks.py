@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from instagram_api.application.webhooks import (
     InstagramWebhookHandshakeService,
     InstagramWebhookProcessor,
+    NullInstagramWebhookOperationalObserver,
+    RetryInstagramWebhookFailureHandler,
 )
 from instagram_api.domain import InstagramAccountId, InstagramConnectionId
 from instagram_api.infrastructure.meta.webhooks import MetaInstagramWebhookSignatureVerifier
