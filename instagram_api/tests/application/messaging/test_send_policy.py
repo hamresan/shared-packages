@@ -68,7 +68,7 @@ def test_send_access_policy_rejects_ineligible_connection(
 
 
 @pytest.mark.parametrize(
-    "request",
+    "send_request",
     [
         InstagramMessageSendRequest(InstagramUserId("recipient")),
         InstagramMessageSendRequest(InstagramUserId("recipient"), text="   "),
@@ -90,10 +90,10 @@ def test_send_access_policy_rejects_ineligible_connection(
     ],
 )
 def test_payload_policy_rejects_invalid_payloads(
-    request: InstagramMessageSendRequest,
+    send_request: InstagramMessageSendRequest,
 ) -> None:
     with pytest.raises(InstagramMessagePayloadInvalidError):
-        InstagramMessagePayloadPolicy().validate(request)
+        InstagramMessagePayloadPolicy().validate(send_request)
 
 
 def test_payload_policy_accepts_text_and_media_payloads() -> None:
