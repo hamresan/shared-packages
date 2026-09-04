@@ -1,6 +1,11 @@
 """Public domain models and identifiers."""
 
 from .accounts import InstagramAccount
+from .comment_replies import (
+    InstagramPrivateCommentReplyRequest,
+    InstagramPrivateCommentReplyResult,
+    InstagramPrivateReplySource,
+)
 from .comments import InstagramComment, InstagramCommentReplyResult
 from .connections import InstagramConnection
 from .identifiers import (
@@ -44,6 +49,9 @@ __all__ = [
     "InstagramMessageId",
     "InstagramMessageSendRequest",
     "InstagramMessageSendResult",
+    "InstagramPrivateCommentReplyRequest",
+    "InstagramPrivateCommentReplyResult",
+    "InstagramPrivateReplySource",
     "InstagramUserId",
     "InstagramWebhookEvent",
     "Page",
