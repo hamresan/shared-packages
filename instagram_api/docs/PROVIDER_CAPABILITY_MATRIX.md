@@ -207,6 +207,12 @@ Permissions:
 
 The package must send the reply through the explicit connection that owns the media/comment.
 
+Stage 8 implementation decisions:
+
+- public replies use `POST /<IG_COMMENT_ID>/replies` and are not retried automatically;
+- blank reply text is rejected before provider execution;
+- provider request/policy rejection is normalized without guessing undocumented error subtypes.
+
 ### Private replies to commenters
 
 Status: **Verified with strict eligibility windows**
@@ -228,7 +234,16 @@ Documented restrictions include:
 - Instagram Live has a separate rule: the private reply can be sent only while the Live broadcast is
   active.
 
-Stage 8 must model normal-media and Live eligibility separately.
+Stage 8 models standard and Live eligibility separately:
+
+- standard private replies carry the source comment creation time and are rejected locally once the
+  documented 7-day window expires;
+- Live private replies carry explicit broadcast-active state and are rejected locally when the
+  broadcast is no longer active;
+- the one-private-reply-per-comment restriction is not simulated with temporary in-memory state;
+  duplicate/ineligible attempts are normalized from the Meta provider rejection until durable
+  idempotency/state is introduced by its later roadmap stage;
+- private reply POST requests are never retried automatically.
 
 ### Messaging webhooks and connection routing
 

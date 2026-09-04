@@ -20,6 +20,8 @@ from instagram_api.domain import (
     InstagramMessage,
     InstagramMessageId,
     InstagramMessageSendRequest,
+    InstagramPrivateCommentReplyRequest,
+    InstagramPrivateReplySource,
     InstagramUserId,
 )
 from tests.fakes import (
@@ -189,14 +191,20 @@ def test_write_contracts_record_the_explicit_connection() -> None:
         )
     )
     public_result = asyncio.run(replier.reply_publicly(connection_id, comment_id, "Public"))
-    private_result = asyncio.run(replier.reply_privately(connection_id, comment_id, "Private"))
+    private_request = InstagramPrivateCommentReplyRequest(
+        comment_id=comment_id,
+        text="Private",
+        comment_created_at=datetime.now(UTC),
+        source=InstagramPrivateReplySource.STANDARD,
+    )
+    private_result = asyncio.run(replier.reply_privately(connection_id, private_request))
 
     assert send_result.message_id == InstagramMessageId("sent-1")
     assert sender.sent[0][0] == connection_id
     assert public_result.comment_id == InstagramCommentId("public-reply")
-    assert private_result.comment_id == InstagramCommentId("private-reply")
+    assert private_result.message_id == InstagramMessageId("private-message")
     assert replier.public_replies == [(connection_id, comment_id, "Public")]
-    assert replier.private_replies == [(connection_id, comment_id, "Private")]
+    assert replier.private_replies == [(connection_id, private_request)]
 
 
 def test_fakes_fail_closed_for_unknown_connection_or_target() -> None:

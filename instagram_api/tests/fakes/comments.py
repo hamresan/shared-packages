@@ -4,6 +4,8 @@ from instagram_api.application.contracts.comments import (
     InstagramCommentProvider,
     InstagramCommentReader,
     InstagramCommentReplier,
+    InstagramPrivateCommentReplyProvider,
+    InstagramPublicCommentReplyProvider,
 )
 from instagram_api.domain import (
     InstagramComment,
@@ -11,6 +13,10 @@ from instagram_api.domain import (
     InstagramCommentReplyResult,
     InstagramConnectionId,
     InstagramMediaId,
+    InstagramMessageId,
+    InstagramPrivateCommentReplyRequest,
+    InstagramPrivateCommentReplyResult,
+    InstagramUserId,
     Page,
     PaginationCursor,
 )
@@ -53,11 +59,13 @@ class FakeInstagramCommentReader(InstagramCommentReader):
 
 
 class FakeInstagramCommentReplier(InstagramCommentReplier):
-    """Fake replier that records connection-aware reply operations."""
+    """Fake composite replier for contract compatibility tests."""
 
     def __init__(self) -> None:
         self.public_replies: list[tuple[InstagramConnectionId, InstagramCommentId, str]] = []
-        self.private_replies: list[tuple[InstagramConnectionId, InstagramCommentId, str]] = []
+        self.private_replies: list[
+            tuple[InstagramConnectionId, InstagramPrivateCommentReplyRequest]
+        ] = []
 
     async def reply_publicly(
         self,
@@ -71,11 +79,47 @@ class FakeInstagramCommentReplier(InstagramCommentReplier):
     async def reply_privately(
         self,
         connection_id: InstagramConnectionId,
+        request: InstagramPrivateCommentReplyRequest,
+    ) -> InstagramPrivateCommentReplyResult:
+        self.private_replies.append((connection_id, request))
+        return InstagramPrivateCommentReplyResult(
+            message_id=InstagramMessageId("private-message"),
+            recipient_id=InstagramUserId("recipient"),
+        )
+
+
+class FakeInstagramPublicCommentReplyProvider(InstagramPublicCommentReplyProvider):
+    """Fake public reply provider that records explicit connection routing."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[InstagramConnectionId, InstagramCommentId, str]] = []
+
+    async def reply(
+        self,
+        connection_id: InstagramConnectionId,
         comment_id: InstagramCommentId,
         text: str,
     ) -> InstagramCommentReplyResult:
-        self.private_replies.append((connection_id, comment_id, text))
-        return InstagramCommentReplyResult(InstagramCommentId("private-reply"))
+        self.calls.append((connection_id, comment_id, text))
+        return InstagramCommentReplyResult(InstagramCommentId("public-reply"))
+
+
+class FakeInstagramPrivateCommentReplyProvider(InstagramPrivateCommentReplyProvider):
+    """Fake private reply provider that records explicit connection routing."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[InstagramConnectionId, InstagramPrivateCommentReplyRequest]] = []
+
+    async def reply(
+        self,
+        connection_id: InstagramConnectionId,
+        request: InstagramPrivateCommentReplyRequest,
+    ) -> InstagramPrivateCommentReplyResult:
+        self.calls.append((connection_id, request))
+        return InstagramPrivateCommentReplyResult(
+            message_id=InstagramMessageId("private-message"),
+            recipient_id=InstagramUserId("recipient"),
+        )
 
 
 class FakeInstagramCommentProvider(InstagramCommentProvider):

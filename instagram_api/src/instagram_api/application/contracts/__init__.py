@@ -1,7 +1,15 @@
 """Public application contracts."""
 
 from .accounts import InstagramAccountProvider, InstagramAccountReader
-from .comments import InstagramCommentProvider, InstagramCommentReader, InstagramCommentReplier
+from .comments import (
+    InstagramCommentProvider,
+    InstagramCommentReader,
+    InstagramCommentReplier,
+    InstagramPrivateCommentReplier,
+    InstagramPrivateCommentReplyProvider,
+    InstagramPublicCommentReplier,
+    InstagramPublicCommentReplyProvider,
+)
 from .connection import InstagramAccessTokenProvider, InstagramConnectionReader
 from .media import InstagramMediaProvider, InstagramMediaReader
 from .messaging import (
@@ -32,6 +40,10 @@ __all__ = [
     "InstagramMessageReader",
     "InstagramMessageSender",
     "InstagramOutboundMessageProvider",
+    "InstagramPrivateCommentReplier",
+    "InstagramPrivateCommentReplyProvider",
+    "InstagramPublicCommentReplier",
+    "InstagramPublicCommentReplyProvider",
     "InstagramWebhookParser",
     "InstagramWebhookVerifier",
 ]
