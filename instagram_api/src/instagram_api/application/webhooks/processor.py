@@ -32,9 +32,7 @@ class InstagramWebhookProcessor:
         """Process authentic non-duplicate events and return dispatch count."""
 
         if not self._verifier.verify(payload, signature):
-            raise InstagramWebhookAuthenticationError(
-                "Instagram webhook signature is invalid."
-            )
+            raise InstagramWebhookAuthenticationError("Instagram webhook signature is invalid.")
 
         dispatched = 0
         for event in self._parser.parse(payload):
@@ -43,9 +41,7 @@ class InstagramWebhookProcessor:
                 continue
 
             try:
-                connection_id = await self._connection_resolver.resolve(
-                    event.provider_account_id
-                )
+                connection_id = await self._connection_resolver.resolve(event.provider_account_id)
                 await self._dispatcher.dispatch(connection_id, event)
             except Exception:
                 await self._idempotency_store.release(event.event_id)

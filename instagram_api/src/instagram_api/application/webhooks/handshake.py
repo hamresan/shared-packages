@@ -19,15 +19,9 @@ class InstagramWebhookHandshakeService:
         """Return the challenge only for a valid subscribe handshake."""
 
         if mode != "subscribe":
-            raise InstagramWebhookHandshakeError(
-                "Webhook verification mode must be subscribe."
-            )
+            raise InstagramWebhookHandshakeError("Webhook verification mode must be subscribe.")
         if verify_token != self._verify_token:
-            raise InstagramWebhookHandshakeError(
-                "Webhook verification token is invalid."
-            )
+            raise InstagramWebhookHandshakeError("Webhook verification token is invalid.")
         if challenge is None or not challenge:
-            raise InstagramWebhookHandshakeError(
-                "Webhook verification challenge is missing."
-            )
+            raise InstagramWebhookHandshakeError("Webhook verification challenge is missing.")
         return challenge
