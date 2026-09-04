@@ -26,15 +26,13 @@ from tests.fakes import FakeInstagramAccessTokenProvider
 from tests.infrastructure.meta.http.fakes import SequenceMetaHttpTransport
 
 
-def build_meta_messaging_providers(
+def build_meta_executor(
     transport: SequenceMetaHttpTransport,
     connection_id: InstagramConnectionId,
-) -> tuple[MetaInstagramConversationProvider, MetaInstagramMessageProvider]:
-    """Build Stage 5 providers with real shared infrastructure and fake transport."""
+) -> MetaRequestExecutor:
+    """Build the shared Meta executor used by messaging tests."""
 
-    parser = MetaInstagramMessagingPayloadParser(MetaInstagramMessagingFieldParser())
-    mapper = MetaInstagramMessagingMapper(MetaInstagramMessagingTimestampParser())
-    executor = MetaRequestExecutor(
+    return MetaRequestExecutor(
         request_builder=MetaRequestBuilder(
             MetaApiConfig(api_version="v24.0"),
             FakeInstagramAccessTokenProvider({connection_id: "token"}),
@@ -44,6 +42,31 @@ def build_meta_messaging_providers(
         retry_policy=MetaRetryPolicy(base_delay_seconds=0),
         observer=NullMetaHttpObserver(),
     )
+
+
+def build_meta_message_detail_reader(
+    transport: SequenceMetaHttpTransport,
+    connection_id: InstagramConnectionId,
+) -> MetaInstagramMessageDetailReader:
+    """Build a message-detail reader with real parsing and fake transport."""
+
+    parser = MetaInstagramMessagingPayloadParser(MetaInstagramMessagingFieldParser())
+    return MetaInstagramMessageDetailReader(
+        build_meta_executor(transport, connection_id),
+        parser,
+        MetaInstagramMessageDetailAvailabilityPolicy(),
+    )
+
+
+def build_meta_messaging_providers(
+    transport: SequenceMetaHttpTransport,
+    connection_id: InstagramConnectionId,
+) -> tuple[MetaInstagramConversationProvider, MetaInstagramMessageProvider]:
+    """Build Stage 5 providers with real shared infrastructure and fake transport."""
+
+    parser = MetaInstagramMessagingPayloadParser(MetaInstagramMessagingFieldParser())
+    mapper = MetaInstagramMessagingMapper(MetaInstagramMessagingTimestampParser())
+    executor = build_meta_executor(transport, connection_id)
     pagination_mapper = MetaPaginationCursorMapper()
     detail_reader = MetaInstagramMessageDetailReader(
         executor,
