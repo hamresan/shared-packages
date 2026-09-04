@@ -33,6 +33,8 @@ def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
             {InstagramAccountId("account"): InstagramConnectionId("connection")}
         ),
         dispatcher,
+        RetryInstagramWebhookFailureHandler(),
+        NullInstagramWebhookOperationalObserver(),
     )
     app = FastAPI()
     app.include_router(
