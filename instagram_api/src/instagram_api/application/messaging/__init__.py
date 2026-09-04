@@ -1,4 +1,4 @@
-"""Instagram messaging read capability."""
+"""Instagram messaging capabilities."""
 
 from .errors import (
     InstagramMessagingAccessError,
@@ -10,12 +10,32 @@ from .policy import (
     INSTAGRAM_MANAGE_MESSAGES_PERMISSION,
     InstagramMessagingReadPolicy,
 )
+from .send_errors import (
+    InstagramMessagePayloadInvalidError,
+    InstagramMessageRecipientIneligibleError,
+    InstagramMessageSendError,
+    InstagramMessageSendRejectedError,
+)
+from .send_policy import (
+    INSTAGRAM_SEND_MESSAGE_PERMISSION,
+    InstagramMessagePayloadPolicy,
+    InstagramMessageSendAccessPolicy,
+)
+from .send_service import InstagramMessageSendService
 from .services import InstagramConversationService, InstagramMessageService
 
 __all__ = [
     "INSTAGRAM_BASIC_PERMISSION",
     "INSTAGRAM_MANAGE_MESSAGES_PERMISSION",
+    "INSTAGRAM_SEND_MESSAGE_PERMISSION",
     "InstagramConversationService",
+    "InstagramMessagePayloadInvalidError",
+    "InstagramMessagePayloadPolicy",
+    "InstagramMessageRecipientIneligibleError",
+    "InstagramMessageSendAccessPolicy",
+    "InstagramMessageSendError",
+    "InstagramMessageSendRejectedError",
+    "InstagramMessageSendService",
     "InstagramMessageService",
     "InstagramMessagingAccessError",
     "InstagramMessagingConnectionUnavailableError",
