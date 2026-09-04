@@ -359,22 +359,27 @@ upgrade policy.
 
 ### Instagram Live comments
 
-Status: **Partially verified and capability-gated**
+Status: **Verified subset implemented and explicitly capability-gated in Stage 12**
 
-Verified behavior:
+Verified and implemented behavior:
 
 - Meta documents a `live_comments` webhook subscription alongside normal `comments`;
+- Stage 11 normalizes `live_comments` into the same package-owned comment event model while
+  preserving an explicit Live flag and the provider account identity used for connection routing;
+- Stage 12 exposes the Live constraint that actions on such events require an active broadcast;
 - Meta documents private replies originating from comments on Instagram Live;
-- a private reply to a Live commenter is allowed only while the Live broadcast is active.
+- a private reply to a Live commenter is allowed only while the Live broadcast is active;
+- the existing private-reply eligibility policy enforces that active-broadcast requirement before
+  provider execution.
 
-Conditional behavior:
+Stage 12 research did not establish a documented public contract that this package can safely expose
+for:
 
-- active Live media/session discovery;
-- broader Live-session metadata;
-- historical Live-comment retrieval beyond documented webhook/comment behavior.
+- discovering an active Live session as media;
+- reading broader Live-session metadata;
+- retrieving historical Live comments beyond webhook-supported behavior.
 
-These conditional capabilities must not be exposed until a supported public endpoint and permission
-are verified during Stage 12.
+Those capabilities therefore remain disabled rather than being inferred from normal-media APIs.
 
 ### Instagram Live video/audio stream
 
