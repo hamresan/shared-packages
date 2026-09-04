@@ -13,12 +13,16 @@ from identity.application.factories.entities import (
     SessionFactory,
     UserRegistrationFactory,
 )
+from identity.application.factories.external_identity import ExternalIdentityRegistrationFactory
 from identity.application.factories.security_events import IdentitySecurityEventFactory
 from identity.application.policies.data_retention import DataRetentionPolicy
 from identity.application.policies.otp_purpose import OtpPurposePolicy
 from identity.application.policies.otp_rate_limit import OtpRateLimitPolicy
 from identity.application.policies.user_status import UserStatusPolicy
 from identity.application.resolvers import VerifiedOtpUserResolver
+from identity.application.services.authenticate_external_identity import (
+    AuthenticateExternalIdentityService,
+)
 from identity.application.services.cleanup_retained_data import CleanupRetainedIdentityDataService
 from identity.application.services.refresh_session import RefreshSessionService
 from identity.application.services.request_otp import RequestOtpService
@@ -142,6 +146,16 @@ class IdentityModule:
             user_status_policy=user_status_policy,
         )
 
+        self.external_identity_authenticator = AuthenticateExternalIdentityService(
+            unit_of_work_factory=self._unit_of_work_factory,
+            clock=clock,
+            hasher=hasher,
+            refresh_token_generator=refresh_token_generator,
+            access_token_issuer=config.access_token_issuer,
+            session_factory=session_factory,
+            registration_factory=ExternalIdentityRegistrationFactory(),
+            user_status_policy=user_status_policy,
+        )
         self.otp_requester = RequestOtpService(
             unit_of_work_factory=self._unit_of_work_factory,
             otp_delivery=otp_delivery,
@@ -206,6 +220,7 @@ class IdentityModule:
         )
         self.public_api = IdentityPublicApi(
             access_token_authenticator=config.access_token_authenticator,
+            external_identity_authenticator=self.external_identity_authenticator,
             otp_requester=self.otp_requester,
             otp_verifier=self.otp_verifier,
             session_refresher=self.session_refresher,
