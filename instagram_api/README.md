@@ -166,12 +166,18 @@ complete DM archive.
 - validate `X-Hub-Signature-256` against the raw request body before parsing;
 - keep handshake verification, signature validation, parsing, event mapping, deduplication,
   connection resolution, and host dispatch as separate responsibilities;
-- normalize generic Meta envelope items and Stage 10 messaging payloads without implementing
-  Stage 11 comment-event semantics;
+- normalize generic Meta envelope items, Stage 10 messaging payloads, and Stage 11 comment
+  payloads into package-owned models;
 - normalize inbound messages, messaging postbacks, read receipts, reactions, message edits, and
   referrals into package-owned models;
 - preserve provider message IDs, sender/recipient IDs, message timestamps, supported message flags,
   attachment URLs, and story-reply correlation when Meta supplies them;
+- normalize direct `comments` and `live_comments` notifications as comment-created payloads and
+  supported comment items delivered through a `changes` collection as comment-changed payloads;
+- preserve comment ID, optional media ID, commenter ID/username, text, parent comment reference,
+  media product type, and Live context when Meta supplies them;
+- keep intentionally missing comment details optional so host logic can correlate through the
+  Stage 7 comment/media readers rather than receiving fabricated values;
 - preserve the provider professional-account ID needed for deterministic connection resolution;
 - use an atomic idempotency contract with acquire/complete/release semantics so duplicates are
   suppressed while failed dispatches remain retryable;
