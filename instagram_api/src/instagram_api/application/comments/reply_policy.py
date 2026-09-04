@@ -54,9 +54,7 @@ class InstagramCommentReplyTextPolicy:
         """Reject blank reply text."""
 
         if not text.strip():
-            raise InstagramCommentReplyPayloadInvalidError(
-                "Comment reply text must not be blank."
-            )
+            raise InstagramCommentReplyPayloadInvalidError("Comment reply text must not be blank.")
 
 
 class InstagramPrivateReplyEligibilityPolicy:
@@ -82,6 +80,4 @@ class InstagramPrivateReplyEligibilityPolicy:
             )
 
         if now - request.comment_created_at > PRIVATE_REPLY_WINDOW:
-            raise InstagramPrivateReplyExpiredError(
-                "Private reply window has expired."
-            )
+            raise InstagramPrivateReplyExpiredError("Private reply window has expired.")

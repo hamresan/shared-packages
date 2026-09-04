@@ -28,7 +28,6 @@ from tests.fakes import (
     FixedInstagramReplyClock,
 )
 
-
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 
 
@@ -69,9 +68,7 @@ def test_public_reply_service_routes_selected_connection() -> None:
         InstagramCommentReplyTextPolicy(),
     )
 
-    result = asyncio.run(
-        service.reply_publicly(connection_id, comment_id, "public reply")
-    )
+    result = asyncio.run(service.reply_publicly(connection_id, comment_id, "public reply"))
 
     assert result.comment_id == InstagramCommentId("public-reply")
     assert provider.calls == [(connection_id, comment_id, "public reply")]

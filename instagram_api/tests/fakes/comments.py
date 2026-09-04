@@ -62,9 +62,7 @@ class FakeInstagramCommentReplier(InstagramCommentReplier):
     """Fake composite replier for contract compatibility tests."""
 
     def __init__(self) -> None:
-        self.public_replies: list[
-            tuple[InstagramConnectionId, InstagramCommentId, str]
-        ] = []
+        self.public_replies: list[tuple[InstagramConnectionId, InstagramCommentId, str]] = []
         self.private_replies: list[
             tuple[InstagramConnectionId, InstagramPrivateCommentReplyRequest]
         ] = []
@@ -110,9 +108,7 @@ class FakeInstagramPrivateCommentReplyProvider(InstagramPrivateCommentReplyProvi
     """Fake private reply provider that records explicit connection routing."""
 
     def __init__(self) -> None:
-        self.calls: list[
-            tuple[InstagramConnectionId, InstagramPrivateCommentReplyRequest]
-        ] = []
+        self.calls: list[tuple[InstagramConnectionId, InstagramPrivateCommentReplyRequest]] = []
 
     async def reply(
         self,

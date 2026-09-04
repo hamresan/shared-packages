@@ -24,7 +24,6 @@ from instagram_api.domain import (
 )
 from tests.fakes import FixedInstagramReplyClock
 
-
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 
 
@@ -67,9 +66,7 @@ def test_reply_access_policy_accepts_required_permissions() -> None:
             InstagramCommentConnectionUnavailableError,
         ),
         (
-            build_connection(
-                permissions=frozenset({"instagram_business_manage_comments"})
-            ),
+            build_connection(permissions=frozenset({"instagram_business_manage_comments"})),
             InstagramCommentPermissionRequiredError,
         ),
         (

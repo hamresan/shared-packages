@@ -17,14 +17,10 @@ from tests.infrastructure.meta.http.fakes import SequenceMetaHttpTransport
 def test_public_reply_provider_posts_to_comment_replies_edge() -> None:
     connection_id = InstagramConnectionId("connection")
     comment_id = InstagramCommentId("comment")
-    transport = SequenceMetaHttpTransport(
-        [MetaHttpResponse(200, {}, b'{"id":"reply"}')]
-    )
+    transport = SequenceMetaHttpTransport([MetaHttpResponse(200, {}, b'{"id":"reply"}')])
     provider = build_public_reply_provider(transport, connection_id)
 
-    result = asyncio.run(
-        provider.reply(connection_id, comment_id, "thanks")
-    )
+    result = asyncio.run(provider.reply(connection_id, comment_id, "thanks"))
 
     assert result.comment_id == InstagramCommentId("reply")
     request = transport.requests[0]

@@ -14,6 +14,4 @@ def test_reply_response_parsers_reject_missing_required_ids() -> None:
         MetaInstagramPublicReplyResponseParser().parse({})
 
     with pytest.raises(MetaInvalidResponseError):
-        MetaInstagramPrivateReplyResponseParser().parse(
-            {"recipient_id": "recipient"}
-        )
+        MetaInstagramPrivateReplyResponseParser().parse({"recipient_id": "recipient"})

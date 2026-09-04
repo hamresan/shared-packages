@@ -197,9 +197,7 @@ def test_write_contracts_record_the_explicit_connection() -> None:
         comment_created_at=datetime.now(UTC),
         source=InstagramPrivateReplySource.STANDARD,
     )
-    private_result = asyncio.run(
-        replier.reply_privately(connection_id, private_request)
-    )
+    private_result = asyncio.run(replier.reply_privately(connection_id, private_request))
 
     assert send_result.message_id == InstagramMessageId("sent-1")
     assert sender.sent[0][0] == connection_id
