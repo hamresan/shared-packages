@@ -158,8 +158,13 @@ Critical eligibility rule:
 Additional rules:
 
 - the message recipient must be eligible under current Meta messaging policy;
-- provider policy/window errors must be normalized rather than hidden;
+- Stage 6 verifies an existing conversation for the recipient through the Conversations API before
+  sending;
+- the initial send implementation supports text plus documented image/video URL attachments;
+- provider request/policy rejections are normalized without guessing undocumented error-code
+  subtypes;
 - non-idempotent sends must not be blindly retried;
+- host correlation identifiers are local metadata only and are not sent to Meta as idempotency keys;
 - the selected connection must never fall back to another authorized Instagram account.
 
 ### Comment reading
