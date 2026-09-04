@@ -3,7 +3,6 @@
 from instagram_api.application.contracts.webhooks import (
     InstagramWebhookConnectionResolver,
     InstagramWebhookEventDispatcher,
-    InstagramMessagingWebhookHandler,
     InstagramWebhookIdempotencyStore,
     InstagramWebhookParser,
     InstagramWebhookVerifier,
@@ -11,7 +10,6 @@ from instagram_api.application.contracts.webhooks import (
 from instagram_api.domain import (
     InstagramAccountId,
     InstagramConnectionId,
-    InstagramMessagingWebhookPayload,
     InstagramWebhookEvent,
 )
 
@@ -98,19 +96,3 @@ class FakeInstagramWebhookEventDispatcher(InstagramWebhookEventDispatcher):
         if event.event_id == self._fail_event_id:
             raise RuntimeError("dispatch failed")
         self.events.append((connection_id, event))
-
-
-class FakeInstagramMessagingWebhookHandler(InstagramMessagingWebhookHandler):
-    """Fake host handler for normalized messaging webhook payloads."""
-
-    def __init__(self) -> None:
-        self.events: list[
-            tuple[InstagramConnectionId, InstagramMessagingWebhookPayload]
-        ] = []
-
-    async def handle(
-        self,
-        connection_id: InstagramConnectionId,
-        payload: InstagramMessagingWebhookPayload,
-    ) -> None:
-        self.events.append((connection_id, payload))
