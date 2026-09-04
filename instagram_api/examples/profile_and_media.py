@@ -3,6 +3,8 @@
 import asyncio
 import os
 
+import httpx
+
 from instagram_api.application.accounts import (
     InstagramAccountAccessPolicy,
     InstagramAccountService,
@@ -109,7 +111,11 @@ async def main() -> None:
         MetaApiConfig(api_version=api_version),
         access_token_provider,
     )
-    transport = HttpxMetaHttpTransport(MetaTimeoutConfig())
+    client = httpx.AsyncClient()
+    transport = HttpxMetaHttpTransport(
+        client,
+        MetaTimeoutConfig(),
+    )
     executor = MetaRequestExecutor(
         request_builder,
         transport,
@@ -145,12 +151,15 @@ async def main() -> None:
         InstagramMediaAccessPolicy(),
     )
 
-    account = await account_service.get_account(connection_id)
-    media_page = await media_service.list_media(connection_id)
+    try:
+        account = await account_service.get_account(connection_id)
+        media_page = await media_service.list_media(connection_id)
 
-    print(f"@{account.username}: {account.biography or ''}")
-    for media in media_page.items:
-        print(f"{media.media_type.value}: {media.caption or ''}")
+        print(f"@{account.username}: {account.biography or ''}")
+        for media in media_page.items:
+            print(f"{media.media_type.value}: {media.caption or ''}")
+    finally:
+        await client.aclose()
 
 
 if __name__ == "__main__":
