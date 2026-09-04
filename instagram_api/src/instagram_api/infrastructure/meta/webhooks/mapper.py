@@ -3,7 +3,11 @@
 from collections.abc import Mapping
 from datetime import UTC, datetime
 
-from instagram_api.domain import InstagramAccountId, InstagramWebhookEvent
+from instagram_api.domain import (
+    InstagramAccountId,
+    InstagramMessagingWebhookPayload,
+    InstagramWebhookEvent,
+)
 
 from .event_id import MetaInstagramWebhookEventIdFactory
 
@@ -21,6 +25,7 @@ class MetaInstagramWebhookEventMapper:
         event_type: str,
         occurred_at_seconds: int | None,
         item: Mapping[str, object],
+        payload: InstagramMessagingWebhookPayload | None = None,
     ) -> InstagramWebhookEvent:
         """Create one normalized generic webhook event."""
 
@@ -39,4 +44,5 @@ class MetaInstagramWebhookEventMapper:
             event_type=event_type,
             provider_account_id=InstagramAccountId(account_id),
             occurred_at=occurred_at,
+            payload=payload,
         )
