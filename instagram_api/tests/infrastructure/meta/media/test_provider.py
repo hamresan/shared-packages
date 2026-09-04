@@ -5,7 +5,12 @@ import asyncio
 import pytest
 
 from instagram_api.application.media import InstagramMediaUnavailableError
-from instagram_api.domain import InstagramConnectionId, InstagramMediaId, InstagramMediaType
+from instagram_api.domain import (
+    InstagramConnectionId,
+    InstagramMediaId,
+    InstagramMediaType,
+    PaginationCursor,
+)
 from instagram_api.infrastructure.meta.http import (
     MetaApiConfig,
     MetaErrorDecoder,
@@ -98,7 +103,7 @@ def test_provider_passes_after_cursor_and_reads_media_detail() -> None:
     )
     provider = build_provider(transport, connection_id)
 
-    asyncio.run(provider.list_media(connection_id, cursor="cursor"))
+    asyncio.run(provider.list_media(connection_id, cursor=PaginationCursor("cursor")))
     media = asyncio.run(provider.get_media(connection_id, InstagramMediaId("media")))
 
     assert transport.requests[0].params["after"] == "cursor"
