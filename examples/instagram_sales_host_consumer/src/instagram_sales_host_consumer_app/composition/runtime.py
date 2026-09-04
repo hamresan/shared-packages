@@ -2,8 +2,6 @@
 
 from dataclasses import dataclass
 
-from sqlalchemy.ext.asyncio import AsyncEngine
-
 from instagram_api.application.accounts import (
     InstagramAccountAccessPolicy,
     InstagramAccountService,
@@ -33,6 +31,7 @@ from instagram_auth import (
     InstagramAccessTokenProvider as AuthInstagramAccessTokenProvider,
 )
 from instagram_auth import InstagramConnectionReader as AuthInstagramConnectionReader
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from instagram_sales_host_consumer_app.auth_adapters import (
     InstagramAuthAccessTokenAdapter,
