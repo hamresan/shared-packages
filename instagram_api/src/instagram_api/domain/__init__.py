@@ -39,6 +39,7 @@ from .messaging_webhooks import (
     InstagramMessagingWebhookPayload,
 )
 from .pagination import Page
+from .webhook_payloads import InstagramWebhookPayload
 from .webhooks import InstagramWebhookEvent
 
 __all__ = [
@@ -74,6 +75,7 @@ __all__ = [
     "InstagramPrivateReplySource",
     "InstagramUserId",
     "InstagramWebhookEvent",
+    "InstagramWebhookPayload",
     "Page",
     "PaginationCursor",
 ]
