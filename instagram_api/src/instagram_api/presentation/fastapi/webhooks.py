@@ -18,7 +18,6 @@ def create_instagram_webhook_router(
 
     router = APIRouter()
 
-    @router.get("/webhooks/instagram")
     async def verify_webhook(
         mode: str | None = Query(default=None, alias="hub.mode"),
         verify_token: str | None = Query(default=None, alias="hub.verify_token"),
@@ -34,7 +33,6 @@ def create_instagram_webhook_router(
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         return Response(content=verified_challenge, media_type="text/plain")
 
-    @router.post("/webhooks/instagram")
     async def receive_webhook(
         request: Request,
         signature: str | None = Header(
@@ -49,4 +47,14 @@ def create_instagram_webhook_router(
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         return {"dispatched": dispatched}
 
+    router.add_api_route(
+        "/webhooks/instagram",
+        verify_webhook,
+        methods=["GET"],
+    )
+    router.add_api_route(
+        "/webhooks/instagram",
+        receive_webhook,
+        methods=["POST"],
+    )
     return router
