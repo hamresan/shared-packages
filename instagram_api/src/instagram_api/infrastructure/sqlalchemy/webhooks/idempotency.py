@@ -12,6 +12,7 @@ from .models import instagram_webhook_events
 
 _STATUS_PROCESSING = "processing"
 _STATUS_COMPLETED = "completed"
+_DEFAULT_LEASE_DURATION = timedelta(minutes=5)
 
 
 class SqlAlchemyInstagramWebhookIdempotencyStore(InstagramWebhookIdempotencyStore):
@@ -21,7 +22,7 @@ class SqlAlchemyInstagramWebhookIdempotencyStore(InstagramWebhookIdempotencyStor
         self,
         engine: AsyncEngine,
         *,
-        lease_duration: timedelta = timedelta(minutes=5),
+        lease_duration: timedelta = _DEFAULT_LEASE_DURATION,
     ) -> None:
         self._engine = engine
         self._lease_duration = lease_duration
@@ -43,19 +44,17 @@ class SqlAlchemyInstagramWebhookIdempotencyStore(InstagramWebhookIdempotencyStor
                 )
             return True
         except IntegrityError:
-            pass
-
-        async with self._engine.begin() as connection:
-            result = await connection.execute(
-                update(instagram_webhook_events)
-                .where(
-                    instagram_webhook_events.c.event_id == event_id,
-                    instagram_webhook_events.c.status == _STATUS_PROCESSING,
-                    instagram_webhook_events.c.lease_expires_at <= now,
+            async with self._engine.begin() as connection:
+                result = await connection.execute(
+                    update(instagram_webhook_events)
+                    .where(
+                        instagram_webhook_events.c.event_id == event_id,
+                        instagram_webhook_events.c.status == _STATUS_PROCESSING,
+                        instagram_webhook_events.c.lease_expires_at <= now,
+                    )
+                    .values(lease_expires_at=lease_expires_at)
                 )
-                .values(lease_expires_at=lease_expires_at)
-            )
-        return result.rowcount == 1
+            return result.rowcount == 1
 
     async def complete(self, event_id: str) -> None:
         """Mark a claimed event as completed and permanently suppress duplicates."""
