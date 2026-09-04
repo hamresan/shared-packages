@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import hmac
 
-from instagram_api.application.webhooks import InstagramWebhookProcessor
+from instagram_api.application.webhooks import (\n    InstagramWebhookProcessor,\n    NullInstagramWebhookOperationalObserver,\n    RetryInstagramWebhookFailureHandler,\n)
 from instagram_api.domain import (
     InstagramAccountId,
     InstagramCommentCreated,
@@ -34,6 +34,8 @@ def test_comment_event_reaches_host_with_resolved_connection_context() -> None:
             {InstagramAccountId("account-a"): InstagramConnectionId("connection-a")}
         ),
         dispatcher,
+        RetryInstagramWebhookFailureHandler(),
+        NullInstagramWebhookOperationalObserver(),
     )
     signature = (
         "sha256="
