@@ -2,6 +2,8 @@
 
 import asyncio
 
+import pytest
+
 from instagram_api.domain import InstagramConnectionId
 from instagram_api.infrastructure.meta.http import (
     MetaApiConfig,
@@ -50,7 +52,7 @@ def test_request_builder_fails_closed_for_unknown_connection() -> None:
         FakeInstagramAccessTokenProvider({known: "token"}),
     )
 
-    try:
+    with pytest.raises(KeyError):
         asyncio.run(
             builder.build(
                 connection_id=missing,
@@ -58,7 +60,3 @@ def test_request_builder_fails_closed_for_unknown_connection() -> None:
                 path="me",
             )
         )
-    except KeyError:
-        pass
-    else:
-        raise AssertionError("Unknown connection must not fall back to another token.")
