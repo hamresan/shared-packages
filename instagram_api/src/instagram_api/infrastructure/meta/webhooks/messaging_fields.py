@@ -35,12 +35,18 @@ class MetaInstagramMessagingWebhookFieldParser:
     def timestamp(self, value: object) -> datetime:
         """Parse Meta's messaging timestamp, which is expressed in milliseconds."""
 
-        if not isinstance(value, int) or isinstance(value, bool):
+        timestamp_value: int | None = None
+        if isinstance(value, int) and not isinstance(value, bool):
+            timestamp_value = value
+        elif isinstance(value, str) and value.isdigit():
+            timestamp_value = int(value)
+
+        if timestamp_value is None:
             raise MetaInvalidResponseError(
                 message="Meta messaging webhook timestamp is invalid.",
                 status_code=200,
             )
-        return datetime.fromtimestamp(value / 1000, tz=UTC)
+        return datetime.fromtimestamp(timestamp_value / 1000, tz=UTC)
 
     def required_message_id(self, payload: Mapping[str, object]) -> str:
         """Return a required Meta message ID."""
