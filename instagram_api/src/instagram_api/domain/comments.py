@@ -15,7 +15,7 @@ class InstagramComment:
     """A provider-neutral Instagram comment or reply."""
 
     id: InstagramCommentId
-    media_id: InstagramMediaId
+    media_id: InstagramMediaId | None
     author_id: InstagramUserId
     text: str
     created_at: datetime
