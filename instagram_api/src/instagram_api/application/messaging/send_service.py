@@ -54,6 +54,6 @@ class InstagramMessageSendService(InstagramMessageSender):
         result = await self._provider.send_message(connection_id, request)
         return InstagramMessageSendResult(
             message_id=result.message_id,
-            recipient_id=result.recipient_id,
+            recipient_id=result.recipient_id or request.recipient_id,
             correlation_id=request.correlation_id,
         )
