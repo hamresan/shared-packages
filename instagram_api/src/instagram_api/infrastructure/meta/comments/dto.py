@@ -8,7 +8,7 @@ class MetaInstagramCommentDto:
     """Typed Meta comment payload."""
 
     id: str
-    media_id: str
+    media_id: str | None
     author_id: str
     text: str
     timestamp: str
