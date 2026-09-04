@@ -4,7 +4,11 @@ import asyncio
 import hashlib
 import hmac
 
-from instagram_api.application.webhooks import (\n    InstagramWebhookProcessor,\n    NullInstagramWebhookOperationalObserver,\n    RetryInstagramWebhookFailureHandler,\n)
+from instagram_api.application.webhooks import (
+    InstagramWebhookProcessor,
+    NullInstagramWebhookOperationalObserver,
+    RetryInstagramWebhookFailureHandler,
+)
 from instagram_api.domain import (
     InstagramAccountId,
     InstagramCommentCreated,
