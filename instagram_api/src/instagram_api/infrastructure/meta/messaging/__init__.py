@@ -10,8 +10,8 @@ from .dto import (
     MetaInstagramMessageDetailDto,
     MetaInstagramMessageSummaryDto,
 )
-from .fields import MetaInstagramMessagingFieldParser
 from .eligibility_provider import MetaInstagramMessageRecipientEligibilityChecker
+from .fields import MetaInstagramMessagingFieldParser
 from .mapper import MetaInstagramMessagingMapper
 from .outbound_error_mapper import MetaInstagramMessageSendErrorMapper
 from .outbound_payload import MetaInstagramOutboundPayloadMapper
