@@ -241,6 +241,16 @@ host automation/AI
     selects connection and decides whether/how to reply
 ```
 
+## Provider capability matrix
+
+Roadmap Stage 0 is documented in
+[`docs/PROVIDER_CAPABILITY_MATRIX.md`](docs/PROVIDER_CAPABILITY_MATRIX.md).
+
+The matrix records the verified Instagram Login host/permissions, profile/media/messaging/comment
+capabilities, webhook routing identifiers, provider limitations, pagination/version expectations,
+and capability-gated Instagram Live behavior.
+
 ## Status
 
-Initial package skeleton and roadmap only. See `ROADMAP.md` for staged implementation.
+Stage 0 — Provider capability matrix is complete. No Stage 1 contracts or implementation have been
+started. See `ROADMAP.md` for the next staged implementation step.
