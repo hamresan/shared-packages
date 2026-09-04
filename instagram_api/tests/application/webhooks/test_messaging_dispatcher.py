@@ -10,9 +10,7 @@ from instagram_api.domain import (
     InstagramConnectionId,
     InstagramMessageReceived,
 )
-from instagram_api.infrastructure.meta.webhooks import (
-    MetaInstagramWebhookSignatureVerifier,
-)
+from instagram_api.infrastructure.meta.webhooks import MetaInstagramWebhookSignatureVerifier
 from tests.fakes import (
     FakeInstagramWebhookConnectionResolver,
     FakeInstagramWebhookEventDispatcher,
