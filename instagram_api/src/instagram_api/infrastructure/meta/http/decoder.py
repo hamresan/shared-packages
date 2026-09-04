@@ -2,6 +2,7 @@
 
 import json
 from collections.abc import Mapping
+from typing import cast
 
 from .error_decoder import MetaErrorDecoder
 from .errors import MetaInvalidResponseError
@@ -34,4 +35,4 @@ class MetaResponseDecoder:
                 status_code=response.status_code,
             )
 
-        return payload
+        return cast(Mapping[str, object], payload)
