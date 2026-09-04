@@ -27,6 +27,17 @@ from .messaging import (
     InstagramMessageSendRequest,
     InstagramMessageSendResult,
 )
+from .messaging_webhooks import (
+    InstagramInboundMessageAttachment,
+    InstagramMessageEdited,
+    InstagramMessagePostbackReceived,
+    InstagramMessageReaction,
+    InstagramMessageReactionAction,
+    InstagramMessageRead,
+    InstagramMessageReceived,
+    InstagramMessagingReferralReceived,
+    InstagramMessagingWebhookPayload,
+)
 from .pagination import Page
 from .webhooks import InstagramWebhookEvent
 
@@ -40,15 +51,24 @@ __all__ = [
     "InstagramConnectionId",
     "InstagramConversation",
     "InstagramConversationId",
+    "InstagramInboundMessageAttachment",
     "InstagramMedia",
     "InstagramMediaId",
     "InstagramMediaType",
     "InstagramMessage",
     "InstagramMessageAttachment",
     "InstagramMessageAttachmentType",
+    "InstagramMessageEdited",
     "InstagramMessageId",
+    "InstagramMessagePostbackReceived",
+    "InstagramMessageReaction",
+    "InstagramMessageReactionAction",
+    "InstagramMessageRead",
+    "InstagramMessageReceived",
     "InstagramMessageSendRequest",
     "InstagramMessageSendResult",
+    "InstagramMessagingReferralReceived",
+    "InstagramMessagingWebhookPayload",
     "InstagramPrivateCommentReplyRequest",
     "InstagramPrivateCommentReplyResult",
     "InstagramPrivateReplySource",
