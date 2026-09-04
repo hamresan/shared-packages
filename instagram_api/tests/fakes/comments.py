@@ -20,8 +20,14 @@ class FakeInstagramCommentReader(InstagramCommentReader):
 
     def __init__(
         self,
-        comments: dict[tuple[InstagramConnectionId, InstagramMediaId], tuple[InstagramComment, ...]],
-        replies: dict[tuple[InstagramConnectionId, InstagramCommentId], tuple[InstagramComment, ...]],
+        comments: dict[
+            tuple[InstagramConnectionId, InstagramMediaId],
+            tuple[InstagramComment, ...],
+        ],
+        replies: dict[
+            tuple[InstagramConnectionId, InstagramCommentId],
+            tuple[InstagramComment, ...],
+        ],
     ) -> None:
         self._comments = comments
         self._replies = replies
