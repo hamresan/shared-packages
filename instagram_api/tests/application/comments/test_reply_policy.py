@@ -13,6 +13,7 @@ from instagram_api.application.comments import (
     InstagramPrivateReplyEligibilityPolicy,
     InstagramPrivateReplyExpiredError,
     InstagramPrivateReplyLiveInactiveError,
+    InstagramLiveCommentCapabilityPolicy,
 )
 from instagram_api.domain import (
     InstagramAccountId,
@@ -126,3 +127,15 @@ def test_live_private_reply_requires_active_broadcast() -> None:
 
     with pytest.raises(InstagramPrivateReplyLiveInactiveError):
         policy.validate(inactive_request)
+
+
+def test_live_comment_capability_policy_exposes_verified_boundaries() -> None:
+    policy = InstagramLiveCommentCapabilityPolicy()
+
+    assert policy.can_normalize_webhook() is True
+    assert policy.can_reply_privately(True) is True
+    assert policy.can_reply_privately(False) is False
+    assert policy.can_reply_privately(None) is False
+    assert policy.can_discover_active_session() is False
+    assert policy.can_read_historical_comments() is False
+    assert policy.can_read_live_stream() is False
