@@ -34,6 +34,7 @@ def test_parser_normalizes_documented_direct_comment_webhook() -> None:
     assert comment.text == "Interested"
     assert comment.media_product_type == "REELS"
     assert comment.is_live is False
+    assert comment.requires_active_live_broadcast is False
 
 
 def test_parser_normalizes_live_comment_and_parent_reference() -> None:
@@ -54,6 +55,7 @@ def test_parser_normalizes_live_comment_and_parent_reference() -> None:
     assert comment.commenter_username == "customer"
     assert comment.media_id == InstagramMediaId("live-media")
     assert comment.is_live is True
+    assert comment.requires_active_live_broadcast is True
 
 
 def test_parser_normalizes_comment_change_envelope() -> None:
