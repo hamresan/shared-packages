@@ -10,6 +10,11 @@ instagram_webhook_events = Table(
     Column("event_id", String(64), primary_key=True),
     Column("status", String(16), nullable=False),
     Column(
+        "lease_expires_at",
+        DateTime(timezone=True),
+        nullable=True,
+    ),
+    Column(
         "created_at",
         DateTime(timezone=True),
         nullable=False,
