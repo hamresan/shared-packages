@@ -3,6 +3,13 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import cast
+
+
+def empty_string_mapping() -> Mapping[str, str]:
+    """Return an explicitly typed empty string mapping."""
+
+    return cast(Mapping[str, str], {})
 
 
 class MetaHttpMethod(StrEnum):
@@ -19,8 +26,8 @@ class MetaHttpRequest:
 
     method: MetaHttpMethod
     url: str
-    headers: Mapping[str, str] = field(default_factory=dict)
-    params: Mapping[str, str] = field(default_factory=dict)
+    headers: Mapping[str, str] = field(default_factory=empty_string_mapping)
+    params: Mapping[str, str] = field(default_factory=empty_string_mapping)
     json_body: Mapping[str, object] | None = None
 
 
