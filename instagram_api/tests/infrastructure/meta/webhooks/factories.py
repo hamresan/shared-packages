@@ -1,6 +1,9 @@
 """Factories for Meta Instagram webhook tests."""
 
 from instagram_api.infrastructure.meta.webhooks import (
+    MetaInstagramCommentWebhookFieldParser,
+    MetaInstagramCommentWebhookMapper,
+    MetaInstagramCommentWebhookPayloadParser,
     MetaInstagramMessageWebhookMapper,
     MetaInstagramMessagingMetadataMapper,
     MetaInstagramMessagingWebhookFieldParser,
@@ -13,9 +16,10 @@ from instagram_api.infrastructure.meta.webhooks import (
 
 
 def build_meta_webhook_parser() -> MetaInstagramWebhookParser:
-    """Build the real Meta webhook parser with Stage 10 messaging normalization."""
+    """Build the real Meta webhook parser with current normalization layers."""
 
     messaging_fields = MetaInstagramMessagingWebhookFieldParser()
+    comment_fields = MetaInstagramCommentWebhookFieldParser()
     return MetaInstagramWebhookParser(
         MetaInstagramWebhookFieldParser(),
         MetaInstagramWebhookEventMapper(MetaInstagramWebhookEventIdFactory()),
@@ -24,4 +28,6 @@ def build_meta_webhook_parser() -> MetaInstagramWebhookParser:
             MetaInstagramMessageWebhookMapper(messaging_fields),
             MetaInstagramMessagingMetadataMapper(messaging_fields),
         ),
+        MetaInstagramCommentWebhookPayloadParser(comment_fields),
+        MetaInstagramCommentWebhookMapper(),
     )
