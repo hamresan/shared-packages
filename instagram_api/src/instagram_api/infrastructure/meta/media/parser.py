@@ -65,8 +65,9 @@ class MetaInstagramMediaPayloadParser:
                 status_code=200,
             )
 
+        raw_items = cast(Sequence[object], data)
         items: list[MetaInstagramMediaDto] = []
-        for raw_item in data:
+        for raw_item in raw_items:
             if not isinstance(raw_item, Mapping):
                 raise MetaInvalidResponseError(
                     message="Meta media list contains an invalid item.",
