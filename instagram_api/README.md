@@ -148,6 +148,18 @@ complete DM archive.
 - support Meta's private-reply flow where allowed;
 - expose explicit failure reasons for expired or ineligible reply windows.
 
+### Comment replies
+
+- publish public replies through the selected connection;
+- send private replies as a distinct use case with explicit eligibility context;
+- require `instagram_business_basic` and `instagram_business_manage_comments`;
+- enforce the documented 7-day private-reply window for standard comments;
+- treat Instagram Live separately: private replies are allowed only while the broadcast is active;
+- preserve Meta's one-private-reply-per-comment restriction by normalizing provider rejection rather
+  than pretending the package has durable send history before Stage 13;
+- never retry public/private reply POST requests automatically;
+- never route a reply through a different authorized Instagram connection.
+
 ### Webhooks
 
 - provide webhook verification helpers/adapters;
