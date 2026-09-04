@@ -107,3 +107,34 @@ def test_message_provider_preserves_unsupported_message_without_detail_request()
     assert page.items[0].is_unsupported is True
     assert page.items[0].details_available is False
     assert page.items[0].sender_id is None
+
+
+def test_message_provider_does_not_request_details_for_older_cursor_page() -> None:
+    connection_id = InstagramConnectionId("connection")
+    conversation_id = InstagramConversationId("conversation")
+    transport = SequenceMetaHttpTransport(
+        [
+            MetaHttpResponse(
+                200,
+                {},
+                (
+                    b'{"messages":{"data":[{"id":"old-message","created_time":'
+                    b'"2026-01-01T10:01:00+0000","is_unsupported":false}]}}'
+                ),
+            )
+        ]
+    )
+    _, message_provider = build_meta_messaging_providers(transport, connection_id)
+
+    page = asyncio.run(
+        message_provider.list_messages(
+            connection_id,
+            conversation_id,
+            PaginationCursor("older-page"),
+        )
+    )
+
+    assert len(transport.requests) == 1
+    assert page.items[0].id.value == "old-message" if hasattr(page.items[0].id, "value") else str(page.items[0].id) == "old-message"
+    assert page.items[0].details_available is False
+    assert page.items[0].sender_id is None
