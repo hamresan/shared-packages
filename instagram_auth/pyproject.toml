@@ -19,6 +19,7 @@ fastapi = [
 ]
 test = [
   "aiosqlite>=0.20,<1.0",
+  "build>=1.2,<2.0",
   "fastapi>=0.115,<1.0",
   "pyright>=1.1,<2.0",
   "pytest>=8.0,<9.0",
@@ -30,9 +31,12 @@ test = [
 packages = ["src/instagram_auth"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "../identity/src", "../instagram_api/src"]
 testpaths = ["tests"]
 addopts = "--cov=instagram_auth --cov-report=term-missing --cov-report=xml --cov-fail-under=85"
+filterwarnings = [
+  "ignore:The anyio\\.abc\\.BlockingPortal alias is deprecated.*:DeprecationWarning:starlette\\.testclient",
+]
 
 [tool.coverage.run]
 branch = true
@@ -45,7 +49,7 @@ skip_covered = true
 
 [tool.pyright]
 include = ["src", "tests"]
-extraPaths = ["src"]
+extraPaths = ["src", "../identity/src", "../instagram_api/src"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 

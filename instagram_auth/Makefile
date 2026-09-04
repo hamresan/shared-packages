@@ -14,6 +14,6 @@ test:
 	pytest
 
 coverage:
-	pytest --cov=instagram_auth --cov-branch --cov-report=term-missing --cov-fail-under=85
+	pytest
 
 check: lint typecheck coverage
