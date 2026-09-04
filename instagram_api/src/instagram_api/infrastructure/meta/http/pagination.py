@@ -1,7 +1,6 @@
 """Meta pagination mapping."""
 
 from collections.abc import Mapping
-from typing import Any
 
 from instagram_api.domain import PaginationCursor
 
@@ -9,7 +8,7 @@ from instagram_api.domain import PaginationCursor
 class MetaPaginationCursorMapper:
     """Extracts package-owned pagination cursors from Meta paging payloads."""
 
-    def next_cursor(self, payload: Mapping[str, Any]) -> PaginationCursor | None:
+    def next_cursor(self, payload: Mapping[str, object]) -> PaginationCursor | None:
         """Return the next cursor when Meta exposes one."""
 
         paging = payload.get("paging")
