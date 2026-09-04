@@ -39,8 +39,9 @@ class MetaInstagramMessagingWebhookMapper:
         )
         occurred_at = self._fields.timestamp(item.get("timestamp"))
 
-        message = item.get("message")
-        if isinstance(message, Mapping):
+        raw_message = item.get("message")
+        if raw_message is not None:
+            message = self._fields.mapping(raw_message, "message")
             return self._message_mapper.to_domain(
                 sender_id=sender_id,
                 recipient_id=recipient_id,
