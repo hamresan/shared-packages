@@ -1,10 +1,13 @@
 """Reusable fakes for Instagram API tests."""
 
 from .accounts import FakeInstagramAccountProvider, FakeInstagramAccountReader
+from .clocks import FixedInstagramReplyClock
 from .comments import (
     FakeInstagramCommentProvider,
     FakeInstagramCommentReader,
     FakeInstagramCommentReplier,
+    FakeInstagramPrivateCommentReplyProvider,
+    FakeInstagramPublicCommentReplyProvider,
 )
 from .connections import FakeInstagramAccessTokenProvider, FakeInstagramConnectionReader
 from .media import FakeInstagramMediaProvider, FakeInstagramMediaReader
@@ -26,6 +29,9 @@ __all__ = [
     "FakeInstagramCommentProvider",
     "FakeInstagramCommentReader",
     "FakeInstagramCommentReplier",
+    "FakeInstagramPrivateCommentReplyProvider",
+    "FakeInstagramPublicCommentReplyProvider",
+    "FixedInstagramReplyClock",
     "FakeInstagramConnectionReader",
     "FakeInstagramConversationProvider",
     "FakeInstagramConversationReader",
