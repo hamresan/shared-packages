@@ -28,8 +28,8 @@ def test_parser_normalizes_inbound_message_with_story_and_attachment_metadata() 
     event = build_meta_webhook_parser().parse(payload)[0]
 
     assert event.provider_account_id == "account"
-    assert isinstance(event.payload, InstagramMessageReceived)
     message = event.payload
+    assert isinstance(message, InstagramMessageReceived)
     assert message.sender_id == InstagramUserId("sender")
     assert message.recipient_id == InstagramUserId("account")
     assert message.message_id == InstagramMessageId("message-1")
@@ -61,39 +61,46 @@ def test_parser_normalizes_postback_read_reaction_edit_and_referral() -> None:
 
     events = build_meta_webhook_parser().parse(payload)
 
-    assert isinstance(events[0].payload, InstagramMessagePostbackReceived)
-    assert events[0].payload.message_id == InstagramMessageId("postback-mid")
-    assert events[0].payload.payload == "START"
+    postback = events[0].payload
+    assert isinstance(postback, InstagramMessagePostbackReceived)
+    assert postback.message_id == InstagramMessageId("postback-mid")
+    assert postback.payload == "START"
 
-    assert isinstance(events[1].payload, InstagramMessageRead)
-    assert events[1].payload.message_id == InstagramMessageId("read-mid")
+    read = events[1].payload
+    assert isinstance(read, InstagramMessageRead)
+    assert read.message_id == InstagramMessageId("read-mid")
 
-    assert isinstance(events[2].payload, InstagramMessageReaction)
-    assert events[2].payload.action is InstagramMessageReactionAction.REACT
-    assert events[2].payload.emoji == "❤"
+    reaction = events[2].payload
+    assert isinstance(reaction, InstagramMessageReaction)
+    assert reaction.action is InstagramMessageReactionAction.REACT
+    assert reaction.emoji == "❤"
 
-    assert isinstance(events[3].payload, InstagramMessageEdited)
-    assert events[3].payload.text == "edited"
-    assert events[3].payload.edit_count == 2
+    edited = events[3].payload
+    assert isinstance(edited, InstagramMessageEdited)
+    assert edited.text == "edited"
+    assert edited.edit_count == 2
 
-    assert isinstance(events[4].payload, InstagramMessagingReferralReceived)
-    assert events[4].payload.referral_ref == "campaign"
-    assert events[4].payload.source == "ADS"
+    referral = events[4].payload
+    assert isinstance(referral, InstagramMessagingReferralReceived)
+    assert referral.referral_ref == "campaign"
+    assert referral.source == "ADS"
 
 
 def test_parser_preserves_provider_message_id_and_stable_delivery_event_id() -> None:
     payload = (
         b'{"entry":[{"id":"account","time":1788523200,"messaging":['
         b'{"sender":{"id":"sender"},"recipient":{"id":"account"},'
-        b'"timestamp":1788523200123,"message":{"mid":"provider-message-id","text":"hello"}}]}]}'
+        b'"timestamp":"1788523200123",'
+        b'"message":{"mid":"provider-message-id","text":"hello"}}]}]}'
     )
     parser = build_meta_webhook_parser()
 
     first = parser.parse(payload)[0]
     second = parser.parse(payload)[0]
 
-    assert isinstance(first.payload, InstagramMessageReceived)
-    assert first.payload.message_id == InstagramMessageId("provider-message-id")
+    message = first.payload
+    assert isinstance(message, InstagramMessageReceived)
+    assert message.message_id == InstagramMessageId("provider-message-id")
     assert first.event_id == second.event_id
 
 
