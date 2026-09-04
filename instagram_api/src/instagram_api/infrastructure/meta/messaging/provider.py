@@ -18,6 +18,7 @@ from instagram_api.infrastructure.meta.http import (
     MetaPaginationCursorMapper,
 )
 
+from .detail_policy import META_MESSAGE_DETAIL_LIMIT
 from .detail_reader import MetaInstagramMessageDetailReader
 from .mapper import MetaInstagramMessagingMapper
 from .parser import MetaInstagramMessagingPayloadParser
@@ -95,7 +96,8 @@ class MetaInstagramMessageProvider(InstagramMessageProvider):
         summaries = self._parser.parse_message_summaries(payload)
         messages: list[InstagramMessage] = []
 
-        for position, summary in enumerate(summaries):
+        start_position = META_MESSAGE_DETAIL_LIMIT if cursor is not None else 0
+        for position, summary in enumerate(summaries, start=start_position):
             detail = await self._detail_reader.read(connection_id, summary, position)
             messages.append(self._mapper.message(conversation_id, summary, detail))
 
