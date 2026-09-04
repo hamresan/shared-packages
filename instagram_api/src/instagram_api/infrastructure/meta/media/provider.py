@@ -83,8 +83,7 @@ class MetaInstagramMediaProvider(InstagramMediaProvider):
                 params={"fields": ",".join(MEDIA_FIELDS)},
             )
         except MetaProviderError as exc:
-            self._error_mapper.raise_mapped(exc)
-            raise AssertionError("Meta media error mapper must raise.")
+            raise self._error_mapper.map(exc) from exc
 
         dto = self._parser.parse_media(payload)
         return self._mapper.to_domain(dto)
