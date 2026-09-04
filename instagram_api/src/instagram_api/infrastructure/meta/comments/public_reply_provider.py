@@ -1,6 +1,5 @@
 """Meta public comment reply provider."""
 
-from instagram_api.application.comments.reply_errors import InstagramPublicReplyRejectedError
 from instagram_api.application.contracts.comments import InstagramPublicCommentReplyProvider
 from instagram_api.domain import (
     InstagramCommentId,
@@ -12,14 +11,23 @@ from instagram_api.infrastructure.meta.http import (
     MetaJsonExecutor,
     MetaProviderError,
 )
-from instagram_api.infrastructure.meta.http.errors import MetaInvalidResponseError
+
+from .public_reply_error_mapper import MetaInstagramPublicReplyErrorMapper
+from .public_reply_response import MetaInstagramPublicReplyResponseParser
 
 
 class MetaInstagramPublicCommentReplyProvider(InstagramPublicCommentReplyProvider):
     """Publishes public replies through Meta's comment replies edge."""
 
-    def __init__(self, executor: MetaJsonExecutor) -> None:
+    def __init__(
+        self,
+        executor: MetaJsonExecutor,
+        response_parser: MetaInstagramPublicReplyResponseParser,
+        error_mapper: MetaInstagramPublicReplyErrorMapper,
+    ) -> None:
         self._executor = executor
+        self._response_parser = response_parser
+        self._error_mapper = error_mapper
 
     async def reply(
         self,
@@ -32,17 +40,9 @@ class MetaInstagramPublicCommentReplyProvider(InstagramPublicCommentReplyProvide
                 connection_id=connection_id,
                 method=MetaHttpMethod.POST,
                 path=f"{comment_id}/replies",
-                json_body={"message": text},
+                params={"message": text},
             )
         except MetaProviderError as exc:
-            if exc.status_code == 400:
-                raise InstagramPublicReplyRejectedError(exc.message) from exc
-            raise
+            raise self._error_mapper.map(exc) from exc
 
-        reply_id = payload.get("id")
-        if not isinstance(reply_id, str) or not reply_id:
-            raise MetaInvalidResponseError(
-                message="Meta public reply response is missing a valid reply id.",
-                status_code=200,
-            )
-        return InstagramCommentReplyResult(InstagramCommentId(reply_id))
+        return self._response_parser.parse(payload)
