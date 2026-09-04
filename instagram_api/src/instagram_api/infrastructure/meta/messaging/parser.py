@@ -1,29 +1,34 @@
 """Parsers for Meta Instagram conversation and message payloads."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import cast
-
-from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
 from .dto import (
     MetaInstagramConversationDto,
     MetaInstagramMessageDetailDto,
     MetaInstagramMessageSummaryDto,
 )
+from .fields import MetaInstagramMessagingFieldParser
 
 
 class MetaInstagramMessagingPayloadParser:
     """Validates Meta messaging payloads into typed DTOs."""
 
+    def __init__(self, field_parser: MetaInstagramMessagingFieldParser) -> None:
+        self._field_parser = field_parser
+
     def parse_conversations(
         self,
         payload: Mapping[str, object],
     ) -> tuple[MetaInstagramConversationDto, ...]:
-        data = self._data_sequence(payload.get("data"), "conversation")
+        data = self._field_parser.sequence(payload.get("data"), "conversation")
         items: list[MetaInstagramConversationDto] = []
         for item in data:
-            mapping = self._mapping(item, "conversation")
-            conversation_id = self._required_string(mapping.get("id"), "conversation id")
+            mapping = self._field_parser.mapping(item, "conversation")
+            conversation_id = self._field_parser.required_string(
+                mapping.get("id"),
+                "conversation id",
+            )
             updated = mapping.get("updated_time")
             items.append(
                 MetaInstagramConversationDto(
@@ -37,13 +42,16 @@ class MetaInstagramMessagingPayloadParser:
         self,
         payload: Mapping[str, object],
     ) -> tuple[MetaInstagramMessageSummaryDto, ...]:
-        messages = self._mapping(payload.get("messages"), "messages")
-        data = self._data_sequence(messages.get("data"), "message")
+        messages = self._field_parser.mapping(payload.get("messages"), "messages")
+        data = self._field_parser.sequence(messages.get("data"), "message")
         items: list[MetaInstagramMessageSummaryDto] = []
         for item in data:
-            mapping = self._mapping(item, "message")
-            message_id = self._required_string(mapping.get("id"), "message id")
-            created = self._required_string(mapping.get("created_time"), "created_time")
+            mapping = self._field_parser.mapping(item, "message")
+            message_id = self._field_parser.required_string(mapping.get("id"), "message id")
+            created = self._field_parser.required_string(
+                mapping.get("created_time"),
+                "created_time",
+            )
             unsupported = mapping.get("is_unsupported")
             items.append(
                 MetaInstagramMessageSummaryDto(
@@ -58,8 +66,11 @@ class MetaInstagramMessagingPayloadParser:
         self,
         payload: Mapping[str, object],
     ) -> MetaInstagramMessageDetailDto:
-        message_id = self._required_string(payload.get("id"), "message id")
-        created = self._required_string(payload.get("created_time"), "created_time")
+        message_id = self._field_parser.required_string(payload.get("id"), "message id")
+        created = self._field_parser.required_string(
+            payload.get("created_time"),
+            "created_time",
+        )
         sender = payload.get("from")
         sender_id: str | None = None
         if isinstance(sender, Mapping):
@@ -74,29 +85,10 @@ class MetaInstagramMessagingPayloadParser:
             message=raw_message if isinstance(raw_message, str) else None,
         )
 
-    @staticmethod
-    def _mapping(value: object, label: str) -> Mapping[str, object]:
-        if not isinstance(value, Mapping):
-            raise MetaInvalidResponseError(
-                message=f"Meta {label} payload is invalid.",
-                status_code=200,
-            )
-        return cast(Mapping[str, object], value)
+    def messages_container(
+        self,
+        payload: Mapping[str, object],
+    ) -> Mapping[str, object]:
+        """Return the nested messages object for pagination mapping."""
 
-    @staticmethod
-    def _data_sequence(value: object, label: str) -> Sequence[object]:
-        if not isinstance(value, Sequence) or isinstance(value, str | bytes):
-            raise MetaInvalidResponseError(
-                message=f"Meta {label} collection is invalid.",
-                status_code=200,
-            )
-        return cast(Sequence[object], value)
-
-    @staticmethod
-    def _required_string(value: object, label: str) -> str:
-        if not isinstance(value, str) or not value:
-            raise MetaInvalidResponseError(
-                message=f"Meta payload is missing a valid {label}.",
-                status_code=200,
-            )
-        return value
+        return self._field_parser.mapping(payload.get("messages"), "messages")
