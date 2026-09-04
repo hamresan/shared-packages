@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Reusable Instagram API integration package for Python applications."
 readme = "README.md"
 requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.27,<1.0",
+]
 
 [project.optional-dependencies]
 test = [
