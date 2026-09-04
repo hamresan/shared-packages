@@ -3,6 +3,7 @@
 from .config import MetaApiConfig, MetaTimeoutConfig
 from .contracts import MetaHttpObserver, MetaHttpTransport
 from .decoder import MetaResponseDecoder
+from .error_decoder import MetaErrorDecoder
 from .errors import (
     MetaAuthenticationError,
     MetaInvalidResponseError,
@@ -22,6 +23,7 @@ __all__ = [
     "HttpxMetaHttpTransport",
     "MetaApiConfig",
     "MetaAuthenticationError",
+    "MetaErrorDecoder",
     "MetaHttpMethod",
     "MetaHttpObserver",
     "MetaHttpRequest",
