@@ -1,7 +1,9 @@
 """Messaging contract fakes."""
 
 from instagram_api.application.contracts.messaging import (
+    InstagramConversationProvider,
     InstagramConversationReader,
+    InstagramMessageProvider,
     InstagramMessageReader,
     InstagramMessageSender,
 )
@@ -36,6 +38,25 @@ class FakeInstagramConversationReader(InstagramConversationReader):
         return Page(items=self._conversations[connection_id])
 
 
+class FakeInstagramConversationProvider(InstagramConversationProvider):
+    """Fake conversation provider isolated by connection ID."""
+
+    def __init__(
+        self,
+        pages: dict[InstagramConnectionId, Page[InstagramConversation]],
+    ) -> None:
+        self._pages = pages
+        self.calls: list[tuple[InstagramConnectionId, PaginationCursor | None]] = []
+
+    async def list_conversations(
+        self,
+        connection_id: InstagramConnectionId,
+        cursor: PaginationCursor | None = None,
+    ) -> Page[InstagramConversation]:
+        self.calls.append((connection_id, cursor))
+        return self._pages[connection_id]
+
+
 class FakeInstagramMessageReader(InstagramMessageReader):
     """Fake message reader isolated by connection and conversation."""
 
@@ -56,6 +77,35 @@ class FakeInstagramMessageReader(InstagramMessageReader):
     ) -> Page[InstagramMessage]:
         del cursor
         return Page(items=self._messages[(connection_id, conversation_id)])
+
+
+class FakeInstagramMessageProvider(InstagramMessageProvider):
+    """Fake message provider isolated by connection and conversation."""
+
+    def __init__(
+        self,
+        pages: dict[
+            tuple[InstagramConnectionId, InstagramConversationId],
+            Page[InstagramMessage],
+        ],
+    ) -> None:
+        self._pages = pages
+        self.calls: list[
+            tuple[
+                InstagramConnectionId,
+                InstagramConversationId,
+                PaginationCursor | None,
+            ]
+        ] = []
+
+    async def list_messages(
+        self,
+        connection_id: InstagramConnectionId,
+        conversation_id: InstagramConversationId,
+        cursor: PaginationCursor | None = None,
+    ) -> Page[InstagramMessage]:
+        self.calls.append((connection_id, conversation_id, cursor))
+        return self._pages[(connection_id, conversation_id)]
 
 
 class FakeInstagramMessageSender(InstagramMessageSender):
