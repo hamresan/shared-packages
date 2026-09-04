@@ -1,10 +1,11 @@
 """FastAPI Instagram webhook adapter tests."""
 
+import asyncio
 import hashlib
 import hmac
 
+import httpx
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from instagram_api.application.webhooks import (
     InstagramWebhookHandshakeService,
@@ -26,14 +27,16 @@ from tests.fakes import (
 )
 
 
-def build_client() -> tuple[TestClient, FakeInstagramWebhookEventDispatcher]:
+def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
     secret = "app-secret"
     dispatcher = FakeInstagramWebhookEventDispatcher()
     processor = InstagramWebhookProcessor(
         MetaInstagramWebhookSignatureVerifier(secret),
         MetaInstagramWebhookParser(
             MetaInstagramWebhookFieldParser(),
-            MetaInstagramWebhookEventMapper(MetaInstagramWebhookEventIdFactory()),
+            MetaInstagramWebhookEventMapper(
+                MetaInstagramWebhookEventIdFactory()
+            ),
         ),
         FakeInstagramWebhookIdempotencyStore(),
         FakeInstagramWebhookConnectionResolver(
@@ -48,19 +51,52 @@ def build_client() -> tuple[TestClient, FakeInstagramWebhookEventDispatcher]:
             processor,
         )
     )
-    return TestClient(app), dispatcher
+    return app, dispatcher
+
+
+async def get_response(
+    app: FastAPI,
+    *,
+    params: dict[str, str],
+) -> httpx.Response:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as client:
+        return await client.get("/webhooks/instagram", params=params)
+
+
+async def post_response(
+    app: FastAPI,
+    *,
+    content: bytes,
+    signature: str,
+) -> httpx.Response:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as client:
+        return await client.post(
+            "/webhooks/instagram",
+            content=content,
+            headers={"X-Hub-Signature-256": signature},
+        )
 
 
 def test_fastapi_adapter_handles_verification_handshake() -> None:
-    client, _ = build_client()
+    app, _ = build_app()
 
-    response = client.get(
-        "/webhooks/instagram",
-        params={
-            "hub.mode": "subscribe",
-            "hub.verify_token": "verify-token",
-            "hub.challenge": "12345",
-        },
+    response = asyncio.run(
+        get_response(
+            app,
+            params={
+                "hub.mode": "subscribe",
+                "hub.verify_token": "verify-token",
+                "hub.challenge": "12345",
+            },
+        )
     )
 
     assert response.status_code == 200
@@ -68,32 +104,36 @@ def test_fastapi_adapter_handles_verification_handshake() -> None:
 
 
 def test_fastapi_adapter_rejects_invalid_handshake() -> None:
-    client, _ = build_client()
+    app, _ = build_app()
 
-    response = client.get(
-        "/webhooks/instagram",
-        params={
-            "hub.mode": "subscribe",
-            "hub.verify_token": "wrong",
-            "hub.challenge": "12345",
-        },
+    response = asyncio.run(
+        get_response(
+            app,
+            params={
+                "hub.mode": "subscribe",
+                "hub.verify_token": "wrong",
+                "hub.challenge": "12345",
+            },
+        )
     )
 
     assert response.status_code == 403
 
 
 def test_fastapi_adapter_verifies_and_dispatches_post_delivery() -> None:
-    client, dispatcher = build_client()
+    app, dispatcher = build_app()
     payload = (
         b'{"entry":[{"id":"account","time":1788523200,'
         b'"changes":[{"field":"comments","value":{"id":"comment"}}]}]}'
     )
     digest = hmac.new(b"app-secret", payload, hashlib.sha256).hexdigest()
 
-    response = client.post(
-        "/webhooks/instagram",
-        content=payload,
-        headers={"X-Hub-Signature-256": f"sha256={digest}"},
+    response = asyncio.run(
+        post_response(
+            app,
+            content=payload,
+            signature=f"sha256={digest}",
+        )
     )
 
     assert response.status_code == 200
@@ -102,12 +142,14 @@ def test_fastapi_adapter_verifies_and_dispatches_post_delivery() -> None:
 
 
 def test_fastapi_adapter_rejects_unauthentic_post() -> None:
-    client, dispatcher = build_client()
+    app, dispatcher = build_app()
 
-    response = client.post(
-        "/webhooks/instagram",
-        content=b'{"entry":[]}',
-        headers={"X-Hub-Signature-256": "sha256=wrong"},
+    response = asyncio.run(
+        post_response(
+            app,
+            content=b'{"entry":[]}',
+            signature="sha256=wrong",
+        )
     )
 
     assert response.status_code == 403
