@@ -43,7 +43,11 @@ class MetaInstagramMessageWebhookMapper:
             payload = attachment.get("payload")
             url: str | None = None
             if isinstance(payload, Mapping):
-                url = self._fields.optional_string(payload.get("url"))
+                payload_mapping = self._fields.mapping(
+                    payload,
+                    "attachment payload",
+                )
+                url = self._fields.optional_string(payload_mapping.get("url"))
             attachments.append(
                 InstagramInboundMessageAttachment(
                     attachment_type=self._fields.optional_string(
@@ -57,10 +61,12 @@ class MetaInstagramMessageWebhookMapper:
         story_url: str | None = None
         reply_to = message.get("reply_to")
         if isinstance(reply_to, Mapping):
-            story = reply_to.get("story")
+            reply_mapping = self._fields.mapping(reply_to, "reply_to")
+            story = reply_mapping.get("story")
             if isinstance(story, Mapping):
-                story_id = self._fields.optional_string(story.get("id"))
-                story_url = self._fields.optional_string(story.get("url"))
+                story_mapping = self._fields.mapping(story, "story")
+                story_id = self._fields.optional_string(story_mapping.get("id"))
+                story_url = self._fields.optional_string(story_mapping.get("url"))
 
         return InstagramMessageReceived(
             sender_id=sender_id,
