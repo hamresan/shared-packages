@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 
 from .identifiers import (
     InstagramConversationId,
@@ -32,12 +33,29 @@ class InstagramMessage:
     details_available: bool = True
 
 
+class InstagramMessageAttachmentType(StrEnum):
+    """Supported outbound media attachment types."""
+
+    IMAGE = "image"
+    VIDEO = "video"
+
+
+@dataclass(frozen=True, slots=True)
+class InstagramMessageAttachment:
+    """Supported outbound media attachment."""
+
+    type: InstagramMessageAttachmentType
+    url: str
+
+
 @dataclass(frozen=True, slots=True)
 class InstagramMessageSendRequest:
     """Normalized outbound message request."""
 
     recipient_id: InstagramUserId
-    text: str
+    text: str | None = None
+    attachment: InstagramMessageAttachment | None = None
+    correlation_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,3 +63,5 @@ class InstagramMessageSendResult:
     """Normalized result returned after an outbound message is accepted."""
 
     message_id: InstagramMessageId
+    recipient_id: InstagramUserId | None = None
+    correlation_id: str | None = None
