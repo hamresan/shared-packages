@@ -1,7 +1,5 @@
 """Mappers for Meta Instagram conversation and message DTOs."""
 
-from datetime import datetime
-
 from instagram_api.domain import (
     InstagramConversation,
     InstagramConversationId,
@@ -9,20 +7,27 @@ from instagram_api.domain import (
     InstagramMessageId,
     InstagramUserId,
 )
-from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
 from .dto import (
     MetaInstagramConversationDto,
     MetaInstagramMessageDetailDto,
     MetaInstagramMessageSummaryDto,
 )
+from .timestamp_parser import MetaInstagramMessagingTimestampParser
 
 
 class MetaInstagramMessagingMapper:
     """Maps typed provider DTOs to normalized domain models."""
 
+    def __init__(self, timestamp_parser: MetaInstagramMessagingTimestampParser) -> None:
+        self._timestamp_parser = timestamp_parser
+
     def conversation(self, dto: MetaInstagramConversationDto) -> InstagramConversation:
-        updated_at = self._timestamp(dto.updated_time) if dto.updated_time is not None else None
+        updated_at = (
+            self._timestamp_parser.parse(dto.updated_time)
+            if dto.updated_time is not None
+            else None
+        )
         return InstagramConversation(
             id=InstagramConversationId(dto.id),
             participant_ids=(),
@@ -44,18 +49,8 @@ class MetaInstagramMessagingMapper:
             id=InstagramMessageId(summary.id),
             conversation_id=conversation_id,
             sender_id=sender_id,
-            sent_at=self._timestamp(summary.created_time),
+            sent_at=self._timestamp_parser.parse(summary.created_time),
             text=detail.message if detail is not None else None,
             is_unsupported=summary.is_unsupported,
             details_available=detail is not None,
         )
-
-    @staticmethod
-    def _timestamp(value: str) -> datetime:
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise MetaInvalidResponseError(
-                message="Meta messaging payload contains an invalid timestamp.",
-                status_code=200,
-            ) from exc
