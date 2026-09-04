@@ -40,11 +40,11 @@ class MetaInstagramMessageWebhookMapper:
         attachments: list[InstagramInboundMessageAttachment] = []
         for raw_attachment in self._fields.sequence(message.get("attachments")):
             attachment = self._fields.mapping(raw_attachment, "attachment")
-            payload = attachment.get("payload")
+            raw_payload = attachment.get("payload")
             url: str | None = None
-            if isinstance(payload, Mapping):
+            if raw_payload is not None:
                 payload_mapping = self._fields.mapping(
-                    payload,
+                    raw_payload,
                     "attachment payload",
                 )
                 url = self._fields.optional_string(payload_mapping.get("url"))
@@ -57,12 +57,12 @@ class MetaInstagramMessageWebhookMapper:
 
         story_id: str | None = None
         story_url: str | None = None
-        reply_to = message.get("reply_to")
-        if isinstance(reply_to, Mapping):
-            reply_mapping = self._fields.mapping(reply_to, "reply_to")
-            story = reply_mapping.get("story")
-            if isinstance(story, Mapping):
-                story_mapping = self._fields.mapping(story, "story")
+        raw_reply_to = message.get("reply_to")
+        if raw_reply_to is not None:
+            reply_mapping = self._fields.mapping(raw_reply_to, "reply_to")
+            raw_story = reply_mapping.get("story")
+            if raw_story is not None:
+                story_mapping = self._fields.mapping(raw_story, "story")
                 story_id = self._fields.optional_string(story_mapping.get("id"))
                 story_url = self._fields.optional_string(story_mapping.get("url"))
 
