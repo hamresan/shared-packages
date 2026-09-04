@@ -1,0 +1,1 @@
+"""Account/profile application tests."""
