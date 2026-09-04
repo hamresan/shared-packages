@@ -3,7 +3,15 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from identity.domain import IdentityType, OtpChallenge, OtpPurpose, Session, User, UserIdentity
+from identity.domain import (
+    ExternalIdentity,
+    IdentityType,
+    OtpChallenge,
+    OtpPurpose,
+    Session,
+    User,
+    UserIdentity,
+)
 
 
 class UserRepository(Protocol):
@@ -20,6 +28,16 @@ class UserIdentityRepository(Protocol):
     ) -> UserIdentity | None: ...
 
     async def add(self, identity: UserIdentity) -> None: ...
+
+
+class ExternalIdentityRepository(Protocol):
+    async def get_by_provider_subject(
+        self,
+        provider: str,
+        subject: str,
+    ) -> ExternalIdentity | None: ...
+
+    async def add(self, external_identity: ExternalIdentity) -> None: ...
 
 
 class OtpChallengeRepository(Protocol):
