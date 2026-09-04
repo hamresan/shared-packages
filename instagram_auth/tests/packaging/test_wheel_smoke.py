@@ -37,4 +37,11 @@ def test_wheel_build_contains_public_package_and_metadata(tmp_path: Path) -> Non
 
     assert "Name: hamresan-instagram-auth" in metadata
     assert "Requires-Python: >=3.12" in metadata
-    assert "Requires-Dist: fastapi" not in metadata
+
+    fastapi_requirements = tuple(
+        line
+        for line in metadata.splitlines()
+        if line.lower().startswith("requires-dist: fastapi")
+    )
+    assert fastapi_requirements
+    assert all("; extra ==" in requirement for requirement in fastapi_requirements)
