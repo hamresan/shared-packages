@@ -9,9 +9,7 @@ from instagram_api.infrastructure.meta.http import MetaHttpMethod, MetaJsonExecu
 from .parser import MetaInstagramMessagingPayloadParser
 
 
-class MetaInstagramMessageRecipientEligibilityChecker(
-    InstagramMessageRecipientEligibilityChecker
-):
+class MetaInstagramMessageRecipientEligibilityChecker(InstagramMessageRecipientEligibilityChecker):
     """Checks for an existing conversation with the intended recipient."""
 
     def __init__(

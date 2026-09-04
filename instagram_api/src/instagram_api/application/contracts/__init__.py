@@ -8,8 +8,8 @@ from .messaging import (
     InstagramConversationProvider,
     InstagramConversationReader,
     InstagramMessageProvider,
-    InstagramMessageRecipientEligibilityChecker,
     InstagramMessageReader,
+    InstagramMessageRecipientEligibilityChecker,
     InstagramMessageSender,
     InstagramOutboundMessageProvider,
 )

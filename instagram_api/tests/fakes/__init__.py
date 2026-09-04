@@ -8,8 +8,8 @@ from .messaging import (
     FakeInstagramConversationProvider,
     FakeInstagramConversationReader,
     FakeInstagramMessageProvider,
-    FakeInstagramMessageRecipientEligibilityChecker,
     FakeInstagramMessageReader,
+    FakeInstagramMessageRecipientEligibilityChecker,
     FakeInstagramMessageSender,
     FakeInstagramOutboundMessageProvider,
 )

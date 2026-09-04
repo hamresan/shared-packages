@@ -22,9 +22,7 @@ class MetaInstagramOutboundPayloadMapper:
             return {"recipient": recipient, "message": {}}
 
         provider_type = (
-            "image"
-            if attachment.type is InstagramMessageAttachmentType.IMAGE
-            else "video"
+            "image" if attachment.type is InstagramMessageAttachmentType.IMAGE else "video"
         )
         message = {
             "attachment": {

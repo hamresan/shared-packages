@@ -111,9 +111,7 @@ class FakeInstagramMessageProvider(InstagramMessageProvider):
         return self._pages[(connection_id, conversation_id)]
 
 
-class FakeInstagramMessageRecipientEligibilityChecker(
-    InstagramMessageRecipientEligibilityChecker
-):
+class FakeInstagramMessageRecipientEligibilityChecker(InstagramMessageRecipientEligibilityChecker):
     """Fake recipient eligibility checker scoped by connection and recipient."""
 
     def __init__(

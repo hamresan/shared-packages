@@ -50,9 +50,7 @@ def test_send_access_policy_accepts_required_permissions() -> None:
             InstagramMessagingConnectionUnavailableError,
         ),
         (
-            build_connection(
-                permissions=frozenset({"instagram_business_manage_messages"})
-            ),
+            build_connection(permissions=frozenset({"instagram_business_manage_messages"})),
             InstagramMessagingPermissionRequiredError,
         ),
         (
