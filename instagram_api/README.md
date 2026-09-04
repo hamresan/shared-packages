@@ -264,5 +264,5 @@ and capability-gated Instagram Live behavior.
 
 ## Status
 
-Stage 0 — Provider capability matrix is complete. No Stage 1 contracts or implementation have been
-started. See `ROADMAP.md` for the next staged implementation step.
+Implementation progress is tracked stage by stage in `ROADMAP.md`. This package must not be
+considered complete beyond the latest merged roadmap stage and its passing quality gates.
