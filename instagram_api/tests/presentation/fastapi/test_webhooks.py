@@ -19,6 +19,7 @@ from tests.fakes import (
     FakeInstagramWebhookEventDispatcher,
     FakeInstagramWebhookIdempotencyStore,
 )
+from tests.infrastructure.meta.webhooks.factories import build_meta_webhook_parser
 
 
 def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
