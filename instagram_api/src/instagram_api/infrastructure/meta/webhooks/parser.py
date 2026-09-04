@@ -8,21 +8,24 @@ from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
 from .fields import MetaInstagramWebhookFieldParser
 from .mapper import MetaInstagramWebhookEventMapper
+from .messaging_mapper import MetaInstagramMessagingWebhookMapper
 
 
 class MetaInstagramWebhookParser(InstagramWebhookParser):
-    """Parses Meta envelopes without interpreting Stage 10+ event semantics."""
+    """Parses generic envelopes and normalizes supported messaging payloads."""
 
     def __init__(
         self,
         field_parser: MetaInstagramWebhookFieldParser,
         event_mapper: MetaInstagramWebhookEventMapper,
+        messaging_mapper: MetaInstagramMessagingWebhookMapper,
     ) -> None:
         self._field_parser = field_parser
         self._event_mapper = event_mapper
+        self._messaging_mapper = messaging_mapper
 
     def parse(self, payload: bytes) -> tuple[InstagramWebhookEvent, ...]:
-        """Return generic normalized events from a Meta Instagram envelope."""
+        """Return normalized events from a Meta Instagram envelope."""
 
         try:
             decoded: object = json.loads(payload)
@@ -68,12 +71,14 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                     "messaging",
                 ):
                     message = self._field_parser.mapping(raw_message, "messaging item")
+                    normalized_payload = self._messaging_mapper.to_domain(message)
                     events.append(
                         self._event_mapper.to_domain(
                             account_id=account_id,
                             event_type="messaging",
                             occurred_at_seconds=occurred_seconds,
                             item=message,
+                            payload=normalized_payload,
                         )
                     )
 

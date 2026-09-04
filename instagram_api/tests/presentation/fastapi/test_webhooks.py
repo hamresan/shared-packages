@@ -12,19 +12,14 @@ from instagram_api.application.webhooks import (
     InstagramWebhookProcessor,
 )
 from instagram_api.domain import InstagramAccountId, InstagramConnectionId
-from instagram_api.infrastructure.meta.webhooks import (
-    MetaInstagramWebhookEventIdFactory,
-    MetaInstagramWebhookEventMapper,
-    MetaInstagramWebhookFieldParser,
-    MetaInstagramWebhookParser,
-    MetaInstagramWebhookSignatureVerifier,
-)
+from instagram_api.infrastructure.meta.webhooks import MetaInstagramWebhookSignatureVerifier
 from instagram_api.presentation.fastapi import create_instagram_webhook_router
 from tests.fakes import (
     FakeInstagramWebhookConnectionResolver,
     FakeInstagramWebhookEventDispatcher,
     FakeInstagramWebhookIdempotencyStore,
 )
+from tests.infrastructure.meta.webhooks.factories import build_meta_webhook_parser
 
 
 def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
@@ -32,10 +27,7 @@ def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
     dispatcher = FakeInstagramWebhookEventDispatcher()
     processor = InstagramWebhookProcessor(
         MetaInstagramWebhookSignatureVerifier(secret),
-        MetaInstagramWebhookParser(
-            MetaInstagramWebhookFieldParser(),
-            MetaInstagramWebhookEventMapper(MetaInstagramWebhookEventIdFactory()),
-        ),
+        build_meta_webhook_parser(),
         FakeInstagramWebhookIdempotencyStore(),
         FakeInstagramWebhookConnectionResolver(
             {InstagramAccountId("account"): InstagramConnectionId("connection")}
