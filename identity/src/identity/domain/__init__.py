@@ -47,6 +47,17 @@ class UserIdentity:
 
 
 @dataclass(frozen=True, slots=True)
+class ExternalIdentity:
+    id: UUID
+    user_id: UUID
+    provider: str
+    subject: str
+    verified_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class OtpChallenge:
     id: UUID
     user_id: UUID | None
