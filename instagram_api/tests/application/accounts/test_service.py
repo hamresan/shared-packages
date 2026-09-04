@@ -63,6 +63,9 @@ def test_service_reads_selected_connection_account() -> None:
 def test_service_does_not_call_provider_for_unusable_connection() -> None:
     connection_id = InstagramConnectionId("connection")
     account_id = InstagramAccountId("account")
+    provider = FakeInstagramAccountProvider(
+        {connection_id: InstagramAccount(id=account_id, username="shop")}
+    )
     service = InstagramAccountService(
         FakeInstagramConnectionReader(
             {
@@ -74,14 +77,14 @@ def test_service_does_not_call_provider_for_unusable_connection() -> None:
                 )
             }
         ),
-        FakeInstagramAccountProvider(
-            {connection_id: InstagramAccount(id=account_id, username="shop")}
-        ),
+        provider,
         InstagramAccountAccessPolicy(),
     )
 
     with pytest.raises(InstagramConnectionUnavailableError):
         asyncio.run(service.get_account(connection_id))
+
+    assert provider.requested_connection_ids == []
 
 
 def test_service_rejects_provider_account_mismatch() -> None:
