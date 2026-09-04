@@ -4,6 +4,7 @@ from typing import Protocol
 from uuid import UUID
 
 from identity.application.contracts.security import AccessTokenIssuer, IssuedAccessToken
+from identity.application.dto_external import AuthenticateExternalIdentityCommand
 from identity.application.dto import (
     AuthSessionResult,
     DataRetentionCleanupResult,
@@ -15,6 +16,7 @@ from identity.application.dto import (
 from identity.domain import IdentityType, OtpPurpose
 from identity.public.errors import AccessTokenAuthenticationError
 from identity.public.services import (
+    ExternalIdentityAuthenticator,
     IdentityDataRetentionCleaner,
     OtpRequester,
     OtpVerifier,
@@ -40,6 +42,7 @@ class AccessTokenAuthenticator(Protocol):
 @dataclass(frozen=True, slots=True)
 class IdentityPublicApi:
     access_token_authenticator: AccessTokenAuthenticator
+    external_identity_authenticator: ExternalIdentityAuthenticator
     otp_requester: OtpRequester
     otp_verifier: OtpVerifier
     session_refresher: SessionRefresher
@@ -52,9 +55,11 @@ __all__ = [
     "AccessTokenAuthenticationError",
     "AccessTokenAuthenticator",
     "AccessTokenIssuer",
+    "AuthenticateExternalIdentityCommand",
     "AuthSessionResult",
     "AuthenticatedPrincipal",
     "DataRetentionCleanupResult",
+    "ExternalIdentityAuthenticator",
     "IdentityDataRetentionCleaner",
     "IdentityPublicApi",
     "IdentityType",
