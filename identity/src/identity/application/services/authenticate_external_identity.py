@@ -68,7 +68,7 @@ class AuthenticateExternalIdentityService:
                 if user is None:
                     raise RuntimeError("External identity references a missing user")
 
-            self._user_status_policy.ensure_authentication_allowed(user.status)
+            self._user_status_policy.ensure_active(user)
 
             refresh_token = self._refresh_token_generator.generate()
             session = self._session_factory.create(
