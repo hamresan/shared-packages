@@ -1,12 +1,18 @@
-"""Provider error policy for Instagram message-detail availability."""
+"""Eligibility policy for Instagram message-detail reads."""
 
-from instagram_api.infrastructure.meta.http import MetaProviderError
+from .dto import MetaInstagramMessageSummaryDto
+
+META_MESSAGE_DETAIL_LIMIT = 20
 
 
 class MetaInstagramMessageDetailAvailabilityPolicy:
-    """Recognizes provider failures caused by unavailable historical details."""
+    """Applies Meta's documented message-detail availability rules."""
 
-    def details_are_unavailable(self, error: MetaProviderError) -> bool:
-        """Return whether message summary should be preserved without details."""
+    def can_read(
+        self,
+        summary: MetaInstagramMessageSummaryDto,
+        position: int,
+    ) -> bool:
+        """Return whether a detail request should be attempted."""
 
-        return error.provider_code == 100
+        return not summary.is_unsupported and position < META_MESSAGE_DETAIL_LIMIT
