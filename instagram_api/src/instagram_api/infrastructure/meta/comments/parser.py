@@ -33,7 +33,7 @@ class MetaInstagramCommentPayloadParser:
             or fallback_parent_id
         )
 
-        required_values = (comment_id, media_id, author_id, text, timestamp)
+        required_values = (comment_id, author_id, text, timestamp)
         if not all(isinstance(value, str) and value for value in required_values):
             raise MetaInvalidResponseError(
                 message="Meta comment response is missing required fields.",
@@ -42,7 +42,7 @@ class MetaInstagramCommentPayloadParser:
 
         return MetaInstagramCommentDto(
             id=cast(str, comment_id),
-            media_id=cast(str, media_id),
+            media_id=media_id,
             author_id=cast(str, author_id),
             text=cast(str, text),
             timestamp=cast(str, timestamp),
