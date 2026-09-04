@@ -319,6 +319,11 @@ host automation/AI
     selects connection and decides whether/how to reply
 ```
 
+A complete host composition example is available at
+`examples/instagram_sales_host_consumer`. It demonstrates one identity principal owning two
+independent Instagram connections, auth-to-API adapters using only public contracts, host-owned
+SQLAlchemy/Alembic metadata, explicit webhook routing, and same-connection DM/comment replies.
+
 ## Provider capability matrix
 
 Roadmap Stage 0 is documented in
