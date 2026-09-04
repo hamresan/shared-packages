@@ -22,6 +22,8 @@ A host user may own multiple Instagram connections. Therefore, all account-scope
 
 ## Stage 0 — Provider capability matrix
 
+Status: **Complete (2026-09-04)**. See [`docs/PROVIDER_CAPABILITY_MATRIX.md`](docs/PROVIDER_CAPABILITY_MATRIX.md).
+
 Build and maintain a verified matrix against current Meta documentation for:
 
 - account/profile fields;
