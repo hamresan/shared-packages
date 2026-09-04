@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from instagram_api.domain import (
     InstagramAccountId,
-    InstagramMessagingWebhookPayload,
+    InstagramWebhookPayload,
     InstagramWebhookEvent,
 )
 
@@ -25,7 +25,7 @@ class MetaInstagramWebhookEventMapper:
         event_type: str,
         occurred_at_seconds: int | None,
         item: Mapping[str, object],
-        payload: InstagramMessagingWebhookPayload | None = None,
+        payload: InstagramWebhookPayload | None = None,
     ) -> InstagramWebhookEvent:
         """Create one normalized generic webhook event."""
 
