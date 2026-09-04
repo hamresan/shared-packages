@@ -2,7 +2,6 @@
 
 import asyncio
 from collections.abc import Mapping
-from typing import Any
 
 from instagram_api.domain import InstagramConnectionId
 
@@ -38,7 +37,7 @@ class MetaRequestExecutor:
         path: str,
         params: Mapping[str, str] | None = None,
         json_body: Mapping[str, object] | None = None,
-    ) -> Mapping[str, Any]:
+    ) -> Mapping[str, object]:
         """Execute one provider request for the selected connection."""
 
         request = await self._request_builder.build(
