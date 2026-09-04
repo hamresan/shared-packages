@@ -64,5 +64,11 @@ class SqlAlchemyHostConnectionRegistry(InstagramWebhookConnectionResolver):
                 )
                 .order_by(instagram_connection_links.c.connection_id)
             )
-            values = tuple(rows.all())
-        return tuple(InstagramConnectionId(value) for value in values)
+            raw_values = rows.all()
+
+        values: list[InstagramConnectionId] = []
+        for raw_value in raw_values:
+            if not isinstance(raw_value, str):
+                raise TypeError("Host connection ID must be stored as text.")
+            values.append(InstagramConnectionId(raw_value))
+        return tuple(values)
