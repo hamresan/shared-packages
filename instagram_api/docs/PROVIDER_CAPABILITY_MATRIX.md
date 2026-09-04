@@ -247,10 +247,12 @@ Stage 8 models standard and Live eligibility separately:
 
 ### Messaging webhooks and connection routing
 
-Status: **Verified**
+Status: **Verified and implemented in Stage 10**
 
 Meta messaging webhook payloads include the professional account identity in the webhook entry and
-recipient/sender identifiers in messaging events.
+recipient/sender identifiers in messaging events. Stage 10 normalizes currently documented
+messaging payload variants for inbound messages, postbacks, read receipts, reactions, message
+edits, and referrals.
 
 This is sufficient for deterministic host routing:
 
@@ -262,11 +264,15 @@ This is sufficient for deterministic host routing:
 
 The package must not look up an "active account" globally.
 
-Representative messaging webhook subscriptions/events documented by Meta include messaging events
-such as messages, message reads, and messaging postbacks where applicable to the enabled feature.
+Stage 10 preserves provider message IDs and deterministic delivery event IDs separately: provider
+message IDs remain available for correlation, while Stage 9 deterministic event IDs continue to
+drive delivery deduplication.
 
-Stage 9/10 must verify the exact subscription field set against the API version selected at
-implementation time.
+Unknown messaging variants remain valid generic webhook events with no fabricated normalized
+payload. They are not silently reinterpreted as a supported message type.
+
+The implementation must continue to verify the exact subscription field set against the selected
+Meta API version when host subscription configuration is added.
 
 ### Comment webhooks and connection routing
 
