@@ -1,0 +1,30 @@
+name: Instagram API CI
+
+on:
+  pull_request:
+    paths:
+      - "instagram_api/**"
+      - ".github/workflows/instagram-api-ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "instagram_api/**"
+      - ".github/workflows/instagram-api-ci.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: instagram_api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: instagram_api/pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: make check
