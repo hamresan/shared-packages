@@ -29,5 +29,9 @@ class MetaTransientError(MetaProviderError):
     """Provider failure that may be retried for an idempotent operation."""
 
 
+class MetaTimeoutError(MetaTransientError):
+    """Provider transport timed out before a response was completed."""
+
+
 class MetaInvalidResponseError(MetaProviderError):
     """Provider response could not be decoded safely."""
