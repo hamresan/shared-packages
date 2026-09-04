@@ -118,7 +118,19 @@ The package must not infer a globally active Instagram account from the current 
 - receive and normalize messaging webhook events with enough connection/account identity for host routing;
 - support pagination and provider constraints.
 
-Important platform rule: the package must not promise arbitrary proactive DMs. Instagram messaging conversations are subject to Meta's current messaging policies and recipient/conversation eligibility rules.
+Important platform rules:
+
+- the package must not promise arbitrary proactive DMs;
+- conversations in the Requests folder that have been inactive for 30 days are not returned by Meta;
+- message IDs may be listed beyond the range for which Meta exposes full details;
+- Meta currently exposes message details only for the 20 most recent messages in a conversation;
+- unsupported or detail-ineligible messages remain normalized as partial messages instead of being
+  filled with invented sender/text data;
+- shared-media/message data may be incomplete and must not be presented as complete media metadata.
+
+Instagram messaging conversations are subject to Meta's current messaging policies and
+recipient/conversation eligibility rules. The package must not describe conversation reads as a
+complete DM archive.
 
 ### Comments
 
@@ -252,5 +264,5 @@ and capability-gated Instagram Live behavior.
 
 ## Status
 
-Stage 0 — Provider capability matrix is complete. No Stage 1 contracts or implementation have been
-started. See `ROADMAP.md` for the next staged implementation step.
+Implementation progress is tracked stage by stage in `ROADMAP.md`. This package must not be
+considered complete beyond the latest merged roadmap stage and its passing quality gates.

@@ -25,9 +25,11 @@ class InstagramMessage:
 
     id: InstagramMessageId
     conversation_id: InstagramConversationId
-    sender_id: InstagramUserId
+    sender_id: InstagramUserId | None
     sent_at: datetime
     text: str | None = None
+    is_unsupported: bool = False
+    details_available: bool = True
 
 
 @dataclass(frozen=True, slots=True)

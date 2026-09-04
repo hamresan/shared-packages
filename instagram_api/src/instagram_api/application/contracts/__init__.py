@@ -5,7 +5,9 @@ from .comments import InstagramCommentReader, InstagramCommentReplier
 from .connection import InstagramAccessTokenProvider, InstagramConnectionReader
 from .media import InstagramMediaProvider, InstagramMediaReader
 from .messaging import (
+    InstagramConversationProvider,
     InstagramConversationReader,
+    InstagramMessageProvider,
     InstagramMessageReader,
     InstagramMessageSender,
 )
@@ -18,9 +20,11 @@ __all__ = [
     "InstagramCommentReader",
     "InstagramCommentReplier",
     "InstagramConnectionReader",
+    "InstagramConversationProvider",
     "InstagramConversationReader",
     "InstagramMediaProvider",
     "InstagramMediaReader",
+    "InstagramMessageProvider",
     "InstagramMessageReader",
     "InstagramMessageSender",
     "InstagramWebhookParser",
