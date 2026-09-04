@@ -7,6 +7,7 @@ from identity.application.contracts.security import (
 from identity.application.contracts.unit_of_work import IdentityUnitOfWorkFactory
 from identity.application.dto import AuthSessionResult
 from identity.application.dto_external import AuthenticateExternalIdentityCommand
+from identity.application.errors import ExternalIdentityAuthenticationError, InactiveUserError
 from identity.application.factories.entities import SessionFactory
 from identity.application.factories.external_identity import ExternalIdentityRegistrationFactory
 from identity.application.policies.user_status import UserStatusPolicy
@@ -40,11 +41,11 @@ class AuthenticateExternalIdentityService:
         display_name = command.display_name.strip()
 
         if not provider:
-            raise ValueError("External identity provider is required")
+            raise ExternalIdentityAuthenticationError("External identity provider is required")
         if not subject:
-            raise ValueError("External identity subject is required")
+            raise ExternalIdentityAuthenticationError("External identity subject is required")
         if not display_name:
-            raise ValueError("External identity display name is required")
+            raise ExternalIdentityAuthenticationError("External identity display name is required")
 
         now = self._clock.now()
 
@@ -66,9 +67,12 @@ class AuthenticateExternalIdentityService:
             else:
                 user = await uow.users.get(external_identity.user_id)
                 if user is None:
-                    raise RuntimeError("External identity references a missing user")
+                    raise ExternalIdentityAuthenticationError("External identity references a missing user")
 
-            self._user_status_policy.ensure_active(user)
+            try:
+                self._user_status_policy.ensure_active(user)
+            except InactiveUserError as exc:
+                raise ExternalIdentityAuthenticationError("User account is not active") from exc
 
             refresh_token = self._refresh_token_generator.generate()
             session = self._session_factory.create(
