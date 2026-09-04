@@ -8,9 +8,11 @@ from .models import MetaHttpMethod
 
 @dataclass(frozen=True, slots=True)
 class MetaRetryPolicy:
-    """Determines whether a failed request can be retried safely."""
+    """Determines whether and when a failed request can be retried safely."""
 
     max_attempts: int = 3
+    base_delay_seconds: float = 0.25
+    max_delay_seconds: float = 2.0
 
     def should_retry(
         self,
@@ -28,3 +30,9 @@ class MetaRetryPolicy:
             return False
 
         return isinstance(error, MetaRateLimitError | MetaTransientError)
+
+    def delay_seconds(self, attempt: int) -> float:
+        """Return a bounded exponential delay before the next attempt."""
+
+        delay = self.base_delay_seconds * (2 ** max(attempt - 1, 0))
+        return min(delay, self.max_delay_seconds)
