@@ -1,6 +1,7 @@
 """Meta provider error decoding."""
 
 from collections.abc import Mapping
+from typing import cast
 
 from .errors import (
     MetaAuthenticationError,
@@ -18,9 +19,10 @@ class MetaErrorDecoder:
 
         error_payload: Mapping[str, object] = {}
         if isinstance(payload, Mapping):
-            raw_error = payload.get("error")
+            payload_mapping = cast(Mapping[str, object], payload)
+            raw_error = payload_mapping.get("error")
             if isinstance(raw_error, Mapping):
-                error_payload = raw_error
+                error_payload = cast(Mapping[str, object], raw_error)
 
         raw_message = error_payload.get("message")
         message = raw_message if isinstance(raw_message, str) else "Meta provider request failed."
