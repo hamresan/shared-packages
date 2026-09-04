@@ -166,7 +166,12 @@ complete DM archive.
 - validate `X-Hub-Signature-256` against the raw request body before parsing;
 - keep handshake verification, signature validation, parsing, event mapping, deduplication,
   connection resolution, and host dispatch as separate responsibilities;
-- normalize generic Meta envelope items without implementing Stage 10/11 event semantics;
+- normalize generic Meta envelope items and Stage 10 messaging payloads without implementing
+  Stage 11 comment-event semantics;
+- normalize inbound messages, messaging postbacks, read receipts, reactions, message edits, and
+  referrals into package-owned models;
+- preserve provider message IDs, sender/recipient IDs, message timestamps, supported message flags,
+  attachment URLs, and story-reply correlation when Meta supplies them;
 - preserve the provider professional-account ID needed for deterministic connection resolution;
 - use an atomic idempotency contract with acquire/complete/release semantics so duplicates are
   suppressed while failed dispatches remain retryable;
