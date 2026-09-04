@@ -17,6 +17,8 @@ from .media import InstagramMedia, InstagramMediaType
 from .messaging import (
     InstagramConversation,
     InstagramMessage,
+    InstagramMessageAttachment,
+    InstagramMessageAttachmentType,
     InstagramMessageSendRequest,
     InstagramMessageSendResult,
 )
@@ -37,6 +39,8 @@ __all__ = [
     "InstagramMediaId",
     "InstagramMediaType",
     "InstagramMessage",
+    "InstagramMessageAttachment",
+    "InstagramMessageAttachmentType",
     "InstagramMessageId",
     "InstagramMessageSendRequest",
     "InstagramMessageSendResult",
