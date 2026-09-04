@@ -35,28 +35,35 @@ class MetaInstagramMessagingMetadataMapper:
     ) -> InstagramMessagingWebhookPayload | None:
         """Map a supported metadata variant or return None."""
 
-        postback = item.get("postback")
-        if isinstance(postback, Mapping):
+        raw_postback = item.get("postback")
+        if raw_postback is not None:
+            postback = self._fields.mapping(raw_postback, "postback")
             return InstagramMessagePostbackReceived(
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(self._fields.required_message_id(postback)),
+                message_id=InstagramMessageId(
+                    self._fields.required_message_id(postback)
+                ),
                 title=self._fields.optional_string(postback.get("title")),
                 payload=self._fields.optional_string(postback.get("payload")),
             )
 
-        read = item.get("read")
-        if isinstance(read, Mapping):
+        raw_read = item.get("read")
+        if raw_read is not None:
+            read = self._fields.mapping(raw_read, "read")
             return InstagramMessageRead(
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(self._fields.required_message_id(read)),
+                message_id=InstagramMessageId(
+                    self._fields.required_message_id(read)
+                ),
             )
 
-        reaction = item.get("reaction")
-        if isinstance(reaction, Mapping):
+        raw_reaction = item.get("reaction")
+        if raw_reaction is not None:
+            reaction = self._fields.mapping(raw_reaction, "reaction")
             action = reaction.get("action")
             if action not in {"react", "unreact"}:
                 raise MetaInvalidResponseError(
@@ -67,25 +74,31 @@ class MetaInstagramMessagingMetadataMapper:
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(self._fields.required_message_id(reaction)),
+                message_id=InstagramMessageId(
+                    self._fields.required_message_id(reaction)
+                ),
                 action=InstagramMessageReactionAction(action),
                 reaction=self._fields.optional_string(reaction.get("reaction")),
                 emoji=self._fields.optional_string(reaction.get("emoji")),
             )
 
-        edited = item.get("message_edit")
-        if isinstance(edited, Mapping):
+        raw_edit = item.get("message_edit")
+        if raw_edit is not None:
+            edited = self._fields.mapping(raw_edit, "message edit")
             return InstagramMessageEdited(
                 sender_id=sender_id,
                 recipient_id=recipient_id,
                 occurred_at=occurred_at,
-                message_id=InstagramMessageId(self._fields.required_message_id(edited)),
+                message_id=InstagramMessageId(
+                    self._fields.required_message_id(edited)
+                ),
                 text=self._fields.optional_string(edited.get("text")),
                 edit_count=self._fields.optional_int(edited.get("num_edit")),
             )
 
-        referral = item.get("referral")
-        if isinstance(referral, Mapping):
+        raw_referral = item.get("referral")
+        if raw_referral is not None:
+            referral = self._fields.mapping(raw_referral, "referral")
             return InstagramMessagingReferralReceived(
                 sender_id=sender_id,
                 recipient_id=recipient_id,
