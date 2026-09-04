@@ -5,8 +5,6 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import create_async_engine
-
 from identity import AuthenticatedPrincipal
 from instagram_api.application.webhooks import (
     InstagramWebhookProcessor,
@@ -31,6 +29,8 @@ from instagram_auth import (
     InstagramConnectionId as AuthInstagramConnectionId,
     InstagramConnectionState,
 )
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from instagram_sales_host_consumer_app.composition import build_reference_runtime
 from instagram_sales_host_consumer_app.persistence import HostSchema
 from tests.support import (
