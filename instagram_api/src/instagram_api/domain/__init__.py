@@ -6,6 +6,11 @@ from .comment_replies import (
     InstagramPrivateCommentReplyResult,
     InstagramPrivateReplySource,
 )
+from .comment_webhooks import (
+    InstagramCommentChanged,
+    InstagramCommentCreated,
+    InstagramCommentWebhookPayload,
+)
 from .comments import InstagramComment, InstagramCommentReplyResult
 from .connections import InstagramConnection
 from .identifiers import (
@@ -46,8 +51,11 @@ __all__ = [
     "InstagramAccount",
     "InstagramAccountId",
     "InstagramComment",
+    "InstagramCommentChanged",
+    "InstagramCommentCreated",
     "InstagramCommentId",
     "InstagramCommentReplyResult",
+    "InstagramCommentWebhookPayload",
     "InstagramConnection",
     "InstagramConnectionId",
     "InstagramConversation",

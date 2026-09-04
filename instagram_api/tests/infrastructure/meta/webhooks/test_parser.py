@@ -4,7 +4,12 @@ from datetime import UTC, datetime
 
 import pytest
 
-from instagram_api.domain import InstagramAccountId, InstagramMessageReceived
+from instagram_api.domain import (
+    InstagramAccountId,
+    InstagramCommentChanged,
+    InstagramCommentId,
+    InstagramMessageReceived,
+)
 from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 from tests.infrastructure.meta.webhooks.factories import build_meta_webhook_parser
 
@@ -23,7 +28,9 @@ def test_parser_normalizes_changes_and_messaging_for_multiple_accounts() -> None
 
     assert len(events) == 2
     assert events[0].provider_account_id == InstagramAccountId("account-a")
-    assert events[0].event_type == "change:comments"
+    assert events[0].event_type == "comment:changed"
+    assert isinstance(events[0].payload, InstagramCommentChanged)
+    assert events[0].payload.comment_id == InstagramCommentId("comment")
     assert events[1].provider_account_id == InstagramAccountId("account-b")
     assert events[1].event_type == "messaging"
     assert isinstance(events[1].payload, InstagramMessageReceived)

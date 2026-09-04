@@ -245,6 +245,29 @@ Stage 8 models standard and Live eligibility separately:
   idempotency/state is introduced by its later roadmap stage;
 - private reply POST requests are never retried automatically.
 
+### Comment webhook notifications
+
+Status: **Verified and implemented in Stage 11**
+
+Current Meta-owned Instagram API documentation shows the Instagram Login comment webhook using an
+entry-level `field` of `comments` and a `value` containing the comment ID plus optional
+commenter, text, and media data. Meta documents both `comments` and `live_comments` webhook
+subscriptions for comment workflows.
+
+Stage 11:
+
+- normalizes direct `comments`/`live_comments` notifications as
+  `InstagramCommentCreated`;
+- normalizes supported comment items delivered through a `changes` collection as
+  `InstagramCommentChanged`;
+- preserves the professional-account identity in the generic webhook envelope so Stage 9
+  connection resolution remains deterministic;
+- preserves comment/media/commenter/parent references when available;
+- represents provider-omitted fields as `None` rather than inventing values;
+- keeps delivery event identity separate from comment identity;
+- allows host logic to use the Stage 7 comment/media readers when the webhook notification is
+  intentionally minimal.
+
 ### Messaging webhooks and connection routing
 
 Status: **Verified and implemented in Stage 10**
