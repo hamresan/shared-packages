@@ -107,7 +107,9 @@ class RecordingCommentReplyProvider(InstagramPublicCommentReplyProvider):
     """Records public comment replies with the explicit connection."""
 
     def __init__(self) -> None:
-        self.replies: list[tuple[InstagramConnectionId, InstagramCommentId, str]] = []
+        self.replies: list[
+            tuple[InstagramConnectionId, InstagramCommentId, str]
+        ] = []
 
     async def reply(
         self,
