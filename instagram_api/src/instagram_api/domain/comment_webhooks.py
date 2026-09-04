@@ -19,6 +19,12 @@ class InstagramCommentWebhookPayload(InstagramWebhookPayload):
     media_product_type: str | None = None
     is_live: bool = False
 
+    @property
+    def requires_active_live_broadcast(self) -> bool:
+        """Return whether actions on this event require an active Live broadcast."""
+
+        return self.is_live
+
 
 @dataclass(frozen=True, slots=True)
 class InstagramCommentCreated(InstagramCommentWebhookPayload):
