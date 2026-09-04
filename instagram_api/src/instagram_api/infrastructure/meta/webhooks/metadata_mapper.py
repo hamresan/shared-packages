@@ -65,7 +65,7 @@ class MetaInstagramMessagingMetadataMapper:
         if raw_reaction is not None:
             reaction = self._fields.mapping(raw_reaction, "reaction")
             action = reaction.get("action")
-            if action not in {"react", "unreact"}:
+            if not isinstance(action, str) or action not in {"react", "unreact"}:
                 raise MetaInvalidResponseError(
                     message="Meta messaging reaction action is invalid.",
                     status_code=200,
