@@ -23,7 +23,9 @@ from .messaging import (
 from .webhooks import (
     FakeInstagramWebhookConnectionResolver,
     FakeInstagramWebhookEventDispatcher,
+    FakeInstagramWebhookFailureHandler,
     FakeInstagramWebhookIdempotencyStore,
+    FakeInstagramWebhookOperationalObserver,
     FakeInstagramWebhookParser,
     FakeInstagramWebhookVerifier,
 )
@@ -50,7 +52,9 @@ __all__ = [
     "FakeInstagramOutboundMessageProvider",
     "FakeInstagramWebhookConnectionResolver",
     "FakeInstagramWebhookEventDispatcher",
+    "FakeInstagramWebhookFailureHandler",
     "FakeInstagramWebhookIdempotencyStore",
+    "FakeInstagramWebhookOperationalObserver",
     "FakeInstagramWebhookParser",
     "FakeInstagramWebhookVerifier",
 ]
