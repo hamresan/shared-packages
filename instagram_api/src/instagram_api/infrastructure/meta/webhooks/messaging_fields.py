@@ -42,6 +42,17 @@ class MetaInstagramMessagingWebhookFieldParser:
             )
         return datetime.fromtimestamp(value / 1000, tz=UTC)
 
+    def required_message_id(self, payload: Mapping[str, object]) -> str:
+        """Return a required Meta message ID."""
+
+        mid = payload.get("mid")
+        if not isinstance(mid, str) or not mid:
+            raise MetaInvalidResponseError(
+                message="Meta messaging webhook is missing a valid message id.",
+                status_code=200,
+            )
+        return mid
+
     def optional_string(self, value: object) -> str | None:
         """Return an optional string."""
 
