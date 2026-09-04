@@ -5,6 +5,7 @@ import asyncio
 from instagram_api.domain import (
     InstagramConnectionId,
     InstagramConversationId,
+    InstagramMessageId,
     PaginationCursor,
 )
 from instagram_api.infrastructure.meta.http import MetaHttpResponse
@@ -73,14 +74,13 @@ def test_message_provider_reads_details_and_nested_pagination() -> None:
         message_provider.list_messages(
             connection_id,
             conversation_id,
-            PaginationCursor("cursor"),
         )
     )
 
     assert page.items[0].text == "hello"
     assert page.items[0].details_available is True
     assert page.next_cursor == PaginationCursor("next")
-    assert transport.requests[0].params["fields"] == "messages.after(cursor)"
+    assert transport.requests[0].params["fields"] == "messages"
     assert transport.requests[1].params["fields"] == "id,created_time,from,to,message"
 
 
@@ -135,6 +135,7 @@ def test_message_provider_does_not_request_details_for_older_cursor_page() -> No
     )
 
     assert len(transport.requests) == 1
-    assert page.items[0].id.value == "old-message" if hasattr(page.items[0].id, "value") else str(page.items[0].id) == "old-message"
+    assert page.items[0].id == InstagramMessageId("old-message")
+    assert transport.requests[0].params["fields"] == "messages.after(older-page)"
     assert page.items[0].details_available is False
     assert page.items[0].sender_id is None
