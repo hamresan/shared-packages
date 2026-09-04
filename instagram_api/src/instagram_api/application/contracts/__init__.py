@@ -8,8 +8,10 @@ from .messaging import (
     InstagramConversationProvider,
     InstagramConversationReader,
     InstagramMessageProvider,
+    InstagramMessageRecipientEligibilityChecker,
     InstagramMessageReader,
     InstagramMessageSender,
+    InstagramOutboundMessageProvider,
 )
 from .webhooks import InstagramWebhookParser, InstagramWebhookVerifier
 
@@ -25,8 +27,10 @@ __all__ = [
     "InstagramMediaProvider",
     "InstagramMediaReader",
     "InstagramMessageProvider",
+    "InstagramMessageRecipientEligibilityChecker",
     "InstagramMessageReader",
     "InstagramMessageSender",
+    "InstagramOutboundMessageProvider",
     "InstagramWebhookParser",
     "InstagramWebhookVerifier",
 ]
