@@ -205,8 +205,16 @@ Current Meta documentation includes comment/private-reply behavior involving Ins
 The roadmap therefore separates:
 
 - Live comment events/replies that are explicitly supported by Meta;
-- active Live media/session discovery, which remains research/conditional;
-- live video/audio stream ingestion, which is outside scope unless Meta exposes an appropriate supported API.
+- active Live media/session discovery and historical Live-comment retrieval, which Stage 12 keeps
+  disabled because no package-safe documented public contract was verified;
+- live video/audio stream ingestion, which is unsupported/not promised unless Meta exposes an
+  appropriate supported public API.
+
+Stage 12 exposes these boundaries explicitly through `InstagramLiveCommentCapabilityPolicy`.
+Normalized Live comment events carry `is_live=True` and
+`requires_active_live_broadcast=True`. Private replies to Live commenters continue through the
+normal connection-aware private-reply service and are rejected locally unless the host supplies
+explicit active-broadcast state.
 
 Provider capability checks must be based on current Meta documentation rather than assumptions.
 

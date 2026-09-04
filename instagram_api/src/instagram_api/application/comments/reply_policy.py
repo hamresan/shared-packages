@@ -24,6 +24,35 @@ INSTAGRAM_COMMENT_REPLY_MANAGE_PERMISSION = "instagram_business_manage_comments"
 PRIVATE_REPLY_WINDOW = timedelta(days=7)
 
 
+class InstagramLiveCommentCapabilityPolicy:
+    """Exposes verified Live-comment capability constraints."""
+
+    def can_normalize_webhook(self) -> bool:
+        """Return whether documented Live comment webhooks are supported."""
+
+        return True
+
+    def can_reply_privately(self, live_is_active: bool | None) -> bool:
+        """Return whether a Live private reply is currently eligible."""
+
+        return live_is_active is True
+
+    def can_discover_active_session(self) -> bool:
+        """Return whether active Live session discovery is verified."""
+
+        return False
+
+    def can_read_historical_comments(self) -> bool:
+        """Return whether historical Live comment retrieval is verified."""
+
+        return False
+
+    def can_read_live_stream(self) -> bool:
+        """Return whether raw Live video/audio ingestion is supported."""
+
+        return False
+
+
 class InstagramCommentReplyAccessPolicy:
     """Validates connection permissions for comment reply operations."""
 

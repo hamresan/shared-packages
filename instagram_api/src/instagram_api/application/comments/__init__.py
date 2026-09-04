@@ -25,6 +25,7 @@ from .reply_policy import (
     PRIVATE_REPLY_WINDOW,
     InstagramCommentReplyAccessPolicy,
     InstagramCommentReplyTextPolicy,
+    InstagramLiveCommentCapabilityPolicy,
     InstagramPrivateReplyEligibilityPolicy,
 )
 from .reply_services import (
@@ -48,6 +49,7 @@ __all__ = [
     "InstagramCommentReplyPayloadInvalidError",
     "InstagramCommentReplyTextPolicy",
     "InstagramCommentService",
+    "InstagramLiveCommentCapabilityPolicy",
     "InstagramPrivateCommentReplyService",
     "InstagramPrivateReplyEligibilityPolicy",
     "InstagramPrivateReplyExpiredError",
