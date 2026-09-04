@@ -10,10 +10,10 @@ from instagram_api.application.comments import (
     InstagramCommentReplyAccessPolicy,
     InstagramCommentReplyPayloadInvalidError,
     InstagramCommentReplyTextPolicy,
+    InstagramLiveCommentCapabilityPolicy,
     InstagramPrivateReplyEligibilityPolicy,
     InstagramPrivateReplyExpiredError,
     InstagramPrivateReplyLiveInactiveError,
-    InstagramLiveCommentCapabilityPolicy,
 )
 from instagram_api.domain import (
     InstagramAccountId,
