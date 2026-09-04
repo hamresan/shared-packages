@@ -17,12 +17,31 @@ class MetaErrorDecoder:
     def decode(self, status_code: int, payload: object) -> MetaProviderError:
         """Build a normalized error from a provider response payload."""
 
-        error_payload = self._error_payload(payload)
-        message = self._string_value(error_payload.get("message")) or "Meta provider request failed."
-        provider_code = self._int_value(error_payload.get("code"))
-        provider_subcode = self._int_value(error_payload.get("error_subcode"))
-        trace_id = self._string_value(error_payload.get("fbtrace_id"))
-        error_type = self._error_type(status_code)
+        error_payload: Mapping[str, Any] = {}
+        if isinstance(payload, Mapping):
+            raw_error = payload.get("error")
+            if isinstance(raw_error, Mapping):
+                error_payload = raw_error
+
+        raw_message = error_payload.get("message")
+        message = raw_message if isinstance(raw_message, str) else "Meta provider request failed."
+
+        raw_code = error_payload.get("code")
+        provider_code = raw_code if isinstance(raw_code, int) else None
+
+        raw_subcode = error_payload.get("error_subcode")
+        provider_subcode = raw_subcode if isinstance(raw_subcode, int) else None
+
+        raw_trace_id = error_payload.get("fbtrace_id")
+        trace_id = raw_trace_id if isinstance(raw_trace_id, str) else None
+
+        error_type: type[MetaProviderError] = MetaProviderError
+        if status_code in {401, 403}:
+            error_type = MetaAuthenticationError
+        elif status_code == 429:
+            error_type = MetaRateLimitError
+        elif status_code >= 500:
+            error_type = MetaTransientError
 
         return error_type(
             message=message,
@@ -31,29 +50,3 @@ class MetaErrorDecoder:
             provider_subcode=provider_subcode,
             trace_id=trace_id,
         )
-
-    @staticmethod
-    def _error_payload(payload: object) -> Mapping[str, Any]:
-        if not isinstance(payload, Mapping):
-            return {}
-
-        raw_error = payload.get("error")
-        return raw_error if isinstance(raw_error, Mapping) else {}
-
-    @staticmethod
-    def _error_type(status_code: int) -> type[MetaProviderError]:
-        if status_code in {401, 403}:
-            return MetaAuthenticationError
-        if status_code == 429:
-            return MetaRateLimitError
-        if status_code >= 500:
-            return MetaTransientError
-        return MetaProviderError
-
-    @staticmethod
-    def _int_value(value: object) -> int | None:
-        return value if isinstance(value, int) else None
-
-    @staticmethod
-    def _string_value(value: object) -> str | None:
-        return value if isinstance(value, str) else None
