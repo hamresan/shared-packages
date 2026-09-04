@@ -8,6 +8,7 @@ from .errors import (
 )
 from .send_errors import InstagramMessagePayloadInvalidError
 
+INSTAGRAM_SEND_BASIC_PERMISSION = "instagram_business_basic"
 INSTAGRAM_SEND_MESSAGE_PERMISSION = "instagram_business_manage_messages"
 
 
@@ -15,16 +16,22 @@ class InstagramMessageSendAccessPolicy:
     """Validates connection eligibility for outbound messaging."""
 
     def validate_connection(self, connection: InstagramConnection) -> None:
-        """Require a usable connection with messaging permission."""
+        """Require a usable connection with outbound messaging permissions."""
 
         if not connection.is_usable:
             raise InstagramMessagingConnectionUnavailableError(
                 "Selected Instagram connection is not usable."
             )
 
-        if INSTAGRAM_SEND_MESSAGE_PERMISSION not in connection.permissions:
+        required = {
+            INSTAGRAM_SEND_BASIC_PERMISSION,
+            INSTAGRAM_SEND_MESSAGE_PERMISSION,
+        }
+        missing = required.difference(connection.permissions)
+        if missing:
+            permission = sorted(missing)[0]
             raise InstagramMessagingPermissionRequiredError(
-                f"Required permission is missing: {INSTAGRAM_SEND_MESSAGE_PERMISSION}"
+                f"Required permission is missing: {permission}"
             )
 
 
