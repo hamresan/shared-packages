@@ -9,6 +9,7 @@ from .errors import (
     MetaInvalidResponseError,
     MetaProviderError,
     MetaRateLimitError,
+    MetaTimeoutError,
     MetaTransientError,
 )
 from .executor import MetaRequestExecutor
@@ -38,6 +39,7 @@ __all__ = [
     "MetaResponseDecoder",
     "MetaRetryPolicy",
     "MetaTimeoutConfig",
+    "MetaTimeoutError",
     "MetaTransientError",
     "NullMetaHttpObserver",
 ]
