@@ -41,7 +41,10 @@ class FakeInstagramMessageReader(InstagramMessageReader):
 
     def __init__(
         self,
-        messages: dict[tuple[InstagramConnectionId, InstagramConversationId], tuple[InstagramMessage, ...]],
+        messages: dict[
+            tuple[InstagramConnectionId, InstagramConversationId],
+            tuple[InstagramMessage, ...],
+        ],
     ) -> None:
         self._messages = messages
 
