@@ -1,6 +1,6 @@
 """Maps Meta Send API rejections to application-level errors."""
 
-from instagram_api.application.messaging import InstagramMessageSendRejectedError
+from instagram_api.application.messaging.send_errors import InstagramMessageSendRejectedError
 from instagram_api.infrastructure.meta.http import MetaProviderError
 
 
