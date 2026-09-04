@@ -1,6 +1,6 @@
 """Connection-aware Meta request construction."""
 
-from typing import Mapping
+from collections.abc import Mapping
 
 from instagram_api.application.contracts.connection import InstagramAccessTokenProvider
 from instagram_api.domain import InstagramConnectionId

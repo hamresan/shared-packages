@@ -1,8 +1,8 @@
 """Shared HTTP models for Meta provider infrastructure."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Mapping
 
 
 class MetaHttpMethod(StrEnum):

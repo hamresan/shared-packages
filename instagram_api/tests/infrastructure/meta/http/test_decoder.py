@@ -47,10 +47,7 @@ def test_decoder_normalizes_provider_errors(
     response = MetaHttpResponse(
         status_code=status_code,
         headers={},
-        body=(
-            b'{"error":{"message":"failure","code":10,'
-            b'"error_subcode":20,"fbtrace_id":"trace"}}'
-        ),
+        body=(b'{"error":{"message":"failure","code":10,"error_subcode":20,"fbtrace_id":"trace"}}'),
     )
 
     with pytest.raises(error_type) as exc_info:
