@@ -49,16 +49,24 @@ class MetaInstagramCommentProvider(InstagramCommentProvider):
         media_id: InstagramMediaId,
         cursor: PaginationCursor | None = None,
     ) -> Page[InstagramComment]:
-        payload = await self._read_collection(
-            connection_id,
-            f"{media_id}/comments",
-            cursor,
+        params: dict[str, object] = {"fields": ",".join(COMMENT_FIELDS)}
+        if cursor is not None:
+            params["after"] = cursor
+
+        payload = await self._executor.execute_json(
+            connection_id=connection_id,
+            method=MetaHttpMethod.GET,
+            path=f"{media_id}/comments",
+            params=params,
         )
         dtos = self._parser.parse_collection(
             payload,
             fallback_media_id=str(media_id),
         )
-        return self._to_page(payload, dtos)
+        return Page(
+            items=tuple(self._mapper.to_domain(dto) for dto in dtos),
+            next_cursor=self._pagination_mapper.next_cursor(payload),
+        )
 
     async def list_replies(
         self,
@@ -66,39 +74,20 @@ class MetaInstagramCommentProvider(InstagramCommentProvider):
         comment_id: InstagramCommentId,
         cursor: PaginationCursor | None = None,
     ) -> Page[InstagramComment]:
-        payload = await self._read_collection(
-            connection_id,
-            f"{comment_id}/replies",
-            cursor,
+        params: dict[str, object] = {"fields": ",".join(COMMENT_FIELDS)}
+        if cursor is not None:
+            params["after"] = cursor
+
+        payload = await self._executor.execute_json(
+            connection_id=connection_id,
+            method=MetaHttpMethod.GET,
+            path=f"{comment_id}/replies",
+            params=params,
         )
         dtos = self._parser.parse_collection(
             payload,
             fallback_parent_id=str(comment_id),
         )
-        return self._to_page(payload, dtos)
-
-    async def _read_collection(
-        self,
-        connection_id: InstagramConnectionId,
-        path: str,
-        cursor: PaginationCursor | None,
-    ) -> dict[str, object]:
-        params: dict[str, object] = {"fields": ",".join(COMMENT_FIELDS)}
-        if cursor is not None:
-            params["after"] = cursor
-        payload = await self._executor.execute_json(
-            connection_id=connection_id,
-            method=MetaHttpMethod.GET,
-            path=path,
-            params=params,
-        )
-        return dict(payload)
-
-    def _to_page(
-        self,
-        payload: dict[str, object],
-        dtos: tuple[MetaInstagramCommentDto, ...],
-    ) -> Page[InstagramComment]:
         return Page(
             items=tuple(self._mapper.to_domain(dto) for dto in dtos),
             next_cursor=self._pagination_mapper.next_cursor(payload),
