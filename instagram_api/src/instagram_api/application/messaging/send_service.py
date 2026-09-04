@@ -55,6 +55,5 @@ class InstagramMessageSendService(InstagramMessageSender):
         return InstagramMessageSendResult(
             message_id=result.message_id,
             recipient_id=result.recipient_id,
-            conversation_id=result.conversation_id,
             correlation_id=request.correlation_id,
         )
