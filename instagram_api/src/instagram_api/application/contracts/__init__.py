@@ -1,6 +1,6 @@
 """Public application contracts."""
 
-from .accounts import InstagramAccountReader
+from .accounts import InstagramAccountProvider, InstagramAccountReader
 from .comments import InstagramCommentReader, InstagramCommentReplier
 from .connection import InstagramAccessTokenProvider, InstagramConnectionReader
 from .media import InstagramMediaReader
@@ -13,6 +13,7 @@ from .webhooks import InstagramWebhookParser, InstagramWebhookVerifier
 
 __all__ = [
     "InstagramAccessTokenProvider",
+    "InstagramAccountProvider",
     "InstagramAccountReader",
     "InstagramCommentReader",
     "InstagramCommentReplier",
