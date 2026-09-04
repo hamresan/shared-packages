@@ -95,7 +95,6 @@ def build_principal() -> AuthenticatedPrincipal:
 def test_two_connections_remain_isolated_across_reads_webhooks_and_replies(
     tmp_path: Path,
 ) -> None:
-
     async def scenario() -> None:
         engine = create_async_engine(
             f"sqlite+aiosqlite:///{tmp_path / 'host.db'}"
