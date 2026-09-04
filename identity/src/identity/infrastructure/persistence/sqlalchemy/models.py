@@ -47,6 +47,27 @@ class UserIdentityModel(IdentityBase):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class ExternalIdentityModel(IdentityBase):
+    __tablename__ = "identity_external_identities"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider",
+            "subject",
+            name="uq_identity_external_identities_provider_subject",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("identity_users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject: Mapped[str] = mapped_column(String(320), nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class OtpChallengeModel(IdentityBase):
     __tablename__ = "identity_otp_challenges"
     __table_args__ = (
@@ -121,4 +142,4 @@ class SessionModel(IdentityBase):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-__all__ = ["OtpChallengeModel", "SessionModel", "UserIdentityModel", "UserModel"]
+__all__ = ["ExternalIdentityModel", "OtpChallengeModel", "SessionModel", "UserIdentityModel", "UserModel"]
