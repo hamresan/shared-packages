@@ -33,10 +33,7 @@ class InstagramConnectionHealthPolicy:
         reasons: set[InstagramConnectionHealthReason] = set()
         if connection.revoked_at is not None:
             reasons.add(InstagramConnectionHealthReason.REVOKED_CREDENTIAL)
-        if (
-            connection.credential_expires_at is not None
-            and connection.credential_expires_at <= now
-        ):
+        if connection.credential_expires_at is not None and connection.credential_expires_at <= now:
             reasons.add(InstagramConnectionHealthReason.EXPIRED_CREDENTIAL)
 
         missing_permissions = frozenset(required_permissions) - connection.permissions

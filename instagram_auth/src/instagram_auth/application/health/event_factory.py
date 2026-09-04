@@ -13,9 +13,15 @@ class InstagramHealthSecurityEventFactory:
 
     def build(self, health: InstagramConnectionHealth) -> tuple[InstagramSecurityEvent, ...]:
         mapping = {
-            InstagramConnectionHealthReason.EXPIRED_CREDENTIAL: InstagramSecurityEventKind.CREDENTIAL_EXPIRED,
-            InstagramConnectionHealthReason.REVOKED_CREDENTIAL: InstagramSecurityEventKind.CREDENTIAL_REVOKED,
-            InstagramConnectionHealthReason.MISSING_PERMISSION: InstagramSecurityEventKind.PERMISSION_LOSS,
+            InstagramConnectionHealthReason.EXPIRED_CREDENTIAL: (
+                InstagramSecurityEventKind.CREDENTIAL_EXPIRED
+            ),
+            InstagramConnectionHealthReason.REVOKED_CREDENTIAL: (
+                InstagramSecurityEventKind.CREDENTIAL_REVOKED
+            ),
+            InstagramConnectionHealthReason.MISSING_PERMISSION: (
+                InstagramSecurityEventKind.PERMISSION_LOSS
+            ),
         }
         return tuple(
             InstagramSecurityEvent(connection_id=health.connection_id, kind=kind)
