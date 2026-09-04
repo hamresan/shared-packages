@@ -281,6 +281,14 @@ Tests should mirror the package's internal responsibility/layer structure.
 
 See [`PRODUCTION.md`](PRODUCTION.md) for Meta App Review/Advanced Access guidance, secure production configuration, observability boundaries, and release verification.
 
+## Cross-package reference consumer
+
+The real `hamresan-instagram-api` public connection/token contracts are exercised by the
+cross-package integration test and by
+`examples/instagram_sales_host_consumer`. The integration remains host-composed: this package
+does not import API persistence or application implementations.
+
 ## Status
 
-Roadmap Stages 0-10 are implemented. Stage 11 production hardening is the final package-completion stage.
+Roadmap Stages 0-11 are implemented. The Stage 11 cross-package acceptance gap is closed by the
+real public-contract integration added alongside `hamresan-instagram-api` Stage 14.
