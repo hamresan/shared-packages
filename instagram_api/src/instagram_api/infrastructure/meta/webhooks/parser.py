@@ -3,7 +3,7 @@
 import json
 
 from instagram_api.application.contracts.webhooks import InstagramWebhookParser
-from instagram_api.domain import InstagramWebhookEvent
+from instagram_api.domain import InstagramWebhookEvent, InstagramWebhookPayload
 from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
 from .comment_mapper import MetaInstagramCommentWebhookMapper
@@ -90,7 +90,7 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                         change.get("field"),
                         "change field",
                     )
-                    normalized_payload = None
+                    normalized_payload: InstagramWebhookPayload | None = None
                     event_type = f"change:{field}"
 
                     if field in self._COMMENT_FIELDS:
