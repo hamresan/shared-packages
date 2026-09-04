@@ -34,9 +34,7 @@ def build_app() -> tuple[FastAPI, FakeInstagramWebhookEventDispatcher]:
         MetaInstagramWebhookSignatureVerifier(secret),
         MetaInstagramWebhookParser(
             MetaInstagramWebhookFieldParser(),
-            MetaInstagramWebhookEventMapper(
-                MetaInstagramWebhookEventIdFactory()
-            ),
+            MetaInstagramWebhookEventMapper(MetaInstagramWebhookEventIdFactory()),
         ),
         FakeInstagramWebhookIdempotencyStore(),
         FakeInstagramWebhookConnectionResolver(
