@@ -13,6 +13,8 @@ from instagram_api.infrastructure.sqlalchemy.webhooks import (
     instagram_webhook_events,
 )
 
+DEFAULT_TEST_LEASE = timedelta(minutes=5)
+
 
 def build_engine(database_path: Path) -> AsyncEngine:
     """Build an isolated async SQLite engine for durability tests."""
@@ -23,7 +25,7 @@ def build_engine(database_path: Path) -> AsyncEngine:
 async def create_store(
     engine: AsyncEngine,
     *,
-    lease_duration: timedelta = timedelta(minutes=5),
+    lease_duration: timedelta = DEFAULT_TEST_LEASE,
 ) -> SqlAlchemyInstagramWebhookIdempotencyStore:
     """Create the schema and return one durable store instance."""
 
