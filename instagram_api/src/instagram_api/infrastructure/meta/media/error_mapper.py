@@ -5,14 +5,14 @@ from instagram_api.infrastructure.meta.http import MetaProviderError
 
 
 class MetaInstagramMediaErrorMapper:
-    """Maps provider object-not-found failures to explicit media unavailability."""
+    """Maps provider failures to media-specific application errors."""
 
-    def raise_mapped(self, error: MetaProviderError) -> None:
-        """Raise an application media error when the provider failure is recognized."""
+    def map(self, error: MetaProviderError) -> Exception:
+        """Return the appropriate media-level or provider exception."""
 
         if error.status_code == 404 or error.provider_code == 100:
-            raise InstagramMediaUnavailableError(
+            return InstagramMediaUnavailableError(
                 "Requested Instagram media is deleted, inaccessible, or unavailable."
-            ) from error
+            )
 
-        raise error
+        return error
