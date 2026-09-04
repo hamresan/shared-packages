@@ -5,14 +5,14 @@ from collections.abc import Mapping
 
 from instagram_api.domain import InstagramConnectionId
 
-from .contracts import MetaHttpObserver, MetaHttpTransport
+from .contracts import MetaHttpObserver, MetaHttpTransport, MetaJsonExecutor
 from .decoder import MetaResponseDecoder
 from .models import MetaHttpMethod
 from .request_builder import MetaRequestBuilder
 from .retry import MetaRetryPolicy
 
 
-class MetaRequestExecutor:
+class MetaRequestExecutor(MetaJsonExecutor):
     """Coordinates request building, transport, decoding, retry, and observability."""
 
     def __init__(

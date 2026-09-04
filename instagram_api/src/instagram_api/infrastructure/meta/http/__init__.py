@@ -1,7 +1,7 @@
 """Shared Meta HTTP infrastructure."""
 
 from .config import MetaApiConfig, MetaTimeoutConfig
-from .contracts import MetaHttpObserver, MetaHttpTransport
+from .contracts import MetaHttpObserver, MetaHttpTransport, MetaJsonExecutor
 from .decoder import MetaResponseDecoder
 from .error_decoder import MetaErrorDecoder
 from .errors import (
@@ -31,6 +31,7 @@ __all__ = [
     "MetaHttpResponse",
     "MetaHttpTransport",
     "MetaInvalidResponseError",
+    "MetaJsonExecutor",
     "MetaPaginationCursorMapper",
     "MetaProviderError",
     "MetaRateLimitError",
