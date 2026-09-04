@@ -95,8 +95,8 @@ class MetaInstagramMessageProvider(InstagramMessageProvider):
         summaries = self._parser.parse_message_summaries(payload)
         messages: list[InstagramMessage] = []
 
-        for summary in summaries:
-            detail = await self._detail_reader.read(connection_id, summary)
+        for position, summary in enumerate(summaries):
+            detail = await self._detail_reader.read(connection_id, summary, position)
             messages.append(self._mapper.message(conversation_id, summary, detail))
 
         messages_payload = self._parser.messages_container(payload)
