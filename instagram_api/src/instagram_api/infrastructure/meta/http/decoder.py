@@ -2,7 +2,6 @@
 
 import json
 from collections.abc import Mapping
-from typing import Any
 
 from .error_decoder import MetaErrorDecoder
 from .errors import MetaInvalidResponseError
@@ -15,11 +14,11 @@ class MetaResponseDecoder:
     def __init__(self, error_decoder: MetaErrorDecoder) -> None:
         self._error_decoder = error_decoder
 
-    def decode_json(self, response: MetaHttpResponse) -> Mapping[str, Any]:
+    def decode_json(self, response: MetaHttpResponse) -> Mapping[str, object]:
         """Return decoded JSON or raise a normalized provider error."""
 
         try:
-            payload = json.loads(response.body)
+            payload: object = json.loads(response.body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise MetaInvalidResponseError(
                 message="Meta response body is not valid JSON.",
