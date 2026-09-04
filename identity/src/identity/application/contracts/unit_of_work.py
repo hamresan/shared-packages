@@ -2,6 +2,7 @@ from types import TracebackType
 from typing import Protocol, Self
 
 from identity.application.contracts.repositories import (
+    ExternalIdentityRepository,
     OtpChallengeRepository,
     SessionRepository,
     UserIdentityRepository,
@@ -15,6 +16,9 @@ class IdentityUnitOfWork(Protocol):
 
     @property
     def identities(self) -> UserIdentityRepository: ...
+
+    @property
+    def external_identities(self) -> ExternalIdentityRepository: ...
 
     @property
     def otp_challenges(self) -> OtpChallengeRepository: ...
