@@ -3,7 +3,7 @@
 from .accounts import FakeInstagramAccountProvider, FakeInstagramAccountReader
 from .comments import FakeInstagramCommentReader, FakeInstagramCommentReplier
 from .connections import FakeInstagramAccessTokenProvider, FakeInstagramConnectionReader
-from .media import FakeInstagramMediaReader
+from .media import FakeInstagramMediaProvider, FakeInstagramMediaReader
 from .messaging import (
     FakeInstagramConversationReader,
     FakeInstagramMessageReader,
@@ -19,6 +19,7 @@ __all__ = [
     "FakeInstagramCommentReplier",
     "FakeInstagramConnectionReader",
     "FakeInstagramConversationReader",
+    "FakeInstagramMediaProvider",
     "FakeInstagramMediaReader",
     "FakeInstagramMessageReader",
     "FakeInstagramMessageSender",
