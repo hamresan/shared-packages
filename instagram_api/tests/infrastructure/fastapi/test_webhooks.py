@@ -11,7 +11,7 @@ from instagram_api.application.webhooks import (
     InstagramWebhookProcessor,
 )
 from instagram_api.domain import InstagramAccountId, InstagramConnectionId
-from instagram_api.infrastructure.fastapi import create_instagram_webhook_router
+from instagram_api.presentation.fastapi import create_instagram_webhook_router
 from instagram_api.infrastructure.meta.webhooks import (
     MetaInstagramWebhookEventIdFactory,
     MetaInstagramWebhookEventMapper,
