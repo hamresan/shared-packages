@@ -162,13 +162,15 @@ complete DM archive.
 
 ### Webhooks
 
-- provide webhook verification helpers/adapters;
-- validate provider signatures where applicable;
-- parse Meta payloads through dedicated provider DTOs/mappers;
-- normalize inbound events into package-owned event contracts;
-- preserve enough provider account identity for the host to resolve the owning `InstagramConnection`;
-- expose idempotency/deduplication boundaries;
-- avoid invoking host business/AI logic inside the webhook parser.
+- provide webhook verification helpers and an optional thin FastAPI presentation adapter;
+- validate `X-Hub-Signature-256` against the raw request body before parsing;
+- keep handshake verification, signature validation, parsing, event mapping, deduplication,
+  connection resolution, and host dispatch as separate responsibilities;
+- normalize generic Meta envelope items without implementing Stage 10/11 event semantics;
+- preserve the provider professional-account ID needed for deterministic connection resolution;
+- use an atomic idempotency contract with acquire/complete/release semantics so duplicates are
+  suppressed while failed dispatches remain retryable;
+- never invoke host business/AI logic inside parsing or provider infrastructure.
 
 Conceptual normalized events:
 

@@ -21,7 +21,13 @@ from .messaging import (
     InstagramMessageSender,
     InstagramOutboundMessageProvider,
 )
-from .webhooks import InstagramWebhookParser, InstagramWebhookVerifier
+from .webhooks import (
+    InstagramWebhookConnectionResolver,
+    InstagramWebhookEventDispatcher,
+    InstagramWebhookIdempotencyStore,
+    InstagramWebhookParser,
+    InstagramWebhookVerifier,
+)
 
 __all__ = [
     "InstagramAccessTokenProvider",
@@ -44,6 +50,9 @@ __all__ = [
     "InstagramPrivateCommentReplyProvider",
     "InstagramPublicCommentReplier",
     "InstagramPublicCommentReplyProvider",
+    "InstagramWebhookConnectionResolver",
+    "InstagramWebhookEventDispatcher",
+    "InstagramWebhookIdempotencyStore",
     "InstagramWebhookParser",
     "InstagramWebhookVerifier",
 ]

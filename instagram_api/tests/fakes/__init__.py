@@ -20,7 +20,13 @@ from .messaging import (
     FakeInstagramMessageSender,
     FakeInstagramOutboundMessageProvider,
 )
-from .webhooks import FakeInstagramWebhookParser, FakeInstagramWebhookVerifier
+from .webhooks import (
+    FakeInstagramWebhookConnectionResolver,
+    FakeInstagramWebhookEventDispatcher,
+    FakeInstagramWebhookIdempotencyStore,
+    FakeInstagramWebhookParser,
+    FakeInstagramWebhookVerifier,
+)
 
 __all__ = [
     "FakeInstagramAccessTokenProvider",
@@ -42,6 +48,9 @@ __all__ = [
     "FakeInstagramMessageReader",
     "FakeInstagramMessageSender",
     "FakeInstagramOutboundMessageProvider",
+    "FakeInstagramWebhookConnectionResolver",
+    "FakeInstagramWebhookEventDispatcher",
+    "FakeInstagramWebhookIdempotencyStore",
     "FakeInstagramWebhookParser",
     "FakeInstagramWebhookVerifier",
 ]

@@ -285,13 +285,21 @@ connection before host business/automation logic runs.
 
 ### Webhook verification and authenticity
 
-Status: **Verified capability; implementation details deferred**
+Status: **Verified and implemented in Stage 9**
 
-Meta requires webhook endpoint verification and authenticated webhook handling. Stage 9 will keep
-verification handshake, signature/authenticity validation, parsing, mapping, deduplication, and host
-dispatch as separate responsibilities.
+Stage 9 implements:
 
-Stage 0 does not select concrete FastAPI or cryptographic implementation details.
+- GET verification handshake through an injected verify token;
+- HMAC-SHA256 validation of `X-Hub-Signature-256` against the raw request body;
+- generic Meta Instagram envelope parsing;
+- deterministic event IDs for envelope items that do not expose a provider event ID;
+- provider professional-account identity preservation for host connection resolution;
+- atomic idempotency boundaries with acquire/complete/release semantics;
+- separate host connection-resolution and normalized-event dispatch contracts;
+- an optional thin FastAPI presentation adapter for GET/POST webhook routes.
+
+Stage 9 deliberately does not interpret message/comment business semantics; those remain in
+Stages 10 and 11.
 
 ### Rate limits and retry behavior
 
