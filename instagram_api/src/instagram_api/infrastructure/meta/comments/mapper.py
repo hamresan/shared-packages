@@ -21,9 +21,7 @@ class MetaInstagramCommentMapper:
         """Map one provider DTO to a normalized comment."""
 
         parent_id = (
-            InstagramCommentId(dto.parent_comment_id)
-            if dto.parent_comment_id is not None
-            else None
+            InstagramCommentId(dto.parent_comment_id) if dto.parent_comment_id is not None else None
         )
         return InstagramComment(
             id=InstagramCommentId(dto.id),

@@ -28,10 +28,7 @@ class MetaInstagramCommentPayloadParser:
         timestamp = payload.get("timestamp")
         media_id = self._field_parser.media_id(payload.get("media")) or fallback_media_id
         author_id = self._field_parser.author_id(payload.get("from"))
-        parent_id = (
-            self._field_parser.parent_id(payload.get("parent_id"))
-            or fallback_parent_id
-        )
+        parent_id = self._field_parser.parent_id(payload.get("parent_id")) or fallback_parent_id
 
         required_values = (comment_id, author_id, text, timestamp)
         if not all(isinstance(value, str) and value for value in required_values):

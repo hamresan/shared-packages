@@ -40,9 +40,7 @@ def test_comment_access_policy_accepts_required_permissions() -> None:
             InstagramCommentConnectionUnavailableError,
         ),
         (
-            build_connection(
-                permissions=frozenset({"instagram_business_manage_comments"})
-            ),
+            build_connection(permissions=frozenset({"instagram_business_manage_comments"})),
             InstagramCommentPermissionRequiredError,
         ),
         (

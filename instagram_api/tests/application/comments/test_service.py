@@ -80,9 +80,5 @@ def test_comment_service_keeps_connections_isolated_and_forwards_cursors() -> No
 
     assert first_page.items == (comment,)
     assert second_page.items == (comment,)
-    assert provider.comment_calls == [
-        (first_id, media_id, PaginationCursor("comments-cursor"))
-    ]
-    assert provider.reply_calls == [
-        (second_id, comment_id, PaginationCursor("replies-cursor"))
-    ]
+    assert provider.comment_calls == [(first_id, media_id, PaginationCursor("comments-cursor"))]
+    assert provider.reply_calls == [(second_id, comment_id, PaginationCursor("replies-cursor"))]
