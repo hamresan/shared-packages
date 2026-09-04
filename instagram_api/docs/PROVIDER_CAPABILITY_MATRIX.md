@@ -128,6 +128,10 @@ Provider limitations that must be preserved:
 
 - the API does not guarantee unlimited message history;
 - conversations in the Requests folder that have not been active for 30 days are not returned;
+- message IDs can be returned for a conversation while full message details are limited to the 20
+  most recent messages;
+- messages outside that detail window must remain partial rather than receiving inferred sender or
+  message text;
 - shared media/message payloads can expose only the image/video URL rather than complete media
   details;
 - one professional account converses with one customer per conversation; group messaging is not
