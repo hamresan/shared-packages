@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from instagram_api.domain import InstagramConnectionId as ApiInstagramConnectionId
+
 from instagram_auth import (
     CORE_PERMISSIONS,
     InstagramAccountType,
@@ -20,12 +21,8 @@ from tests.integration.support import (
 )
 
 OWNER_ID = "owner-1"
-CONNECTION_A = InstagramConnectionId(
-    UUID("00000000-0000-0000-0000-000000000101")
-)
-CONNECTION_B = InstagramConnectionId(
-    UUID("00000000-0000-0000-0000-000000000102")
-)
+CONNECTION_A = InstagramConnectionId(UUID("00000000-0000-0000-0000-000000000101"))
+CONNECTION_B = InstagramConnectionId(UUID("00000000-0000-0000-0000-000000000102"))
 
 
 def build_connection(

@@ -11,9 +11,14 @@ from instagram_api.application.contracts import (
 )
 from instagram_api.domain import (
     InstagramAccountId,
+)
+from instagram_api.domain import (
     InstagramConnection as ApiInstagramConnection,
+)
+from instagram_api.domain import (
     InstagramConnectionId as ApiInstagramConnectionId,
 )
+
 from instagram_auth import (
     InstagramAccessTokenProvider as AuthAccessTokenProvider,
 )
