@@ -1,4 +1,4 @@
-"""Application errors for Instagram messaging reads."""
+"""Application errors for Instagram messaging access."""
 
 
 class InstagramMessagingAccessError(Exception):

@@ -120,6 +120,14 @@ The package must not infer a globally active Instagram account from the current 
 
 Important platform rules:
 
+- outbound Stage 6 messaging is reply-oriented: the recipient must have an existing conversation
+  discoverable for the selected connection before the package sends;
+- the initial send capability supports text plus documented image/video URL attachments;
+- host `correlation_id` values are returned for host correlation but are never sent to Meta and do
+  not create provider-side idempotency;
+- non-idempotent Send API POST requests are never retried automatically;
+- provider request/policy rejection is normalized without inventing undocumented Meta error-code
+  semantics;
 - the package must not promise arbitrary proactive DMs;
 - conversations in the Requests folder that have been inactive for 30 days are not returned by Meta;
 - message IDs may be listed beyond the range for which Meta exposes full details;

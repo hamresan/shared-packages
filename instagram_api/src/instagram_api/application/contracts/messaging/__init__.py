@@ -2,6 +2,10 @@
 
 from .conversations import InstagramConversationReader
 from .messages import InstagramMessageReader
+from .outbound import (
+    InstagramMessageRecipientEligibilityChecker,
+    InstagramOutboundMessageProvider,
+)
 from .providers import InstagramConversationProvider, InstagramMessageProvider
 from .senders import InstagramMessageSender
 
@@ -10,5 +14,7 @@ __all__ = [
     "InstagramConversationReader",
     "InstagramMessageProvider",
     "InstagramMessageReader",
+    "InstagramMessageRecipientEligibilityChecker",
     "InstagramMessageSender",
+    "InstagramOutboundMessageProvider",
 ]
