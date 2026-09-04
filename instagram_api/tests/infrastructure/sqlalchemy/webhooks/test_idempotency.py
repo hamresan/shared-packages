@@ -41,8 +41,11 @@ def test_two_store_instances_atomically_suppress_duplicate_claim(tmp_path: Path)
             first = await create_store(engine)
             second = SqlAlchemyInstagramWebhookIdempotencyStore(engine)
 
-            assert await first.acquire("event-a") is True
-            assert await second.acquire("event-a") is False
+            claims = await asyncio.gather(
+                first.acquire("event-a"),
+                second.acquire("event-a"),
+            )
+            assert sorted(claims) == [False, True]
         finally:
             await engine.dispose()
 
