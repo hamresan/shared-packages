@@ -72,5 +72,7 @@ class MetaRequestExecutor:
                     attempt=attempt,
                 ):
                     raise
+
+                delay_seconds = self._retry_policy.delay_seconds(attempt)
                 attempt += 1
-                await asyncio.sleep(0)
+                await asyncio.sleep(delay_seconds)
