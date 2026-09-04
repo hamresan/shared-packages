@@ -1,5 +1,7 @@
 """Durable SQLAlchemy webhook idempotency store."""
 
+from datetime import UTC, datetime
+
 from sqlalchemy import delete, insert, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -42,9 +44,7 @@ class SqlAlchemyInstagramWebhookIdempotencyStore(InstagramWebhookIdempotencyStor
                 .where(instagram_webhook_events.c.event_id == event_id)
                 .values(
                     status=_STATUS_COMPLETED,
-                    completed_at=__import__("datetime").datetime.now(
-                        __import__("datetime").UTC
-                    ),
+                    completed_at=datetime.now(UTC),
                 )
             )
 
