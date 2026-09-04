@@ -2,12 +2,12 @@
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from identity import AuthenticatedPrincipal
-from instagram_api.application.contracts import InstagramWebhookFailureDecision
 from instagram_api.application.webhooks import (
     InstagramWebhookProcessor,
     NullInstagramWebhookOperationalObserver,
@@ -19,6 +19,7 @@ from instagram_api.domain import (
     InstagramCommentCreated,
     InstagramCommentId,
     InstagramConnectionId,
+    InstagramMessageId,
     InstagramMessageReceived,
     InstagramUserId,
     InstagramWebhookEvent,
@@ -92,11 +93,8 @@ def build_principal() -> AuthenticatedPrincipal:
 
 
 def test_two_connections_remain_isolated_across_reads_webhooks_and_replies(
-    tmp_path: object,
+    tmp_path: Path,
 ) -> None:
-    from pathlib import Path
-
-    assert isinstance(tmp_path, Path)
 
     async def scenario() -> None:
         engine = create_async_engine(
@@ -200,7 +198,7 @@ def test_two_connections_remain_isolated_across_reads_webhooks_and_replies(
                     sender_id=InstagramUserId("customer-a"),
                     recipient_id=InstagramUserId("ig-account-a"),
                     occurred_at=datetime(2026, 9, 4, 12, 1, tzinfo=UTC),
-                    message_id="message-a",
+                    message_id=InstagramMessageId("message-a"),
                     text="Hello",
                 ),
             )
