@@ -6,10 +6,14 @@ from typing import cast
 from instagram_api.infrastructure.meta.http import MetaInvalidResponseError
 
 from .dto import MetaInstagramMediaDto
+from .fields import MetaInstagramMediaFieldParser
 
 
 class MetaInstagramMediaPayloadParser:
     """Validates Meta media payloads and produces typed DTOs."""
+
+    def __init__(self, field_parser: MetaInstagramMediaFieldParser) -> None:
+        self._field_parser = field_parser
 
     def parse_media(self, payload: Mapping[str, object]) -> MetaInstagramMediaDto:
         """Parse one Meta media object."""
@@ -37,13 +41,15 @@ class MetaInstagramMediaPayloadParser:
         return MetaInstagramMediaDto(
             id=media_id,
             media_type=media_type,
-            media_product_type=self._optional_string(payload.get("media_product_type")),
+            media_product_type=self._field_parser.optional_string(
+                payload.get("media_product_type")
+            ),
             timestamp=timestamp,
-            caption=self._optional_string(payload.get("caption")),
-            media_url=self._optional_string(payload.get("media_url")),
-            thumbnail_url=self._optional_string(payload.get("thumbnail_url")),
-            permalink=self._optional_string(payload.get("permalink")),
-            children=self._children(payload.get("children")),
+            caption=self._field_parser.optional_string(payload.get("caption")),
+            media_url=self._field_parser.optional_string(payload.get("media_url")),
+            thumbnail_url=self._field_parser.optional_string(payload.get("thumbnail_url")),
+            permalink=self._field_parser.optional_string(payload.get("permalink")),
+            children=self._field_parser.child_ids(payload.get("children")),
         )
 
     def parse_media_list(
@@ -68,27 +74,3 @@ class MetaInstagramMediaPayloadParser:
                 )
             items.append(self.parse_media(cast(Mapping[str, object], raw_item)))
         return tuple(items)
-
-    @staticmethod
-    def _optional_string(value: object) -> str | None:
-        return value if isinstance(value, str) else None
-
-    @staticmethod
-    def _children(value: object) -> tuple[str, ...]:
-        if not isinstance(value, Mapping):
-            return ()
-
-        children_mapping = cast(Mapping[str, object], value)
-        raw_data = children_mapping.get("data")
-        if not isinstance(raw_data, Sequence) or isinstance(raw_data, str | bytes):
-            return ()
-
-        child_ids: list[str] = []
-        for raw_child in raw_data:
-            if not isinstance(raw_child, Mapping):
-                continue
-            child_mapping = cast(Mapping[str, object], raw_child)
-            child_id = child_mapping.get("id")
-            if isinstance(child_id, str) and child_id:
-                child_ids.append(child_id)
-        return tuple(child_ids)
