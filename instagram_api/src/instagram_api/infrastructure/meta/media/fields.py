@@ -23,8 +23,9 @@ class MetaInstagramMediaFieldParser:
         if not isinstance(raw_data, Sequence) or isinstance(raw_data, str | bytes):
             return ()
 
+        child_items = cast(Sequence[object], raw_data)
         child_ids: list[str] = []
-        for raw_child in raw_data:
+        for raw_child in child_items:
             if not isinstance(raw_child, Mapping):
                 continue
             child_mapping = cast(Mapping[str, object], raw_child)
