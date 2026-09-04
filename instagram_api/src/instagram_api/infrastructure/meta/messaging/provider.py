@@ -9,7 +9,6 @@ from instagram_api.domain import (
     InstagramConversation,
     InstagramConversationId,
     InstagramMessage,
-    InstagramMessageId,
     Page,
     PaginationCursor,
 )
@@ -17,16 +16,12 @@ from instagram_api.infrastructure.meta.http import (
     MetaHttpMethod,
     MetaJsonExecutor,
     MetaPaginationCursorMapper,
-    MetaProviderError,
 )
 
-from .detail_policy import MetaInstagramMessageDetailAvailabilityPolicy
-from .dto import MetaInstagramMessageDetailDto, MetaInstagramMessageSummaryDto
+from .detail_reader import MetaInstagramMessageDetailReader
 from .mapper import MetaInstagramMessagingMapper
 from .parser import MetaInstagramMessagingPayloadParser
 from .query_builder import MetaInstagramMessageQueryBuilder
-
-MESSAGE_DETAIL_FIELDS = "id,created_time,from,to,message"
 
 
 class MetaInstagramConversationProvider(InstagramConversationProvider):
@@ -67,7 +62,7 @@ class MetaInstagramConversationProvider(InstagramConversationProvider):
 
 
 class MetaInstagramMessageProvider(InstagramMessageProvider):
-    """Lists messages and enriches recent supported messages with details."""
+    """Lists messages for one explicit Instagram conversation."""
 
     def __init__(
         self,
@@ -76,14 +71,14 @@ class MetaInstagramMessageProvider(InstagramMessageProvider):
         mapper: MetaInstagramMessagingMapper,
         pagination_mapper: MetaPaginationCursorMapper,
         query_builder: MetaInstagramMessageQueryBuilder,
-        detail_policy: MetaInstagramMessageDetailAvailabilityPolicy,
+        detail_reader: MetaInstagramMessageDetailReader,
     ) -> None:
         self._executor = executor
         self._parser = parser
         self._mapper = mapper
         self._pagination_mapper = pagination_mapper
         self._query_builder = query_builder
-        self._detail_policy = detail_policy
+        self._detail_reader = detail_reader
 
     async def list_messages(
         self,
@@ -101,7 +96,7 @@ class MetaInstagramMessageProvider(InstagramMessageProvider):
         messages: list[InstagramMessage] = []
 
         for summary in summaries:
-            detail = await self._read_detail(connection_id, summary)
+            detail = await self._detail_reader.read(connection_id, summary)
             messages.append(self._mapper.message(conversation_id, summary, detail))
 
         messages_payload = self._parser.messages_container(payload)
@@ -109,25 +104,3 @@ class MetaInstagramMessageProvider(InstagramMessageProvider):
             items=tuple(messages),
             next_cursor=self._pagination_mapper.next_cursor(messages_payload),
         )
-
-    async def _read_detail(
-        self,
-        connection_id: InstagramConnectionId,
-        summary: MetaInstagramMessageSummaryDto,
-    ) -> MetaInstagramMessageDetailDto | None:
-        if summary.is_unsupported:
-            return None
-
-        try:
-            payload = await self._executor.execute_json(
-                connection_id=connection_id,
-                method=MetaHttpMethod.GET,
-                path=str(InstagramMessageId(summary.id)),
-                params={"fields": MESSAGE_DETAIL_FIELDS},
-            )
-        except MetaProviderError as exc:
-            if self._detail_policy.details_are_unavailable(exc):
-                return None
-            raise
-
-        return self._parser.parse_message_detail(payload)
