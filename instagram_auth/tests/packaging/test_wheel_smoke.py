@@ -32,9 +32,7 @@ def test_wheel_build_contains_public_package_and_metadata(tmp_path: Path) -> Non
         names = frozenset(wheel.namelist())
         assert "instagram_auth/__init__.py" in names
 
-        metadata_name = next(
-            name for name in names if name.endswith(".dist-info/METADATA")
-        )
+        metadata_name = next(name for name in names if name.endswith(".dist-info/METADATA"))
         metadata = wheel.read(metadata_name).decode("utf-8")
 
     assert "Name: hamresan-instagram-auth" in metadata
