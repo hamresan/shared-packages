@@ -5,9 +5,10 @@ from datetime import datetime
 from enum import StrEnum
 
 from .identifiers import InstagramMessageId, InstagramUserId
+from .webhook_payloads import InstagramWebhookPayload
 
 
-class InstagramMessagingWebhookPayload:
+class InstagramMessagingWebhookPayload(InstagramWebhookPayload):
     """Marker base for normalized Instagram messaging webhook payloads."""
 
 
