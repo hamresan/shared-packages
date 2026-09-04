@@ -12,6 +12,7 @@ def test_all_identity_tables_use_identity_prefix() -> None:
     assert table_names == {
         "identity_users",
         "identity_user_identities",
+        "identity_external_identities",
         "identity_otp_challenges",
         "identity_sessions",
     }

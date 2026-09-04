@@ -66,3 +66,7 @@ class InvalidRefreshTokenError(IdentityError):
 
 class RefreshTokenReuseError(InvalidRefreshTokenError):
     pass
+
+
+class ExternalIdentityAuthenticationError(IdentityError):
+    pass

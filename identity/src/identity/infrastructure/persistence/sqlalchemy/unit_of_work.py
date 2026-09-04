@@ -4,6 +4,7 @@ from typing import Self
 
 from identity.application.contracts.database import AsyncSessionFactory
 from identity.application.contracts.repositories import (
+    ExternalIdentityRepository,
     OtpChallengeRepository,
     SessionRepository,
     UserIdentityRepository,
@@ -11,10 +12,14 @@ from identity.application.contracts.repositories import (
 )
 from identity.application.contracts.unit_of_work import IdentityUnitOfWork
 from identity.infrastructure.persistence.sqlalchemy.mappers import (
+    ExternalIdentityMapper,
     OtpChallengeMapper,
     SessionMapper,
     UserIdentityMapper,
     UserMapper,
+)
+from identity.infrastructure.persistence.sqlalchemy.repositories.external_identities import (
+    SqlAlchemyExternalIdentityRepository,
 )
 from identity.infrastructure.persistence.sqlalchemy.repositories.otp_challenges import (
     SqlAlchemyOtpChallengeRepository,
@@ -40,6 +45,7 @@ class SqlAlchemyIdentityUnitOfWork(IdentityUnitOfWork):
         self._session: AsyncSession | None = None
         self._users: UserRepository | None = None
         self._identities: UserIdentityRepository | None = None
+        self._external_identities: ExternalIdentityRepository | None = None
         self._otp_challenges: OtpChallengeRepository | None = None
         self._sessions: SessionRepository | None = None
 
@@ -54,6 +60,12 @@ class SqlAlchemyIdentityUnitOfWork(IdentityUnitOfWork):
         if self._identities is None:
             raise RuntimeError("Unit of work has not been entered")
         return self._identities
+
+    @property
+    def external_identities(self) -> ExternalIdentityRepository:
+        if self._external_identities is None:
+            raise RuntimeError("Unit of work has not been entered")
+        return self._external_identities
 
     @property
     def otp_challenges(self) -> OtpChallengeRepository:
@@ -72,6 +84,10 @@ class SqlAlchemyIdentityUnitOfWork(IdentityUnitOfWork):
         self._session = await self._session_context.__aenter__()
         self._users = SqlAlchemyUserRepository(self._session, UserMapper())
         self._identities = SqlAlchemyUserIdentityRepository(self._session, UserIdentityMapper())
+        self._external_identities = SqlAlchemyExternalIdentityRepository(
+            self._session,
+            ExternalIdentityMapper(),
+        )
         self._otp_challenges = SqlAlchemyOtpChallengeRepository(
             self._session,
             OtpChallengeMapper(),

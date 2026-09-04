@@ -9,6 +9,14 @@ from identity.application.dto import (
     RequestOtpResult,
     VerifyOtpCommand,
 )
+from identity.application.dto_external import AuthenticateExternalIdentityCommand
+
+
+class ExternalIdentityAuthenticator(Protocol):
+    async def execute(
+        self,
+        command: AuthenticateExternalIdentityCommand,
+    ) -> AuthSessionResult: ...
 
 
 class OtpRequester(Protocol):
