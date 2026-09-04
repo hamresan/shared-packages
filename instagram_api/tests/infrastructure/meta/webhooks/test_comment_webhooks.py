@@ -107,10 +107,7 @@ def test_comment_delivery_event_id_is_stable_for_duplicate_payload() -> None:
 @pytest.mark.parametrize(
     "payload",
     [
-        (
-            b'{"entry":[{"id":"account","field":"comments",'
-            b'"value":{"text":"missing comment id"}}]}'
-        ),
+        (b'{"entry":[{"id":"account","field":"comments","value":{"text":"missing comment id"}}]}'),
         (
             b'{"entry":[{"id":"account","changes":['
             b'{"field":"live_comments","value":{"text":"missing id"}}]}]}'

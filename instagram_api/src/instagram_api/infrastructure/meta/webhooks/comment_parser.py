@@ -34,9 +34,7 @@ class MetaInstagramCommentWebhookPayloadParser:
         commenter_username: str | None = None
         if from_mapping is not None:
             commenter_id = self._fields.optional_string(from_mapping.get("id"))
-            commenter_username = self._fields.optional_string(
-                from_mapping.get("username")
-            )
+            commenter_username = self._fields.optional_string(from_mapping.get("username"))
 
         media_mapping = self._fields.mapping(value.get("media"))
         media_id: str | None = None

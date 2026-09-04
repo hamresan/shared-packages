@@ -22,15 +22,9 @@ class MetaInstagramCommentWebhookMapper:
 
         return InstagramCommentCreated(
             comment_id=InstagramCommentId(dto.comment_id),
-            media_id=(
-                InstagramMediaId(dto.media_id)
-                if dto.media_id is not None
-                else None
-            ),
+            media_id=(InstagramMediaId(dto.media_id) if dto.media_id is not None else None),
             commenter_id=(
-                InstagramUserId(dto.commenter_id)
-                if dto.commenter_id is not None
-                else None
+                InstagramUserId(dto.commenter_id) if dto.commenter_id is not None else None
             ),
             commenter_username=dto.commenter_username,
             text=dto.text,
@@ -51,15 +45,9 @@ class MetaInstagramCommentWebhookMapper:
 
         return InstagramCommentChanged(
             comment_id=InstagramCommentId(dto.comment_id),
-            media_id=(
-                InstagramMediaId(dto.media_id)
-                if dto.media_id is not None
-                else None
-            ),
+            media_id=(InstagramMediaId(dto.media_id) if dto.media_id is not None else None),
             commenter_id=(
-                InstagramUserId(dto.commenter_id)
-                if dto.commenter_id is not None
-                else None
+                InstagramUserId(dto.commenter_id) if dto.commenter_id is not None else None
             ),
             commenter_username=dto.commenter_username,
             text=dto.text,
