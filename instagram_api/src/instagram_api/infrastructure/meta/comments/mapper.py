@@ -27,7 +27,7 @@ class MetaInstagramCommentMapper:
         )
         return InstagramComment(
             id=InstagramCommentId(dto.id),
-            media_id=InstagramMediaId(dto.media_id),
+            media_id=InstagramMediaId(dto.media_id) if dto.media_id is not None else None,
             author_id=InstagramUserId(dto.author_id),
             text=dto.text,
             created_at=self._timestamp_parser.parse(dto.timestamp),
