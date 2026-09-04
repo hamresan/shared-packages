@@ -14,7 +14,10 @@ from identity.application.dto import (
     VerifyOtpCommand,
 )
 from identity.domain import IdentityType, OtpPurpose
-from identity.public.errors import AccessTokenAuthenticationError
+from identity.public.errors import (
+    AccessTokenAuthenticationError,
+    ExternalIdentityAuthenticationError,
+)
 from identity.public.services import (
     ExternalIdentityAuthenticator,
     IdentityDataRetentionCleaner,
@@ -59,6 +62,7 @@ __all__ = [
     "AuthSessionResult",
     "AuthenticatedPrincipal",
     "DataRetentionCleanupResult",
+    "ExternalIdentityAuthenticationError",
     "ExternalIdentityAuthenticator",
     "IdentityDataRetentionCleaner",
     "IdentityPublicApi",
