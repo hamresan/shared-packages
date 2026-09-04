@@ -142,4 +142,10 @@ class SessionModel(IdentityBase):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-__all__ = ["ExternalIdentityModel", "OtpChallengeModel", "SessionModel", "UserIdentityModel", "UserModel"]
+__all__ = [
+    "ExternalIdentityModel",
+    "OtpChallengeModel",
+    "SessionModel",
+    "UserIdentityModel",
+    "UserModel",
+]

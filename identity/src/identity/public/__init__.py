@@ -4,7 +4,6 @@ from typing import Protocol
 from uuid import UUID
 
 from identity.application.contracts.security import AccessTokenIssuer, IssuedAccessToken
-from identity.application.dto_external import AuthenticateExternalIdentityCommand
 from identity.application.dto import (
     AuthSessionResult,
     DataRetentionCleanupResult,
@@ -13,6 +12,7 @@ from identity.application.dto import (
     RequestOtpResult,
     VerifyOtpCommand,
 )
+from identity.application.dto_external import AuthenticateExternalIdentityCommand
 from identity.domain import IdentityType, OtpPurpose
 from identity.public.errors import (
     AccessTokenAuthenticationError,

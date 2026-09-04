@@ -67,7 +67,9 @@ class AuthenticateExternalIdentityService:
             else:
                 user = await uow.users.get(external_identity.user_id)
                 if user is None:
-                    raise ExternalIdentityAuthenticationError("External identity references a missing user")
+                    raise ExternalIdentityAuthenticationError(
+                        "External identity references a missing user"
+                    )
 
             try:
                 self._user_status_policy.ensure_active(user)
