@@ -5,6 +5,7 @@ from .get_connection import GetInstagramConnection
 from .list_connections import ListInstagramConnections
 from .policy import InstagramConnectionOwnershipPolicy
 from .reconnect import ReconnectInstagramConnection
+from .start_reauthorization import StartInstagramConnectionReauthorization
 
 __all__ = [
     "DisconnectInstagramConnection",
@@ -12,4 +13,5 @@ __all__ = [
     "InstagramConnectionOwnershipPolicy",
     "ListInstagramConnections",
     "ReconnectInstagramConnection",
+    "StartInstagramConnectionReauthorization",
 ]
