@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 import re
 import unicodedata
@@ -46,7 +47,10 @@ class PersonaStyleAnalyzer:
         return tuple(counts)
 
     @staticmethod
-    def _ratio(texts: tuple[str, ...], predicate: callable) -> float:
+    def _ratio(
+        texts: tuple[str, ...],
+        predicate: Callable[[str], bool],
+    ) -> float:
         return sum(1 for text in texts if predicate(text)) / len(texts)
 
     @staticmethod
