@@ -40,7 +40,9 @@ def test_sdk_gateway_maps_create_and_interaction(
     async def fake_message_create(**kwargs: object) -> SimpleNamespace:
         message_calls.append(kwargs)
         return SimpleNamespace(
-            messages=[],
+            messages=[
+                SimpleNamespace(content="Here is the account reply."),
+            ],
             stop_reason=SimpleNamespace(stop_reason="end_turn"),
         )
 
@@ -58,6 +60,7 @@ def test_sdk_gateway_maps_create_and_interaction(
 
     assert created.agent_id == "agent-1"
     assert result.succeeded is True
+    assert result.reply_text == "Here is the account reply."
     assert create_calls == [
         {
             "name": "sellora-agent",

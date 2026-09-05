@@ -21,3 +21,4 @@ class LettaInteractionResult:
 @dataclass(frozen=True, slots=True)
 class LettaKnowledgeResult:
     block_id: str
+    reply_text: str | None = None
