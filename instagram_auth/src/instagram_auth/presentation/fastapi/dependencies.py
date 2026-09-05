@@ -8,6 +8,9 @@ from instagram_auth.application.connections.disconnect import DisconnectInstagra
 from instagram_auth.application.connections.get_connection import GetInstagramConnection
 from instagram_auth.application.connections.list_connections import ListInstagramConnections
 from instagram_auth.application.connections.reconnect import ReconnectInstagramConnection
+from instagram_auth.application.connections.start_reauthorization import (
+    StartInstagramConnectionReauthorization,
+)
 
 from .contracts import InstagramFastApiCallbackResponder, InstagramFastApiOwnerContext
 from .errors import InstagramFastApiErrorMapper
@@ -24,6 +27,7 @@ class InstagramFastApiDependencies:
     get_connection: GetInstagramConnection
     disconnect_connection: DisconnectInstagramConnection
     reconnect_connection: ReconnectInstagramConnection
+    start_connection_reauthorization: StartInstagramConnectionReauthorization
     owner_context: InstagramFastApiOwnerContext
     callback_responder: InstagramFastApiCallbackResponder
     connection_mapper: InstagramConnectionResponseMapper
