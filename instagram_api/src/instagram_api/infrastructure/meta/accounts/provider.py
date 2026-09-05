@@ -8,7 +8,7 @@ from .mapper import MetaInstagramAccountMapper
 from .parser import MetaInstagramAccountPayloadParser
 
 ACCOUNT_PROFILE_FIELDS = (
-    "id",
+    "user_id",
     "username",
     "name",
     "biography",
