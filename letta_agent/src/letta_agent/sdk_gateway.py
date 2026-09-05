@@ -1,5 +1,4 @@
-from letta_client import AsyncLetta
-from letta_client.core.api_error import ApiError
+from letta_client import APIError, AsyncLetta
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.errors import LettaProviderError
@@ -26,7 +25,7 @@ class SdkLettaGateway(LettaGateway):
                     }
                 ],
             )
-        except ApiError as error:
+        except APIError as error:
             raise LettaProviderError("Letta agent creation failed") from error
 
         return LettaCreatedAgent(agent_id=agent.id)
@@ -42,7 +41,7 @@ class SdkLettaGateway(LettaGateway):
                 agent_id=agent_id,
                 input=message,
             )
-        except ApiError as error:
+        except APIError as error:
             raise LettaProviderError("Letta agent interaction failed") from error
 
         if response.stop_reason.stop_reason != "end_turn":
