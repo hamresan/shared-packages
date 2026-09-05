@@ -47,4 +47,14 @@ class SdkLettaGateway(LettaGateway):
         if response.stop_reason.stop_reason != "end_turn":
             raise LettaProviderError("Letta agent interaction did not complete successfully")
 
-        return LettaInteractionResult(succeeded=True)
+        reply_text: str | None = None
+        for response_message in reversed(response.messages):
+            content = getattr(response_message, "content", None)
+            if isinstance(content, str) and content.strip():
+                reply_text = content.strip()
+                break
+
+        return LettaInteractionResult(
+            succeeded=True,
+            reply_text=reply_text,
+        )
