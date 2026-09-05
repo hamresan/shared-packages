@@ -6,8 +6,6 @@ from instagram_auth.application.errors.connection_access import (
     InstagramConnectionIdentityMismatchError,
     InstagramConnectionNotFoundError,
 )
-from instagram_auth.domain import InstagramConnectionId
-
 from .factory import InstagramConnectionFactory
 from .models import InstagramConnectionLinkResult, ReauthorizeInstagramConnectionCommand
 from ..connections.policy import InstagramConnectionOwnershipPolicy
@@ -34,9 +32,7 @@ class ReauthorizeInstagramConnection:
         command: ReauthorizeInstagramConnectionCommand,
     ) -> InstagramConnectionLinkResult:
         async with self._unit_of_work:
-            connection = await self._unit_of_work.connections.get_by_id(
-                InstagramConnectionId(command.connection_id)
-            )
+            connection = await self._unit_of_work.connections.get_by_id(command.connection_id)
             if connection is None:
                 raise InstagramConnectionNotFoundError("Instagram connection not found")
 
