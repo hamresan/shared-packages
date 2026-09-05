@@ -58,6 +58,10 @@ Resolve Instagram Professional account
 Create/update another InstagramConnection
 ```
 
+A disconnected connection can also be reauthorized explicitly. Reauthorization is bound to the
+selected `InstagramConnection` across OAuth state and rejects a callback that resolves a different
+Instagram account, so reconnect cannot silently attach or create another connection.
+
 Conceptually:
 
 ```text
@@ -113,6 +117,7 @@ The package should own:
 - access-token lifecycle orchestration supported by Meta;
 - connection status and authorization status;
 - create/update/list/read/disconnect semantics for independent Instagram connections;
+- selected-connection OAuth reauthorization that preserves the target connection across callback;
 - protection against duplicate connection records for the same host owner and Instagram account;
 - disconnect/revoke orchestration where supported;
 - provider error normalization;
