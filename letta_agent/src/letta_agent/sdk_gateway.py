@@ -40,7 +40,7 @@ class SdkLettaGateway(LettaGateway):
         value: str,
     ) -> LettaKnowledgeResult:
         try:
-            existing = await self._client.agents.blocks.retrieve(
+            await self._client.agents.blocks.retrieve(
                 self._knowledge_label,
                 agent_id=agent_id,
             )
