@@ -27,7 +27,7 @@ def test_generator_extracts_observable_style_without_business_facts() -> None:
         )
     )
 
-    assert result.verbosity is PersonaVerbosity.BALANCED
+    assert result.verbosity is PersonaVerbosity.CONCISE
     assert result.sentence_style is PersonaSentenceStyle.SHORT
     assert result.emoji_usage is PersonaUsageLevel.FREQUENT
     assert result.hashtag_usage is PersonaUsageLevel.FREQUENT
