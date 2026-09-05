@@ -8,7 +8,9 @@ from .models import (
     InstagramHostIdentityHandoff,
     InstagramHostLinkAction,
     LinkInstagramAuthorizationCommand,
+    ReauthorizeInstagramConnectionCommand,
 )
+from .reauthorize import ReauthorizeInstagramConnection
 
 __all__ = [
     "InstagramConnectionFactory",
@@ -18,4 +20,6 @@ __all__ = [
     "LinkInstagramAuthorization",
     "LinkInstagramAuthorizationCommand",
     "PrepareInstagramHostIdentityHandoff",
+    "ReauthorizeInstagramConnection",
+    "ReauthorizeInstagramConnectionCommand",
 ]
