@@ -1,7 +1,7 @@
-from collections.abc import Callable
-from dataclasses import dataclass
 import re
 import unicodedata
+from collections.abc import Callable
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)

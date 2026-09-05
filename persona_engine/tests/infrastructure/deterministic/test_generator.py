@@ -39,9 +39,7 @@ def test_generator_extracts_observable_style_without_business_facts() -> None:
 def test_generator_classifies_long_plain_text_style() -> None:
     long_sentence = " ".join(["word"] * 40)
 
-    result = build_generator().generate(
-        PersonaInitializationInput(texts=(long_sentence,))
-    )
+    result = build_generator().generate(PersonaInitializationInput(texts=(long_sentence,)))
 
     assert result.verbosity is PersonaVerbosity.DETAILED
     assert result.sentence_style is PersonaSentenceStyle.LONG
