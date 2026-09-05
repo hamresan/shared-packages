@@ -32,7 +32,7 @@ def test_provider_reads_me_with_supported_profile_fields() -> None:
             MetaHttpResponse(
                 200,
                 {},
-                b'{"id":"account","username":"shop","biography":"Bio"}',
+                b'{"user_id":"account","username":"shop","biography":"Bio"}',
             )
         ]
     )
