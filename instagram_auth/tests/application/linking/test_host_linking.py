@@ -13,8 +13,14 @@ from instagram_auth.application.linking import (
     LinkInstagramAuthorization,
     LinkInstagramAuthorizationCommand,
     PrepareInstagramHostIdentityHandoff,
+    ReauthorizeInstagramConnection,
+    ReauthorizeInstagramConnectionCommand,
+)
+from instagram_auth.application.errors.connection_access import (
+    InstagramConnectionIdentityMismatchError,
 )
 from instagram_auth.application.models import InstagramAuthorizationGrant
+from instagram_auth.application.connections import InstagramConnectionOwnershipPolicy
 from instagram_auth.baseline import InstagramAccountType, InstagramPermission
 from instagram_auth.domain import InstagramConnectionId, InstagramExternalIdentity
 from tests.application.contracts.fakes import FixedClock
@@ -122,3 +128,116 @@ def test_returning_identity_refreshes_same_connection_for_host_owner() -> None:
     assert first.connection_id == second.connection_id
     assert second.created is False
     assert len(unit_of_work.connection_fake.connections) == 1
+
+
+
+def test_selected_reauthorization_refreshes_same_connection() -> None:
+    unit_of_work = FakeInstagramAuthUnitOfWork()
+    clock = FixedClock(NOW)
+    factory = InstagramConnectionFactory(
+        clock,
+        FixedInstagramConnectionIdGenerator(CONNECTION_ID),
+    )
+    linker = LinkInstagramAuthorization(
+        unit_of_work=unit_of_work,
+        connection_factory=factory,
+        credential_factory=InstagramProtectedCredentialFactory(
+            FakeInstagramAccessTokenProtector(),
+            clock,
+        ),
+    )
+    run(
+        linker.execute(
+            LinkInstagramAuthorizationCommand(
+                owner_user_id="owner-1",
+                identity=IDENTITY,
+                grant=GRANT,
+            )
+        )
+    )
+
+    refreshed_identity = InstagramExternalIdentity(
+        provider_user_id=IDENTITY.provider_user_id,
+        username="renamed_shop",
+        account_type=InstagramAccountType.BUSINESS,
+    )
+    service = ReauthorizeInstagramConnection(
+        unit_of_work=unit_of_work,
+        ownership_policy=InstagramConnectionOwnershipPolicy(),
+        connection_factory=factory,
+        credential_factory=InstagramProtectedCredentialFactory(
+            FakeInstagramAccessTokenProtector(),
+            clock,
+        ),
+    )
+    result = run(
+        service.execute(
+            ReauthorizeInstagramConnectionCommand(
+                owner_user_id="owner-1",
+                connection_id=CONNECTION_ID,
+                identity=refreshed_identity,
+                grant=GRANT,
+            )
+        )
+    )
+
+    assert result.connection_id == CONNECTION_ID
+    assert result.created is False
+    assert unit_of_work.connection_fake.connections[CONNECTION_ID].username == "renamed_shop"
+    assert len(unit_of_work.connection_fake.connections) == 1
+
+
+def test_selected_reauthorization_rejects_different_instagram_identity() -> None:
+    unit_of_work = FakeInstagramAuthUnitOfWork()
+    clock = FixedClock(NOW)
+    factory = InstagramConnectionFactory(
+        clock,
+        FixedInstagramConnectionIdGenerator(CONNECTION_ID),
+    )
+    linker = LinkInstagramAuthorization(
+        unit_of_work=unit_of_work,
+        connection_factory=factory,
+        credential_factory=InstagramProtectedCredentialFactory(
+            FakeInstagramAccessTokenProtector(),
+            clock,
+        ),
+    )
+    run(
+        linker.execute(
+            LinkInstagramAuthorizationCommand(
+                owner_user_id="owner-1",
+                identity=IDENTITY,
+                grant=GRANT,
+            )
+        )
+    )
+    different_identity = InstagramExternalIdentity(
+        provider_user_id="ig-professional-other",
+        username="other_shop",
+        account_type=InstagramAccountType.BUSINESS,
+    )
+    service = ReauthorizeInstagramConnection(
+        unit_of_work=unit_of_work,
+        ownership_policy=InstagramConnectionOwnershipPolicy(),
+        connection_factory=factory,
+        credential_factory=InstagramProtectedCredentialFactory(
+            FakeInstagramAccessTokenProtector(),
+            clock,
+        ),
+    )
+
+    try:
+        run(
+            service.execute(
+                ReauthorizeInstagramConnectionCommand(
+                    owner_user_id="owner-1",
+                    connection_id=CONNECTION_ID,
+                    identity=different_identity,
+                    grant=GRANT,
+                )
+            )
+        )
+    except InstagramConnectionIdentityMismatchError:
+        pass
+    else:
+        raise AssertionError("Expected selected reauthorization identity mismatch")
