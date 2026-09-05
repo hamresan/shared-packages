@@ -156,7 +156,6 @@ def test_sdk_gateway_updates_existing_knowledge_block(
     assert update_calls == [("account_knowledge", "agent-1", "Updated knowledge", True)]
 
 
-
 def test_sdk_gateway_normalizes_non_404_knowledge_lookup_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
