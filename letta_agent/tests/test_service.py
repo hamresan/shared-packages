@@ -55,9 +55,7 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
             value="Account knowledge",
         )
     )
-    interaction = asyncio.run(
-        service.interact(agent_id=created.agent_id, message="Are you ready?")
-    )
+    interaction = asyncio.run(service.interact(agent_id=created.agent_id, message="Are you ready?"))
 
     assert created.agent_id == "agent-1"
     assert knowledge.block_id == "block-1"
