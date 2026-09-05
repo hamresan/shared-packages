@@ -6,6 +6,7 @@ from instagram_auth.application.errors.access import (
     InstagramConnectionUnavailableError,
 )
 from instagram_auth.application.errors.connection_access import (
+    InstagramConnectionIdentityMismatchError,
     InstagramConnectionNotFoundError,
     InstagramConnectionOwnershipError,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "DuplicateInstagramConnectionError",
     "InstagramConnectionAccessError",
     "InstagramConnectionConcurrencyError",
+    "InstagramConnectionIdentityMismatchError",
     "InstagramConnectionNotFoundError",
     "InstagramConnectionOwnershipError",
     "InstagramConnectionPermissionError",
