@@ -168,7 +168,6 @@ def test_connect_account_accepts_matching_authenticated_owner() -> None:
     assert result.correlation.owner_user_id == "owner-1"
 
 
-
 def test_reconnect_account_requires_selected_connection_correlation() -> None:
     store = FakeInstagramAuthorizationStateStore()
     run(

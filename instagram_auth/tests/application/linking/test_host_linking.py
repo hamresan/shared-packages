@@ -48,9 +48,7 @@ GRANT = InstagramAuthorizationGrant(
 def test_login_handoff_requires_host_to_resolve_local_user() -> None:
     result = PrepareInstagramHostIdentityHandoff().execute(
         identity=IDENTITY,
-        correlation=InstagramAuthorizationCorrelation(
-            flow=InstagramAuthorizationFlow.LOGIN
-        ),
+        correlation=InstagramAuthorizationCorrelation(flow=InstagramAuthorizationFlow.LOGIN),
     )
 
     assert result.action is InstagramHostLinkAction.RESOLVE_LOCAL_USER
@@ -186,10 +184,7 @@ def test_selected_reauthorization_refreshes_same_connection() -> None:
 
     assert result.connection_id == CONNECTION_ID
     assert result.created is False
-    assert (
-        unit_of_work.connection_fake.connections[CONNECTION_ID].username
-        == "renamed_shop"
-    )
+    assert unit_of_work.connection_fake.connections[CONNECTION_ID].username == "renamed_shop"
     assert len(unit_of_work.connection_fake.connections) == 1
 
 

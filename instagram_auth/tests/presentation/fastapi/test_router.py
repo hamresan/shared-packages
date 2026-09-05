@@ -197,8 +197,6 @@ def test_selected_connection_reauthorization_rejects_cross_owner_access() -> Non
     selected = build_connection(11, "owner-2")
     context = build_test_context(connections=(selected,))
 
-    response = context.client.post(
-        f"/instagram/connections/{selected.id.value}/reauthorization"
-    )
+    response = context.client.post(f"/instagram/connections/{selected.id.value}/reauthorization")
 
     assert response.status_code == 403

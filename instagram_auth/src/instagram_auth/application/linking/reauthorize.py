@@ -36,13 +36,9 @@ class ReauthorizeInstagramConnection:
         command: ReauthorizeInstagramConnectionCommand,
     ) -> InstagramConnectionLinkResult:
         async with self._unit_of_work:
-            connection = await self._unit_of_work.connections.get_by_id(
-                command.connection_id
-            )
+            connection = await self._unit_of_work.connections.get_by_id(command.connection_id)
             if connection is None:
-                raise InstagramConnectionNotFoundError(
-                    "Instagram connection not found"
-                )
+                raise InstagramConnectionNotFoundError("Instagram connection not found")
 
             self._ownership_policy.ensure_owner(
                 owner_user_id=command.owner_user_id,
