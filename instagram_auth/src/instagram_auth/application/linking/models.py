@@ -33,6 +33,16 @@ class LinkInstagramAuthorizationCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class ReauthorizeInstagramConnectionCommand:
+    """Explicit command for refreshing one selected Instagram connection."""
+
+    owner_user_id: str
+    connection_id: InstagramConnectionId
+    identity: InstagramExternalIdentity
+    grant: InstagramAuthorizationGrant
+
+
+@dataclass(frozen=True, slots=True)
 class InstagramConnectionLinkResult:
     """Result of linking an Instagram authorization to one host owner."""
 
