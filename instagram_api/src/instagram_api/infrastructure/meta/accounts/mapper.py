@@ -12,7 +12,7 @@ class MetaInstagramAccountMapper:
         """Map a provider DTO to an Instagram account."""
 
         return InstagramAccount(
-            id=InstagramAccountId(dto.id),
+            id=InstagramAccountId(dto.user_id),
             username=dto.username,
             name=dto.name,
             biography=dto.biography,

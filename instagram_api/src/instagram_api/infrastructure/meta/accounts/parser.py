@@ -13,11 +13,11 @@ class MetaInstagramAccountPayloadParser:
     def parse(self, payload: Mapping[str, object]) -> MetaInstagramAccountDto:
         """Parse a provider payload and reject invalid required fields."""
 
-        account_id = payload.get("id")
+        user_id = payload.get("user_id")
         username = payload.get("username")
-        if not isinstance(account_id, str) or not account_id:
+        if not isinstance(user_id, str) or not user_id:
             raise MetaInvalidResponseError(
-                message="Meta account response is missing a valid id.",
+                message="Meta account response is missing a valid user_id.",
                 status_code=200,
             )
         if not isinstance(username, str) or not username:
@@ -35,7 +35,7 @@ class MetaInstagramAccountPayloadParser:
         media_count = payload.get("media_count")
 
         return MetaInstagramAccountDto(
-            id=account_id,
+            user_id=user_id,
             username=username,
             name=name if isinstance(name, str) else None,
             biography=biography if isinstance(biography, str) else None,

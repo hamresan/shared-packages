@@ -16,7 +16,7 @@ def test_parser_and_mapper_preserve_supported_profile_fields() -> None:
 
     dto = parser.parse(
         {
-            "id": "17841400000000000",
+            "user_id": "17841400000000000",
             "username": "shop",
             "name": "Shop Name",
             "biography": "Bio",
@@ -43,7 +43,7 @@ def test_parser_and_mapper_preserve_supported_profile_fields() -> None:
 def test_parser_normalizes_invalid_optional_fields_to_none() -> None:
     dto = MetaInstagramAccountPayloadParser().parse(
         {
-            "id": "account",
+            "user_id": "account",
             "username": "shop",
             "name": 1,
             "followers_count": True,
@@ -60,9 +60,9 @@ def test_parser_normalizes_invalid_optional_fields_to_none() -> None:
     "payload",
     [
         {"username": "shop"},
-        {"id": "account"},
-        {"id": "", "username": "shop"},
-        {"id": "account", "username": ""},
+        {"user_id": "account"},
+        {"user_id": "", "username": "shop"},
+        {"user_id": "account", "username": ""},
     ],
 )
 def test_parser_rejects_missing_required_profile_fields(
