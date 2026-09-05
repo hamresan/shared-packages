@@ -23,7 +23,10 @@ def test_sdk_gateway_maps_create_and_interaction(
 
     async def fake_message_create(**kwargs: object) -> SimpleNamespace:
         message_calls.append(kwargs)
-        return SimpleNamespace(messages=[])
+        return SimpleNamespace(
+            messages=[],
+            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        )
 
     monkeypatch.setattr(client.agents, "create", fake_create)
     monkeypatch.setattr(client.agents.messages, "create", fake_message_create)
