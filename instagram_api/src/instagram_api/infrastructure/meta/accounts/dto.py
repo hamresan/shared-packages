@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class MetaInstagramAccountDto:
     """Typed Meta account profile payload."""
 
-    id: str
+    user_id: str
     username: str
     name: str | None
     biography: str | None
