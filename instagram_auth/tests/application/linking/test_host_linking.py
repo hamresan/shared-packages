@@ -2,11 +2,17 @@ from asyncio import run
 from datetime import UTC, datetime
 from uuid import UUID
 
+import pytest
+
 from instagram_auth.application.authorization import (
     InstagramAuthorizationCorrelation,
     InstagramAuthorizationFlow,
 )
+from instagram_auth.application.connections import InstagramConnectionOwnershipPolicy
 from instagram_auth.application.credentials import InstagramProtectedCredentialFactory
+from instagram_auth.application.errors.connection_access import (
+    InstagramConnectionIdentityMismatchError,
+)
 from instagram_auth.application.linking import (
     InstagramConnectionFactory,
     InstagramHostLinkAction,
@@ -16,11 +22,7 @@ from instagram_auth.application.linking import (
     ReauthorizeInstagramConnection,
     ReauthorizeInstagramConnectionCommand,
 )
-from instagram_auth.application.errors.connection_access import (
-    InstagramConnectionIdentityMismatchError,
-)
 from instagram_auth.application.models import InstagramAuthorizationGrant
-from instagram_auth.application.connections import InstagramConnectionOwnershipPolicy
 from instagram_auth.baseline import InstagramAccountType, InstagramPermission
 from instagram_auth.domain import InstagramConnectionId, InstagramExternalIdentity
 from tests.application.contracts.fakes import FixedClock
@@ -46,7 +48,9 @@ GRANT = InstagramAuthorizationGrant(
 def test_login_handoff_requires_host_to_resolve_local_user() -> None:
     result = PrepareInstagramHostIdentityHandoff().execute(
         identity=IDENTITY,
-        correlation=InstagramAuthorizationCorrelation(flow=InstagramAuthorizationFlow.LOGIN),
+        correlation=InstagramAuthorizationCorrelation(
+            flow=InstagramAuthorizationFlow.LOGIN
+        ),
     )
 
     assert result.action is InstagramHostLinkAction.RESOLVE_LOCAL_USER
@@ -130,7 +134,6 @@ def test_returning_identity_refreshes_same_connection_for_host_owner() -> None:
     assert len(unit_of_work.connection_fake.connections) == 1
 
 
-
 def test_selected_reauthorization_refreshes_same_connection() -> None:
     unit_of_work = FakeInstagramAuthUnitOfWork()
     clock = FixedClock(NOW)
@@ -183,7 +186,10 @@ def test_selected_reauthorization_refreshes_same_connection() -> None:
 
     assert result.connection_id == CONNECTION_ID
     assert result.created is False
-    assert unit_of_work.connection_fake.connections[CONNECTION_ID].username == "renamed_shop"
+    assert (
+        unit_of_work.connection_fake.connections[CONNECTION_ID].username
+        == "renamed_shop"
+    )
     assert len(unit_of_work.connection_fake.connections) == 1
 
 
@@ -226,7 +232,7 @@ def test_selected_reauthorization_rejects_different_instagram_identity() -> None
         ),
     )
 
-    try:
+    with pytest.raises(InstagramConnectionIdentityMismatchError):
         run(
             service.execute(
                 ReauthorizeInstagramConnectionCommand(
@@ -237,7 +243,3 @@ def test_selected_reauthorization_rejects_different_instagram_identity() -> None
                 )
             )
         )
-    except InstagramConnectionIdentityMismatchError:
-        pass
-    else:
-        raise AssertionError("Expected selected reauthorization identity mismatch")
