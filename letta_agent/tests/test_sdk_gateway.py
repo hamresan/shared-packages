@@ -144,6 +144,4 @@ def test_sdk_gateway_updates_existing_knowledge_block(
     )
 
     assert result.block_id == "block-1"
-    assert update_calls == [
-        ("account_knowledge", "agent-1", "Updated knowledge", True)
-    ]
+    assert update_calls == [("account_knowledge", "agent-1", "Updated knowledge", True)]
