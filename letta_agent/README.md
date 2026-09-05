@@ -9,6 +9,7 @@ Capabilities:
 
 - create one Letta agent from an application-provided specification;
 - attach a persona memory block at creation time;
+- upsert a read-only account knowledge block on an existing agent;
 - perform a controlled interaction with an existing agent;
 - normalize Letta SDK/API failures.
 
