@@ -27,6 +27,7 @@ def build_state(
     *,
     flow: InstagramAuthorizationFlow = InstagramAuthorizationFlow.LOGIN,
     owner_user_id: str | None = None,
+    connection_id: str | None = None,
     expires_at: datetime | None = None,
 ) -> InstagramAuthorizationState:
     return InstagramAuthorizationState(
@@ -35,6 +36,7 @@ def build_state(
         correlation=InstagramAuthorizationCorrelation(
             flow=flow,
             owner_user_id=owner_user_id,
+            connection_id=connection_id,
         ),
         expires_at=expires_at or NOW + timedelta(minutes=10),
     )
@@ -164,3 +166,46 @@ def test_connect_account_accepts_matching_authenticated_owner() -> None:
     )
 
     assert result.correlation.owner_user_id == "owner-1"
+
+
+def test_reconnect_account_requires_selected_connection_correlation() -> None:
+    store = FakeInstagramAuthorizationStateStore()
+    run(
+        store.save(
+            build_state(
+                flow=InstagramAuthorizationFlow.RECONNECT_ACCOUNT,
+                owner_user_id="owner-1",
+            )
+        )
+    )
+
+    assert_failure(
+        build_service(store),
+        state="state-1",
+        owner_user_id="owner-1",
+        expected=InstagramAuthorizationStateValidationFailure.CONNECTION_MISSING,
+    )
+
+
+def test_reconnect_account_accepts_matching_owner_and_selected_connection() -> None:
+    store = FakeInstagramAuthorizationStateStore()
+    connection_id = "00000000-0000-0000-0000-000000000123"
+    run(
+        store.save(
+            build_state(
+                flow=InstagramAuthorizationFlow.RECONNECT_ACCOUNT,
+                owner_user_id="owner-1",
+                connection_id=connection_id,
+            )
+        )
+    )
+
+    result = run(
+        build_service(store).execute(
+            state="state-1",
+            redirect_uri=REDIRECT_URI,
+            authenticated_owner_user_id="owner-1",
+        )
+    )
+
+    assert result.correlation.connection_id == connection_id

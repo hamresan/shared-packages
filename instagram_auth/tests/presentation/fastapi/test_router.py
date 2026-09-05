@@ -51,6 +51,17 @@ def test_connect_account_returns_host_authentication_error_when_owner_is_missing
     assert response.status_code == 401
 
 
+def test_generic_authorization_start_rejects_reconnect_flow() -> None:
+    context = build_test_context(owner_user_id="owner-1")
+
+    response = context.client.get(
+        "/instagram/auth/start",
+        params={"flow": "reconnect_account"},
+    )
+
+    assert response.status_code == 400
+
+
 def test_callback_validates_state_then_delegates_host_response_behavior() -> None:
     context = build_test_context(owner_user_id=None)
     start_response = context.client.get("/instagram/auth/start")
@@ -158,3 +169,34 @@ def test_authorization_state_is_consumed_once_through_callback_route() -> None:
     assert first.status_code == 200
     assert second.status_code == 400
     assert run(context.state_store.consume("secure-state")) is None
+
+
+def test_selected_connection_reauthorization_binds_connection_to_callback() -> None:
+    selected = build_connection(10, "owner-1")
+    context = build_test_context(connections=(selected,))
+
+    start_response = context.client.post(
+        f"/instagram/connections/{selected.id.value}/reauthorization"
+    )
+    assert start_response.status_code == 200
+
+    callback_response = context.client.get(
+        "/instagram/auth/callback",
+        params={"code": "reauthorization-code", "state": "secure-state"},
+    )
+
+    assert callback_response.status_code == 200
+    assert context.callback_responder.authorization is not None
+    correlation = context.callback_responder.authorization.correlation
+    assert correlation.flow.value == "reconnect_account"
+    assert correlation.owner_user_id == "owner-1"
+    assert correlation.connection_id == str(selected.id.value)
+
+
+def test_selected_connection_reauthorization_rejects_cross_owner_access() -> None:
+    selected = build_connection(11, "owner-2")
+    context = build_test_context(connections=(selected,))
+
+    response = context.client.post(f"/instagram/connections/{selected.id.value}/reauthorization")
+
+    assert response.status_code == 403

@@ -18,6 +18,7 @@ class InstagramAuthorizationStateValidationFailure(StrEnum):
     EXPIRED = "expired"
     REDIRECT_URI_MISMATCH = "redirect_uri_mismatch"
     OWNER_MISMATCH = "owner_mismatch"
+    CONNECTION_MISSING = "connection_missing"
 
 
 class InstagramAuthorizationStateValidationError(ValueError):
@@ -53,11 +54,18 @@ class InstagramAuthorizationStateValidator:
 
         correlation = authorization_state.correlation
         if (
-            correlation.flow is InstagramAuthorizationFlow.CONNECT_ACCOUNT
+            correlation.flow is not InstagramAuthorizationFlow.LOGIN
             and authenticated_owner_user_id != correlation.owner_user_id
         ):
             raise InstagramAuthorizationStateValidationError(
                 InstagramAuthorizationStateValidationFailure.OWNER_MISMATCH
+            )
+        if (
+            correlation.flow is InstagramAuthorizationFlow.RECONNECT_ACCOUNT
+            and correlation.connection_id is None
+        ):
+            raise InstagramAuthorizationStateValidationError(
+                InstagramAuthorizationStateValidationFailure.CONNECTION_MISSING
             )
 
         return ValidatedInstagramAuthorization(

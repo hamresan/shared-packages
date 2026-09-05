@@ -7,3 +7,7 @@ class InstagramConnectionNotFoundError(LookupError):
 
 class InstagramConnectionOwnershipError(PermissionError):
     """Raised when a host owner attempts to access another owner's connection."""
+
+
+class InstagramConnectionIdentityMismatchError(ValueError):
+    """Raised when reauthorization resolves a different Instagram account."""

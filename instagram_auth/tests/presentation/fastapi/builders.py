@@ -17,6 +17,7 @@ from instagram_auth.application.connections import (
     InstagramConnectionOwnershipPolicy,
     ListInstagramConnections,
     ReconnectInstagramConnection,
+    StartInstagramConnectionReauthorization,
 )
 from instagram_auth.baseline import (
     InstagramAccountType,
@@ -101,6 +102,10 @@ def build_test_context(
         get_connection=GetInstagramConnection(store, ownership_policy),
         disconnect_connection=DisconnectInstagramConnection(unit_of_work, ownership_policy),
         reconnect_connection=ReconnectInstagramConnection(unit_of_work, ownership_policy),
+        start_connection_reauthorization=StartInstagramConnectionReauthorization(
+            get_connection=GetInstagramConnection(store, ownership_policy),
+            start_authorization=start_authorization,
+        ),
         owner_context=FakeInstagramFastApiOwnerContext(owner_user_id),
         callback_responder=callback_responder,
         connection_mapper=InstagramConnectionResponseMapper(),
