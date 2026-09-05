@@ -16,9 +16,9 @@ class LettaCreatedAgent:
 @dataclass(frozen=True, slots=True)
 class LettaInteractionResult:
     succeeded: bool
+    reply_text: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class LettaKnowledgeResult:
     block_id: str
-    reply_text: str | None = None
