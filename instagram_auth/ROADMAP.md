@@ -228,6 +228,9 @@ Requirements:
 - host ownership authorization is supplied/validated at the application boundary;
 - one user's connection cannot be read or modified by another user;
 - disconnecting one connection does not affect the user's other connections;
+- reconnect authorization is correlated to the intended connection across OAuth state;
+- a callback resolving a different Instagram account is rejected rather than creating or updating
+  another connection;
 - reconnect updates the intended connection rather than creating accidental duplicates.
 
 Exit criteria:
@@ -268,6 +271,7 @@ GET    /instagram/auth/callback
 GET    /instagram/connections
 GET    /instagram/connections/{connection_id}
 POST   /instagram/connections/{connection_id}/disconnect
+POST   /instagram/connections/{connection_id}/reauthorization
 POST   /instagram/connections/{connection_id}/reconnect
 ```
 
