@@ -38,9 +38,7 @@ def test_sdk_gateway_maps_create_and_interaction(
     )
 
     created = asyncio.run(gateway.create_agent(spec))
-    result = asyncio.run(
-        gateway.interact(agent_id=created.agent_id, message=message)
-    )
+    result = asyncio.run(gateway.interact(agent_id=created.agent_id, message=message))
 
     assert created.agent_id == "agent-1"
     assert result.succeeded is True

@@ -46,8 +46,6 @@ class SdkLettaGateway(LettaGateway):
             raise LettaProviderError("Letta agent interaction failed") from error
 
         if response.stop_reason.stop_reason != "end_turn":
-            raise LettaProviderError(
-                "Letta agent interaction did not complete successfully"
-            )
+            raise LettaProviderError("Letta agent interaction did not complete successfully")
 
         return LettaInteractionResult(succeeded=True)
