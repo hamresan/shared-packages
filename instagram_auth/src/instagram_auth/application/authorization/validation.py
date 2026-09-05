@@ -53,7 +53,7 @@ class InstagramAuthorizationStateValidator:
 
         correlation = authorization_state.correlation
         if (
-            correlation.flow is InstagramAuthorizationFlow.CONNECT_ACCOUNT
+            correlation.flow is not InstagramAuthorizationFlow.LOGIN
             and authenticated_owner_user_id != correlation.owner_user_id
         ):
             raise InstagramAuthorizationStateValidationError(
