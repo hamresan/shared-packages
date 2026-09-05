@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
 from instagram_auth.application.authorization.models import (
     InstagramAuthorizationCorrelation,
@@ -43,6 +43,12 @@ class InstagramFastApiRouteHandlers:
         flow: InstagramAuthorizationFlow = InstagramAuthorizationFlow.LOGIN,
         optional_permissions: Annotated[list[InstagramPermission] | None, Query()] = None,
     ) -> InstagramAuthorizationStartResponse:
+        if flow is InstagramAuthorizationFlow.RECONNECT_ACCOUNT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Use the selected connection reauthorization endpoint",
+            )
+
         owner_user_id = None
         if flow is InstagramAuthorizationFlow.CONNECT_ACCOUNT:
             owner_user_id = await self._dependencies.owner_context.require_owner_user_id(request)
