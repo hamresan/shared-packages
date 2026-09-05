@@ -62,6 +62,25 @@ class InstagramFastApiRouteHandlers:
             expires_at=result.expires_at,
         )
 
+    async def start_connection_reauthorization(
+        self,
+        request: Request,
+        connection_id: UUID,
+    ) -> InstagramAuthorizationStartResponse:
+        owner_user_id = await self._dependencies.owner_context.require_owner_user_id(request)
+        try:
+            result = await self._dependencies.start_connection_reauthorization.execute(
+                owner_user_id=owner_user_id,
+                connection_id=InstagramConnectionId(connection_id),
+                redirect_uri=self._config.redirect_uri,
+            )
+        except (InstagramConnectionNotFoundError, InstagramConnectionOwnershipError) as exc:
+            raise self._dependencies.error_mapper.connection_access(exc) from exc
+        return InstagramAuthorizationStartResponse(
+            authorization_url=result.authorization_url,
+            expires_at=result.expires_at,
+        )
+
     async def authorization_callback(
         self,
         request: Request,
@@ -164,6 +183,12 @@ def create_instagram_auth_router(
         handlers.get_connection,
         methods=["GET"],
         response_model=InstagramConnectionResponse,
+    )
+    router.add_api_route(
+        "/instagram/connections/{connection_id}/reauthorization",
+        handlers.start_connection_reauthorization,
+        methods=["POST"],
+        response_model=InstagramAuthorizationStartResponse,
     )
     router.add_api_route(
         "/instagram/connections/{connection_id}/disconnect",
