@@ -3,7 +3,11 @@ from letta_client.core.api_error import ApiError
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.errors import LettaProviderError
-from letta_agent.models import LettaAgentSpec, LettaCreatedAgent, LettaInteractionResult
+from letta_agent.models import (
+    LettaAgentSpec,
+    LettaCreatedAgent,
+    LettaInteractionResult,
+)
 
 
 class SdkLettaGateway(LettaGateway):
@@ -34,11 +38,16 @@ class SdkLettaGateway(LettaGateway):
         message: str,
     ) -> LettaInteractionResult:
         try:
-            await self._client.agents.messages.create(
+            response = await self._client.agents.messages.create(
                 agent_id=agent_id,
                 input=message,
             )
         except ApiError as error:
             raise LettaProviderError("Letta agent interaction failed") from error
+
+        if response.stop_reason.stop_reason != "end_turn":
+            raise LettaProviderError(
+                "Letta agent interaction did not complete successfully"
+            )
 
         return LettaInteractionResult(succeeded=True)
