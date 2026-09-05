@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hamresan-letta-agent"
+version = "0.1.0"
+description = "Reusable Letta agent integration package for Python applications."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "letta-client>=1.0,<2.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "build>=1.2,<2.0",
+  "pyright>=1.1,<2.0",
+  "pytest>=8.0,<9.0",
+  "pytest-cov>=6.0,<7.0",
+  "ruff>=0.9,<1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/letta_agent"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "--cov=letta_agent --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+branch = true
+source = ["letta_agent"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
