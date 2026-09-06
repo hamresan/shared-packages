@@ -90,21 +90,48 @@ def test_parser_normalizes_postback_read_reaction_edit_and_referral() -> None:
 
 
 def test_parser_preserves_provider_message_id_and_stable_delivery_event_id() -> None:
-    payload = (
+    first_payload = (
         b'{"entry":[{"id":"account","time":1788523200,"messaging":['
+        b'{"sender":{"id":"sender"},"recipient":{"id":"account"},'
+        b'"timestamp":"1788523200123",'
+        b'"message":{"mid":"provider-message-id","text":"hello"}}]}]}'
+    )
+    retry_payload = (
+        b'{"entry":[{"id":"account","time":1788523299,"messaging":['
         b'{"sender":{"id":"sender"},"recipient":{"id":"account"},'
         b'"timestamp":"1788523200123",'
         b'"message":{"mid":"provider-message-id","text":"hello"}}]}]}'
     )
     parser = build_meta_webhook_parser()
 
-    first = parser.parse(payload)[0]
-    second = parser.parse(payload)[0]
+    first = parser.parse(first_payload)[0]
+    retried = parser.parse(retry_payload)[0]
 
     message = first.payload
     assert isinstance(message, InstagramMessageReceived)
     assert message.message_id == InstagramMessageId("provider-message-id")
-    assert first.event_id == second.event_id
+    assert first.event_id == retried.event_id
+
+
+def test_parser_uses_different_event_id_for_different_provider_message_id() -> None:
+    first_payload = (
+        b'{"entry":[{"id":"account","time":1788523200,"messaging":['
+        b'{"sender":{"id":"sender"},"recipient":{"id":"account"},'
+        b'"timestamp":"1788523200123",'
+        b'"message":{"mid":"provider-message-1","text":"hello"}}]}]}'
+    )
+    second_payload = (
+        b'{"entry":[{"id":"account","time":1788523200,"messaging":['
+        b'{"sender":{"id":"sender"},"recipient":{"id":"account"},'
+        b'"timestamp":"1788523200123",'
+        b'"message":{"mid":"provider-message-2","text":"hello"}}]}]}'
+    )
+    parser = build_meta_webhook_parser()
+
+    first = parser.parse(first_payload)[0]
+    second = parser.parse(second_payload)[0]
+
+    assert first.event_id != second.event_id
 
 
 def test_parser_keeps_unknown_messaging_variant_as_generic_event() -> None:
