@@ -2,6 +2,7 @@ from letta_agent.contracts import LettaGateway
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
+    LettaCreatedConversation,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -13,6 +14,13 @@ class LettaAgentService:
 
     async def create(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
         return await self._gateway.create_agent(spec)
+
+    async def create_conversation(
+        self,
+        *,
+        agent_id: str,
+    ) -> LettaCreatedConversation:
+        return await self._gateway.create_conversation(agent_id=agent_id)
 
     async def set_knowledge(
         self,
@@ -32,3 +40,16 @@ class LettaAgentService:
         message: str,
     ) -> LettaInteractionResult:
         return await self._gateway.interact(agent_id=agent_id, message=message)
+
+    async def interact_in_conversation(
+        self,
+        *,
+        agent_id: str,
+        conversation_id: str,
+        message: str,
+    ) -> LettaInteractionResult:
+        return await self._gateway.interact_in_conversation(
+            agent_id=agent_id,
+            conversation_id=conversation_id,
+            message=message,
+        )
