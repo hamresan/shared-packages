@@ -46,9 +46,7 @@ class SdkLettaGateway(LettaGateway):
                 agent_id=agent_id,
             )
         except APIError as error:
-            raise LettaProviderError(
-                "Letta conversation creation failed"
-            ) from error
+            raise LettaProviderError("Letta conversation creation failed") from error
 
         return LettaCreatedConversation(
             conversation_id=conversation.id,
@@ -128,8 +126,6 @@ class SdkLettaGateway(LettaGateway):
                 streaming=False,
             )
         except APIError as error:
-            raise LettaProviderError(
-                "Letta conversation interaction failed"
-            ) from error
+            raise LettaProviderError("Letta conversation interaction failed") from error
 
         return self._interaction_mapper.to_result(response)

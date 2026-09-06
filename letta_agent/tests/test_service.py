@@ -56,9 +56,7 @@ class FakeLettaGateway(LettaGateway):
         conversation_id: str,
         message: str,
     ) -> LettaInteractionResult:
-        self.conversation_interactions.append(
-            (agent_id, conversation_id, message)
-        )
+        self.conversation_interactions.append((agent_id, conversation_id, message))
         return LettaInteractionResult(succeeded=True)
 
 
@@ -78,12 +76,8 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
             value="Account knowledge",
         )
     )
-    conversation = asyncio.run(
-        service.create_conversation(agent_id=created.agent_id)
-    )
-    interaction = asyncio.run(
-        service.interact(agent_id=created.agent_id, message="Are you ready?")
-    )
+    conversation = asyncio.run(service.create_conversation(agent_id=created.agent_id))
+    interaction = asyncio.run(service.interact(agent_id=created.agent_id, message="Are you ready?"))
     conversation_interaction = asyncio.run(
         service.interact_in_conversation(
             agent_id=created.agent_id,

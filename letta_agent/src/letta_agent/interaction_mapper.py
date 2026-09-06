@@ -7,9 +7,7 @@ from letta_agent.models import LettaInteractionResult
 class LettaInteractionResponseMapper:
     def to_result(self, response: LettaResponse) -> LettaInteractionResult:
         if response.stop_reason.stop_reason != "end_turn":
-            raise LettaProviderError(
-                "Letta agent interaction did not complete successfully"
-            )
+            raise LettaProviderError("Letta agent interaction did not complete successfully")
 
         reply_text: str | None = None
         for response_message in reversed(response.messages):

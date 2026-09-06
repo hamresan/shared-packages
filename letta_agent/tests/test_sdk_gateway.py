@@ -276,9 +276,7 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
     )
     gateway = SdkLettaGateway(client)
 
-    conversation = asyncio.run(
-        gateway.create_conversation(agent_id="agent-1")
-    )
+    conversation = asyncio.run(gateway.create_conversation(agent_id="agent-1"))
     result = asyncio.run(
         gateway.interact_in_conversation(
             agent_id="agent-1",
@@ -318,11 +316,7 @@ def test_sdk_gateway_normalizes_conversation_creation_failure(
         LettaProviderError,
         match="Letta conversation creation failed",
     ):
-        asyncio.run(
-            SdkLettaGateway(client).create_conversation(
-                agent_id="agent-1"
-            )
-        )
+        asyncio.run(SdkLettaGateway(client).create_conversation(agent_id="agent-1"))
 
 
 def test_sdk_gateway_normalizes_conversation_interaction_failure(
