@@ -2,6 +2,7 @@ from letta_client import APIError, APIStatusError, AsyncLetta
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.errors import LettaProviderError
+from letta_agent.interaction_mapper import LettaInteractionResponseMapper
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
@@ -16,6 +17,7 @@ class SdkLettaGateway(LettaGateway):
 
     def __init__(self, client: AsyncLetta) -> None:
         self._client = client
+        self._interaction_mapper = LettaInteractionResponseMapper()
 
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
         try:
@@ -109,20 +111,7 @@ class SdkLettaGateway(LettaGateway):
         except APIError as error:
             raise LettaProviderError("Letta agent interaction failed") from error
 
-        if response.stop_reason.stop_reason != "end_turn":
-            raise LettaProviderError("Letta agent interaction did not complete successfully")
-
-        reply_text: str | None = None
-        for response_message in reversed(response.messages):
-            content = getattr(response_message, "content", None)
-            if isinstance(content, str) and content.strip():
-                reply_text = content.strip()
-                break
-
-        return LettaInteractionResult(
-            succeeded=True,
-            reply_text=reply_text,
-        )
+        return self._interaction_mapper.to_result(response)
 
     async def interact_in_conversation(
         self,
@@ -132,29 +121,15 @@ class SdkLettaGateway(LettaGateway):
         message: str,
     ) -> LettaInteractionResult:
         try:
-            response = await self._client.agents.messages.create(
+            response = await self._client.conversations.messages.create(
+                conversation_id,
                 agent_id=agent_id,
                 input=message,
-                conversation_id=conversation_id,
+                streaming=False,
             )
         except APIError as error:
             raise LettaProviderError(
                 "Letta conversation interaction failed"
             ) from error
 
-        if response.stop_reason.stop_reason != "end_turn":
-            raise LettaProviderError(
-                "Letta conversation interaction did not complete successfully"
-            )
-
-        reply_text: str | None = None
-        for response_message in reversed(response.messages):
-            content = getattr(response_message, "content", None)
-            if isinstance(content, str) and content.strip():
-                reply_text = content.strip()
-                break
-
-        return LettaInteractionResult(
-            succeeded=True,
-            reply_text=reply_text,
-        )
+        return self._interaction_mapper.to_result(response)
