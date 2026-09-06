@@ -3,6 +3,7 @@ from letta_agent.factory import LettaAgentServiceFactory
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
+    LettaCreatedConversation,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "LettaAgentServiceFactory",
     "LettaAgentSpec",
     "LettaCreatedAgent",
+    "LettaCreatedConversation",
     "LettaInteractionResult",
     "LettaKnowledgeResult",
     "LettaProviderError",
