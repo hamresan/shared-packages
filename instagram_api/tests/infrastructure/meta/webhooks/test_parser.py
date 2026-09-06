@@ -62,3 +62,14 @@ def test_parser_event_ids_are_deterministic_for_duplicate_delivery() -> None:
 def test_parser_rejects_malformed_provider_envelopes(payload: bytes) -> None:
     with pytest.raises(MetaInvalidResponseError):
         build_meta_webhook_parser().parse(payload)
+
+
+def test_parser_normalizes_millisecond_entry_timestamp() -> None:
+    payload = (
+        b'{"entry":[{"id":"account","time":1788523200000,"changes":['
+        b'{"field":"comments","value":{"id":"comment"}}]}]}'
+    )
+
+    event = build_meta_webhook_parser().parse(payload)[0]
+
+    assert event.occurred_at == datetime.fromtimestamp(1788523200, tz=UTC)

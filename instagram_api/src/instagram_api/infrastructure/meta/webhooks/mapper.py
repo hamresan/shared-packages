@@ -10,6 +10,7 @@ from instagram_api.domain import (
 )
 
 from .event_id import MetaInstagramWebhookEventIdFactory
+from .timestamp_normalizer import normalize_meta_webhook_epoch_seconds
 
 
 class MetaInstagramWebhookEventMapper:
@@ -30,7 +31,10 @@ class MetaInstagramWebhookEventMapper:
         """Create one normalized generic webhook event."""
 
         occurred_at = (
-            datetime.fromtimestamp(occurred_at_seconds, tz=UTC)
+            datetime.fromtimestamp(
+                normalize_meta_webhook_epoch_seconds(occurred_at_seconds),
+                tz=UTC,
+            )
             if occurred_at_seconds is not None
             else None
         )
