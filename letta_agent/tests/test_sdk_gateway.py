@@ -252,15 +252,24 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
         conversation_calls.append(kwargs)
         return SimpleNamespace(id="conversation-1")
 
-    class FakeRawResponse:
-        async def parse(self, *, to: type[object]) -> SimpleNamespace:
-            del to
-            return SimpleNamespace(
-                messages=[
-                    SimpleNamespace(content="I remember the previous turn."),
+    class FakeHttpResponse:
+        @staticmethod
+        def json() -> dict[str, object]:
+            return {
+                "messages": [
+                    {
+                        "message_type": "assistant_message",
+                        "id": "message-1",
+                        "date": "2026-09-06T00:00:00Z",
+                        "content": "I remember the previous turn.",
+                    }
                 ],
-                stop_reason=SimpleNamespace(stop_reason="end_turn"),
-            )
+                "stop_reason": {"stop_reason": "end_turn"},
+                "usage": {},
+            }
+
+    class FakeRawResponse:
+        http_response = FakeHttpResponse()
 
     async def fake_conversation_message_create(
         conversation_id: str,
