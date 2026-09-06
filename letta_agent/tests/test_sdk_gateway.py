@@ -1,13 +1,17 @@
 import asyncio
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import httpx
 import pytest
 from letta_client import APIStatusError, AsyncLetta
+from letta_client.types.agents.assistant_message import AssistantMessage
+from letta_client.types.agents.letta_streaming_response import LettaStopReason
 
 from letta_agent.errors import LettaProviderError
 from letta_agent.models import LettaAgentSpec
 from letta_agent.sdk_gateway import SdkLettaGateway
+from tests.support import FakeInteractionStream
 
 
 def build_status_error(status_code: int) -> APIStatusError:
@@ -255,13 +259,17 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
     async def fake_conversation_message_create(
         conversation_id: str,
         **kwargs: object,
-    ) -> SimpleNamespace:
+    ) -> FakeInteractionStream:
         message_calls.append((conversation_id, kwargs))
-        return SimpleNamespace(
-            messages=[
-                SimpleNamespace(content="I remember the previous turn."),
-            ],
-            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        return FakeInteractionStream(
+            [
+                AssistantMessage(
+                    id="message-1",
+                    content="I remember the previous turn.",
+                    date=datetime.now(UTC),
+                ),
+                LettaStopReason(stop_reason="end_turn"),
+            ]
         )
 
     monkeypatch.setattr(

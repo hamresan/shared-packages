@@ -10,6 +10,9 @@ from letta_agent.models import (
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
+from letta_agent.streaming_interaction_mapper import (
+    LettaStreamingInteractionResponseMapper,
+)
 
 
 class SdkLettaGateway(LettaGateway):
@@ -18,6 +21,7 @@ class SdkLettaGateway(LettaGateway):
     def __init__(self, client: AsyncLetta) -> None:
         self._client = client
         self._interaction_mapper = LettaInteractionResponseMapper()
+        self._streaming_interaction_mapper = LettaStreamingInteractionResponseMapper()
 
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
         try:
@@ -128,4 +132,4 @@ class SdkLettaGateway(LettaGateway):
         except APIError as error:
             raise LettaProviderError("Letta conversation interaction failed") from error
 
-        return self._interaction_mapper.to_result(response)
+        return await self._streaming_interaction_mapper.to_result(response)
