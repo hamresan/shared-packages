@@ -252,9 +252,9 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
         conversation_calls.append(kwargs)
         return SimpleNamespace(id="conversation-1")
 
-    class FakeHttpResponse:
+    class FakeRawResponse:
         @staticmethod
-        def json() -> dict[str, object]:
+        async def json() -> dict[str, object]:
             return {
                 "messages": [
                     {
@@ -267,9 +267,6 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
                 "stop_reason": {"stop_reason": "end_turn"},
                 "usage": {},
             }
-
-    class FakeRawResponse:
-        http_response = FakeHttpResponse()
 
     async def fake_conversation_message_create(
         conversation_id: str,
