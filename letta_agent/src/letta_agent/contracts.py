@@ -3,6 +3,7 @@ from typing import Protocol
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
+    LettaCreatedConversation,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -10,6 +11,12 @@ from letta_agent.models import (
 
 class LettaGateway(Protocol):
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent: ...
+
+    async def create_conversation(
+        self,
+        *,
+        agent_id: str,
+    ) -> LettaCreatedConversation: ...
 
     async def set_knowledge(
         self,
@@ -22,5 +29,13 @@ class LettaGateway(Protocol):
         self,
         *,
         agent_id: str,
+        message: str,
+    ) -> LettaInteractionResult: ...
+
+    async def interact_in_conversation(
+        self,
+        *,
+        agent_id: str,
+        conversation_id: str,
         message: str,
     ) -> LettaInteractionResult: ...
