@@ -11,7 +11,9 @@ Capabilities:
 - attach a persona memory block at creation time;
 - upsert a read-only account knowledge block on an existing agent;
 - perform a controlled interaction with an existing agent;
+- create provider conversations for an existing agent;
+- interact inside a selected conversation so hosts can isolate end-user threads;
 - normalize Letta SDK/API failures.
 
 The package does not own host persistence, Instagram connection binding, persona generation,
-knowledge preparation, or conversation routing.
+knowledge preparation, or host conversation routing. The host remains responsible for mapping its own participant/thread identity to a Letta conversation ID.
