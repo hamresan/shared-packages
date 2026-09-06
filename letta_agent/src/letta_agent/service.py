@@ -46,6 +46,13 @@ class LettaAgentService:
             tool_ids=tool_ids,
         )
 
+    async def disable_shared_memory_tools(
+        self,
+        *,
+        agent_id: str,
+    ) -> None:
+        await self._gateway.disable_shared_memory_tools(agent_id=agent_id)
+
     async def interact(
         self,
         *,
