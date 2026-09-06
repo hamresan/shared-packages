@@ -3,7 +3,6 @@
 import pytest
 
 from instagram_api.domain import (
-    InstagramCommentChanged,
     InstagramCommentCreated,
     InstagramCommentId,
     InstagramMediaId,
@@ -58,22 +57,22 @@ def test_parser_normalizes_live_comment_and_parent_reference() -> None:
     assert comment.requires_active_live_broadcast is True
 
 
-def test_parser_normalizes_comment_change_envelope() -> None:
+def test_parser_normalizes_comment_created_inside_changes_envelope() -> None:
     payload = (
         b'{"entry":[{"id":"account","time":1788523200,"changes":['
-        b'{"field":"comments","value":{"id":"comment","text":"updated",'
+        b'{"field":"comments","value":{"id":"comment","text":"new comment",'
         b'"from":{"id":"commenter"},"media":{"id":"media"}}}]}]}'
     )
 
     event = build_meta_webhook_parser().parse(payload)[0]
 
-    assert event.event_type == "comment:changed"
+    assert event.event_type == "comment:created"
     comment = event.payload
-    assert isinstance(comment, InstagramCommentChanged)
+    assert isinstance(comment, InstagramCommentCreated)
     assert comment.comment_id == InstagramCommentId("comment")
     assert comment.commenter_id == InstagramUserId("commenter")
     assert comment.media_id == InstagramMediaId("media")
-    assert comment.text == "updated"
+    assert comment.text == "new comment"
 
 
 def test_parser_preserves_minimal_comment_for_reader_correlation() -> None:
