@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from letta_agent.contracts import LettaGateway
 from letta_agent.models import (
     LettaAgentSpec,
@@ -31,6 +33,17 @@ class LettaAgentService:
         return await self._gateway.set_knowledge(
             agent_id=agent_id,
             value=value,
+        )
+
+    async def set_agent_tools(
+        self,
+        *,
+        agent_id: str,
+        tool_ids: Sequence[str],
+    ) -> None:
+        await self._gateway.set_agent_tools(
+            agent_id=agent_id,
+            tool_ids=tool_ids,
         )
 
     async def interact(

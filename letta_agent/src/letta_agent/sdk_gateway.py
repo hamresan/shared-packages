@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from letta_client import APIError, APIStatusError, AsyncLetta
 from letta_client.types.agents.letta_response import LettaResponse
 
@@ -95,6 +97,20 @@ class SdkLettaGateway(LettaGateway):
             raise LettaProviderError("Letta knowledge creation failed") from error
 
         return LettaKnowledgeResult(block_id=created.id)
+
+    async def set_agent_tools(
+        self,
+        *,
+        agent_id: str,
+        tool_ids: Sequence[str],
+    ) -> None:
+        try:
+            await self._client.agents.update(
+                agent_id,
+                tool_ids=list(tool_ids),
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta agent tool configuration failed") from error
 
     async def interact(
         self,

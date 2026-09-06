@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.models import (
@@ -15,6 +16,7 @@ class FakeLettaGateway(LettaGateway):
     def __init__(self) -> None:
         self.created_specs: list[LettaAgentSpec] = []
         self.knowledge_updates: list[tuple[str, str]] = []
+        self.agent_tool_updates: list[tuple[str, tuple[str, ...]]] = []
         self.interactions: list[tuple[str, str]] = []
         self.conversation_creations: list[str] = []
         self.conversation_interactions: list[tuple[str, str, str]] = []
@@ -39,6 +41,14 @@ class FakeLettaGateway(LettaGateway):
     ) -> LettaKnowledgeResult:
         self.knowledge_updates.append((agent_id, value))
         return LettaKnowledgeResult(block_id="block-1")
+
+    async def set_agent_tools(
+        self,
+        *,
+        agent_id: str,
+        tool_ids: Sequence[str],
+    ) -> None:
+        self.agent_tool_updates.append((agent_id, tuple(tool_ids)))
 
     async def interact(
         self,
@@ -77,6 +87,7 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
         )
     )
     conversation = asyncio.run(service.create_conversation(agent_id=created.agent_id))
+    asyncio.run(service.set_agent_tools(agent_id=created.agent_id, tool_ids=()))
     interaction = asyncio.run(service.interact(agent_id=created.agent_id, message="Are you ready?"))
     conversation_interaction = asyncio.run(
         service.interact_in_conversation(
@@ -93,6 +104,7 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
     assert conversation_interaction.succeeded is True
     assert gateway.created_specs == [spec]
     assert gateway.knowledge_updates == [("agent-1", "Account knowledge")]
+    assert gateway.agent_tool_updates == [("agent-1", ())]
     assert gateway.interactions == [("agent-1", "Are you ready?")]
     assert gateway.conversation_creations == ["agent-1"]
     assert gateway.conversation_interactions == [

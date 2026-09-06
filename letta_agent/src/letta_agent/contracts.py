@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Protocol
 
 from letta_agent.models import (
@@ -24,6 +25,13 @@ class LettaGateway(Protocol):
         agent_id: str,
         value: str,
     ) -> LettaKnowledgeResult: ...
+
+    async def set_agent_tools(
+        self,
+        *,
+        agent_id: str,
+        tool_ids: Sequence[str],
+    ) -> None: ...
 
     async def interact(
         self,
