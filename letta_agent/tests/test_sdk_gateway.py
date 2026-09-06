@@ -267,6 +267,29 @@ def test_sdk_gateway_configures_agent_tools(
     assert update_calls == [("agent-1", [])]
 
 
+def test_sdk_gateway_normalizes_agent_tool_configuration_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_update(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise build_status_error(500)
+
+    monkeypatch.setattr(client.agents, "update", fake_update)
+
+    with pytest.raises(
+        LettaProviderError,
+        match="Letta agent tool configuration failed",
+    ):
+        asyncio.run(
+            SdkLettaGateway(client).set_agent_tools(
+                agent_id="agent-1",
+                tool_ids=(),
+            )
+        )
+
+
 def test_sdk_gateway_creates_and_interacts_in_conversation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
