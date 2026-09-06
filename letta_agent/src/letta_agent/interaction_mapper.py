@@ -12,6 +12,7 @@ class _StopReasonResponse(Protocol):
 
 @runtime_checkable
 class _InteractionMessage(Protocol):
+    message_type: str
     content: object
 
 
@@ -33,6 +34,8 @@ class LettaInteractionResponseMapper:
 
         reply_text: str | None = None
         for response_message in reversed(response.messages):
+            if response_message.message_type != "assistant_message":
+                continue
             content = response_message.content
             if isinstance(content, str) and content.strip():
                 reply_text = content.strip()
