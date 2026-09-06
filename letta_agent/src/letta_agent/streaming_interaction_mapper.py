@@ -1,4 +1,5 @@
-from letta_client import AsyncStream
+from collections.abc import AsyncIterable
+
 from letta_client.types.agents.assistant_message import AssistantMessage
 from letta_client.types.agents.letta_streaming_response import (
     LettaErrorMessage,
@@ -15,7 +16,7 @@ class LettaStreamingInteractionResponseMapper:
 
     async def to_result(
         self,
-        response: AsyncStream[LettaStreamingResponse],
+        response: AsyncIterable[LettaStreamingResponse],
     ) -> LettaInteractionResult:
         reply_text: str | None = None
         stop_reason: str | None = None
