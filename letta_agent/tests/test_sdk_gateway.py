@@ -241,6 +241,32 @@ def test_sdk_gateway_normalizes_missing_knowledge_creation_failure(
         )
 
 
+def test_sdk_gateway_configures_agent_tools(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    update_calls: list[tuple[str, list[str]]] = []
+
+    async def fake_update(
+        agent_id: str,
+        *,
+        tool_ids: list[str],
+    ) -> SimpleNamespace:
+        update_calls.append((agent_id, tool_ids))
+        return SimpleNamespace(id=agent_id)
+
+    monkeypatch.setattr(client.agents, "update", fake_update)
+
+    asyncio.run(
+        SdkLettaGateway(client).set_agent_tools(
+            agent_id="agent-1",
+            tool_ids=(),
+        )
+    )
+
+    assert update_calls == [("agent-1", [])]
+
+
 def test_sdk_gateway_creates_and_interacts_in_conversation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
