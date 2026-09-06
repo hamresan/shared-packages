@@ -17,6 +17,7 @@ coverage:
 	pytest
 
 build:
+	rm -rf dist
 	python -m build --wheel
 
 wheel-smoke: build

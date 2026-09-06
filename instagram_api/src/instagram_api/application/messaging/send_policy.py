@@ -10,6 +10,7 @@ from .send_errors import InstagramMessagePayloadInvalidError
 
 INSTAGRAM_SEND_BASIC_PERMISSION = "instagram_business_basic"
 INSTAGRAM_SEND_MESSAGE_PERMISSION = "instagram_business_manage_messages"
+INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH = 1000
 
 
 class InstagramMessageSendAccessPolicy:
@@ -51,6 +52,11 @@ class InstagramMessagePayloadPolicy:
 
         if request.text is not None and not request.text.strip():
             raise InstagramMessagePayloadInvalidError("Message text must not be blank.")
+
+        if request.text is not None and len(request.text) > INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH:
+            raise InstagramMessagePayloadInvalidError(
+                f"Message text must not exceed {INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH} characters."
+            )
 
         if request.attachment is not None and not request.attachment.url.strip():
             raise InstagramMessagePayloadInvalidError("Attachment URL must not be blank.")

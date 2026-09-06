@@ -3,6 +3,7 @@
 import pytest
 
 from instagram_api.application.messaging import (
+    INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH,
     InstagramMessagePayloadInvalidError,
     InstagramMessagePayloadPolicy,
     InstagramMessageSendAccessPolicy,
@@ -114,3 +115,25 @@ def test_payload_policy_accepts_text_and_media_payloads() -> None:
             ),
         )
     )
+
+
+def test_payload_policy_rejects_text_above_provider_limit() -> None:
+    request = InstagramMessageSendRequest(
+        InstagramUserId("recipient"),
+        text="x" * (INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH + 1),
+    )
+
+    with pytest.raises(
+        InstagramMessagePayloadInvalidError,
+        match="must not exceed 1000 characters",
+    ):
+        InstagramMessagePayloadPolicy().validate(request)
+
+
+def test_payload_policy_accepts_text_at_provider_limit() -> None:
+    request = InstagramMessageSendRequest(
+        InstagramUserId("recipient"),
+        text="x" * INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH,
+    )
+
+    InstagramMessagePayloadPolicy().validate(request)
