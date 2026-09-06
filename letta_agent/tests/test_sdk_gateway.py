@@ -239,3 +239,118 @@ def test_sdk_gateway_normalizes_missing_knowledge_creation_failure(
                 value="Knowledge",
             )
         )
+
+
+def test_sdk_gateway_creates_and_interacts_in_conversation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    conversation_calls: list[dict[str, object]] = []
+    message_calls: list[tuple[str, dict[str, object]]] = []
+
+    async def fake_conversation_create(**kwargs: object) -> SimpleNamespace:
+        conversation_calls.append(kwargs)
+        return SimpleNamespace(id="conversation-1")
+
+    async def fake_conversation_message_create(
+        conversation_id: str,
+        **kwargs: object,
+    ) -> SimpleNamespace:
+        message_calls.append((conversation_id, kwargs))
+        return SimpleNamespace(
+            messages=[
+                SimpleNamespace(content="I remember the previous turn."),
+            ],
+            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        )
+
+    monkeypatch.setattr(
+        client.conversations,
+        "create",
+        fake_conversation_create,
+    )
+    monkeypatch.setattr(
+        client.conversations.messages,
+        "create",
+        fake_conversation_message_create,
+    )
+    gateway = SdkLettaGateway(client)
+
+    conversation = asyncio.run(
+        gateway.create_conversation(agent_id="agent-1")
+    )
+    result = asyncio.run(
+        gateway.interact_in_conversation(
+            agent_id="agent-1",
+            conversation_id=conversation.conversation_id,
+            message="What did I ask before?",
+        )
+    )
+
+    assert conversation.conversation_id == "conversation-1"
+    assert result.succeeded is True
+    assert result.reply_text == "I remember the previous turn."
+    assert conversation_calls == [{"agent_id": "agent-1"}]
+    assert message_calls == [
+        (
+            "conversation-1",
+            {
+                "agent_id": "agent-1",
+                "input": "What did I ask before?",
+                "streaming": False,
+            },
+        )
+    ]
+
+
+def test_sdk_gateway_normalizes_conversation_creation_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_create(**kwargs: object) -> object:
+        del kwargs
+        raise build_status_error(500)
+
+    monkeypatch.setattr(client.conversations, "create", fake_create)
+
+    with pytest.raises(
+        LettaProviderError,
+        match="Letta conversation creation failed",
+    ):
+        asyncio.run(
+            SdkLettaGateway(client).create_conversation(
+                agent_id="agent-1"
+            )
+        )
+
+
+def test_sdk_gateway_normalizes_conversation_interaction_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_create(
+        conversation_id: str,
+        **kwargs: object,
+    ) -> object:
+        del conversation_id, kwargs
+        raise build_status_error(500)
+
+    monkeypatch.setattr(
+        client.conversations.messages,
+        "create",
+        fake_create,
+    )
+
+    with pytest.raises(
+        LettaProviderError,
+        match="Letta conversation interaction failed",
+    ):
+        asyncio.run(
+            SdkLettaGateway(client).interact_in_conversation(
+                agent_id="agent-1",
+                conversation_id="conversation-1",
+                message="Hello",
+            )
+        )
