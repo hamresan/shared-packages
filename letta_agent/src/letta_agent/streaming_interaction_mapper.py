@@ -27,9 +27,12 @@ class LettaStreamingInteractionResponseMapper:
                     f"Letta conversation interaction failed: {event.message}"
                 )
 
-            if isinstance(event, AssistantMessage):
-                if isinstance(event.content, str) and event.content.strip():
-                    reply_text = event.content.strip()
+            if (
+                isinstance(event, AssistantMessage)
+                and isinstance(event.content, str)
+                and event.content.strip()
+            ):
+                reply_text = event.content.strip()
 
             if isinstance(event, LettaStopReason):
                 stop_reason = str(event.stop_reason)
