@@ -367,6 +367,28 @@ def test_sdk_gateway_detaches_only_shared_memory_tools(
     ]
 
 
+def test_sdk_gateway_normalizes_shared_memory_tool_configuration_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_list(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise build_status_error(500)
+
+    monkeypatch.setattr(client.agents.tools, "list", fake_list)
+
+    with pytest.raises(
+        LettaProviderError,
+        match="Letta shared memory tool configuration failed",
+    ):
+        asyncio.run(
+            SdkLettaGateway(client).disable_shared_memory_tools(
+                agent_id="agent-1",
+            )
+        )
+
+
 def test_sdk_gateway_creates_and_interacts_in_conversation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
