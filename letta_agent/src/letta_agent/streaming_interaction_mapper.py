@@ -22,6 +22,7 @@ class LettaStreamingInteractionResponseMapper:
         stop_reason: str | None = None
 
         async for event in response:
+            print("LETTA_STREAM_EVENT:", type(event).__name__, repr(event))
             if isinstance(event, LettaErrorMessage):
                 raise LettaProviderError(f"Letta conversation interaction failed: {event.message}")
 
