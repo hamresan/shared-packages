@@ -126,7 +126,7 @@ class SdkLettaGateway(LettaGateway):
                 input=message,
                 streaming=False,
             )
-            parsed = await response.parse(to=LettaResponse)
+            parsed = LettaResponse.model_validate(response.http_response.json())
         except APIError as error:
             raise LettaProviderError("Letta conversation interaction failed") from error
 
