@@ -1,17 +1,13 @@
 import asyncio
-from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import httpx
 import pytest
 from letta_client import APIStatusError, AsyncLetta
-from letta_client.types.agents.assistant_message import AssistantMessage
-from letta_client.types.agents.letta_streaming_response import LettaStopReason
 
 from letta_agent.errors import LettaProviderError
 from letta_agent.models import LettaAgentSpec
 from letta_agent.sdk_gateway import SdkLettaGateway
-from tests.support import FakeInteractionStream
 
 
 def build_status_error(status_code: int) -> APIStatusError:
