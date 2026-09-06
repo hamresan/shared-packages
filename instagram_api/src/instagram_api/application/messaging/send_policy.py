@@ -53,10 +53,7 @@ class InstagramMessagePayloadPolicy:
         if request.text is not None and not request.text.strip():
             raise InstagramMessagePayloadInvalidError("Message text must not be blank.")
 
-        if (
-            request.text is not None
-            and len(request.text) > INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH
-        ):
+        if request.text is not None and len(request.text) > INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH:
             raise InstagramMessagePayloadInvalidError(
                 f"Message text must not exceed {INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH} characters."
             )
