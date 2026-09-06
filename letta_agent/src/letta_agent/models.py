@@ -14,6 +14,11 @@ class LettaCreatedAgent:
 
 
 @dataclass(frozen=True, slots=True)
+class LettaCreatedConversation:
+    conversation_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class LettaInteractionResult:
     succeeded: bool
     reply_text: str | None = None
