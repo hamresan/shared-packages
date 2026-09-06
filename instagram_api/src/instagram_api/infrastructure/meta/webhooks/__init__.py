@@ -13,6 +13,7 @@ from .messaging_mapper import MetaInstagramMessagingWebhookMapper
 from .metadata_mapper import MetaInstagramMessagingMetadataMapper
 from .parser import MetaInstagramWebhookParser
 from .signature import MetaInstagramWebhookSignatureVerifier
+from .timestamp_normalizer import normalize_meta_webhook_epoch_seconds
 
 __all__ = [
     "MetaInstagramCommentWebhookDto",
@@ -28,4 +29,5 @@ __all__ = [
     "MetaInstagramMessagingWebhookMapper",
     "MetaInstagramWebhookParser",
     "MetaInstagramWebhookSignatureVerifier",
+    "normalize_meta_webhook_epoch_seconds",
 ]
