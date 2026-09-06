@@ -17,6 +17,21 @@ from letta_agent.models import (
 
 class SdkLettaGateway(LettaGateway):
     _knowledge_label = "account_knowledge"
+    _shared_memory_tool_names = frozenset(
+        {
+            "memory",
+            "memory_apply_patch",
+            "memory_insert",
+            "memory_replace",
+            "memory_rethink",
+            "core_memory_append",
+            "core_memory_replace",
+            "archival_memory_insert",
+            "archival_memory_search",
+            "conversation_search",
+            "conversation_search_date",
+        }
+    )
 
     def __init__(self, client: AsyncLetta) -> None:
         self._client = client
@@ -111,6 +126,26 @@ class SdkLettaGateway(LettaGateway):
             )
         except APIError as error:
             raise LettaProviderError("Letta agent tool configuration failed") from error
+
+    async def disable_shared_memory_tools(
+        self,
+        *,
+        agent_id: str,
+    ) -> None:
+        try:
+            tools_page = await self._client.agents.tools.list(
+                agent_id,
+                limit=100,
+            )
+            for tool in tools_page.items:
+                if tool.name not in self._shared_memory_tool_names:
+                    continue
+                await self._client.agents.tools.detach(
+                    tool.id,
+                    agent_id=agent_id,
+                )
+        except APIError as error:
+            raise LettaProviderError("Letta shared memory tool configuration failed") from error
 
     async def interact(
         self,

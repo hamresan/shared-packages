@@ -41,7 +41,10 @@ def test_sdk_gateway_maps_create_and_interaction(
         message_calls.append(kwargs)
         return SimpleNamespace(
             messages=[
-                SimpleNamespace(content="Here is the account reply."),
+                SimpleNamespace(
+                    message_type="assistant_message",
+                    content="Here is the account reply.",
+                ),
             ],
             stop_reason=SimpleNamespace(stop_reason="end_turn"),
         )
@@ -79,6 +82,39 @@ def test_sdk_gateway_maps_create_and_interaction(
             "input": message,
         }
     ]
+
+
+def test_sdk_gateway_ignores_internal_tool_messages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_message_create(**kwargs: object) -> SimpleNamespace:
+        del kwargs
+        return SimpleNamespace(
+            messages=[
+                SimpleNamespace(
+                    message_type="assistant_message",
+                    content="Customer-facing reply.",
+                ),
+                SimpleNamespace(
+                    message_type="tool_return_message",
+                    content="Internal memory tool failure details.",
+                ),
+            ],
+            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        )
+
+    monkeypatch.setattr(client.agents.messages, "create", fake_message_create)
+
+    result = asyncio.run(
+        SdkLettaGateway(client).interact(
+            agent_id="agent-1",
+            message="Hello",
+        )
+    )
+
+    assert result.reply_text == "Customer-facing reply."
 
 
 def test_sdk_gateway_creates_and_attaches_missing_knowledge_block(
@@ -286,6 +322,69 @@ def test_sdk_gateway_normalizes_agent_tool_configuration_failure(
             SdkLettaGateway(client).set_agent_tools(
                 agent_id="agent-1",
                 tool_ids=(),
+            )
+        )
+
+
+def test_sdk_gateway_detaches_only_shared_memory_tools(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    detach_calls: list[tuple[str, str]] = []
+
+    async def fake_list(
+        agent_id: str,
+        *,
+        limit: int,
+    ) -> SimpleNamespace:
+        assert agent_id == "agent-1"
+        assert limit == 100
+        return SimpleNamespace(
+            items=[
+                SimpleNamespace(id="tool-memory", name="memory"),
+                SimpleNamespace(id="tool-search", name="conversation_search"),
+                SimpleNamespace(id="tool-send", name="send_message"),
+                SimpleNamespace(id="tool-custom", name="check_inventory"),
+            ]
+        )
+
+    async def fake_detach(tool_id: str, *, agent_id: str) -> object:
+        detach_calls.append((tool_id, agent_id))
+        return SimpleNamespace(id=agent_id)
+
+    monkeypatch.setattr(client.agents.tools, "list", fake_list)
+    monkeypatch.setattr(client.agents.tools, "detach", fake_detach)
+
+    asyncio.run(
+        SdkLettaGateway(client).disable_shared_memory_tools(
+            agent_id="agent-1",
+        )
+    )
+
+    assert detach_calls == [
+        ("tool-memory", "agent-1"),
+        ("tool-search", "agent-1"),
+    ]
+
+
+def test_sdk_gateway_normalizes_shared_memory_tool_configuration_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_list(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise build_status_error(500)
+
+    monkeypatch.setattr(client.agents.tools, "list", fake_list)
+
+    with pytest.raises(
+        LettaProviderError,
+        match="Letta shared memory tool configuration failed",
+    ):
+        asyncio.run(
+            SdkLettaGateway(client).disable_shared_memory_tools(
+                agent_id="agent-1",
             )
         )
 
