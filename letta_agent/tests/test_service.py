@@ -17,6 +17,7 @@ class FakeLettaGateway(LettaGateway):
         self.created_specs: list[LettaAgentSpec] = []
         self.knowledge_updates: list[tuple[str, str]] = []
         self.agent_tool_updates: list[tuple[str, tuple[str, ...]]] = []
+        self.shared_memory_tool_disables: list[str] = []
         self.interactions: list[tuple[str, str]] = []
         self.conversation_creations: list[str] = []
         self.conversation_interactions: list[tuple[str, str, str]] = []
@@ -49,6 +50,13 @@ class FakeLettaGateway(LettaGateway):
         tool_ids: Sequence[str],
     ) -> None:
         self.agent_tool_updates.append((agent_id, tuple(tool_ids)))
+
+    async def disable_shared_memory_tools(
+        self,
+        *,
+        agent_id: str,
+    ) -> None:
+        self.shared_memory_tool_disables.append(agent_id)
 
     async def interact(
         self,
@@ -88,6 +96,7 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
     )
     conversation = asyncio.run(service.create_conversation(agent_id=created.agent_id))
     asyncio.run(service.set_agent_tools(agent_id=created.agent_id, tool_ids=()))
+    asyncio.run(service.disable_shared_memory_tools(agent_id=created.agent_id))
     interaction = asyncio.run(service.interact(agent_id=created.agent_id, message="Are you ready?"))
     conversation_interaction = asyncio.run(
         service.interact_in_conversation(
@@ -105,6 +114,7 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
     assert gateway.created_specs == [spec]
     assert gateway.knowledge_updates == [("agent-1", "Account knowledge")]
     assert gateway.agent_tool_updates == [("agent-1", ())]
+    assert gateway.shared_memory_tool_disables == ["agent-1"]
     assert gateway.interactions == [("agent-1", "Are you ready?")]
     assert gateway.conversation_creations == ["agent-1"]
     assert gateway.conversation_interactions == [
