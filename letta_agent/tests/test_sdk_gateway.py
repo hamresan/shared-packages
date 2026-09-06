@@ -25,20 +25,23 @@ def build_not_found() -> APIStatusError:
 
 
 @pytest.mark.parametrize("message", ["Ready?", "Confirm readiness."])
-def test_sdk_gateway_maps_create_and_interaction(
+def test_sdk_gateway_maps_create_and_default_interaction(
     monkeypatch: pytest.MonkeyPatch,
     message: str,
 ) -> None:
     client = AsyncLetta(api_key="test-key")
     create_calls: list[dict[str, object]] = []
-    message_calls: list[dict[str, object]] = []
+    message_calls: list[tuple[str, dict[str, object]]] = []
 
     async def fake_create(**kwargs: object) -> SimpleNamespace:
         create_calls.append(kwargs)
         return SimpleNamespace(id="agent-1")
 
-    async def fake_message_create(**kwargs: object) -> SimpleNamespace:
-        message_calls.append(kwargs)
+    async def fake_message_create(
+        conversation_id: str,
+        **kwargs: object,
+    ) -> SimpleNamespace:
+        message_calls.append((conversation_id, kwargs))
         return SimpleNamespace(
             messages=[
                 SimpleNamespace(content="Here is the account reply."),
@@ -47,7 +50,11 @@ def test_sdk_gateway_maps_create_and_interaction(
         )
 
     monkeypatch.setattr(client.agents, "create", fake_create)
-    monkeypatch.setattr(client.agents.messages, "create", fake_message_create)
+    monkeypatch.setattr(
+        client.conversations.messages,
+        "create",
+        fake_message_create,
+    )
     gateway = SdkLettaGateway(client)
     spec = LettaAgentSpec(
         name="sellora-agent",
@@ -56,7 +63,12 @@ def test_sdk_gateway_maps_create_and_interaction(
     )
 
     created = asyncio.run(gateway.create_agent(spec))
-    result = asyncio.run(gateway.interact(agent_id=created.agent_id, message=message))
+    result = asyncio.run(
+        gateway.interact(
+            agent_id=created.agent_id,
+            message=message,
+        )
+    )
 
     assert created.agent_id == "agent-1"
     assert result.succeeded is True
@@ -74,12 +86,73 @@ def test_sdk_gateway_maps_create_and_interaction(
         }
     ]
     assert message_calls == [
-        {
-            "agent_id": "agent-1",
-            "input": message,
-        }
+        (
+            "default",
+            {
+                "agent_id": "agent-1",
+                "input": message,
+                "streaming": False,
+            },
+        )
     ]
 
+
+def test_sdk_gateway_creates_and_uses_isolated_conversation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    conversation_calls: list[dict[str, object]] = []
+    message_calls: list[tuple[str, dict[str, object]]] = []
+
+    async def fake_conversation_create(**kwargs: object) -> SimpleNamespace:
+        conversation_calls.append(kwargs)
+        return SimpleNamespace(id="conv-1")
+
+    async def fake_message_create(
+        conversation_id: str,
+        **kwargs: object,
+    ) -> SimpleNamespace:
+        message_calls.append((conversation_id, kwargs))
+        return SimpleNamespace(
+            messages=[SimpleNamespace(content="Stateful reply.")],
+            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        )
+
+    monkeypatch.setattr(
+        client.conversations,
+        "create",
+        fake_conversation_create,
+    )
+    monkeypatch.setattr(
+        client.conversations.messages,
+        "create",
+        fake_message_create,
+    )
+    gateway = SdkLettaGateway(client)
+
+    conversation = asyncio.run(
+        gateway.create_conversation(agent_id="agent-1")
+    )
+    result = asyncio.run(
+        gateway.interact_in_conversation(
+            agent_id="agent-1",
+            conversation_id=conversation.conversation_id,
+            message="Remember my last question.",
+        )
+    )
+
+    assert conversation.conversation_id == "conv-1"
+    assert result.reply_text == "Stateful reply."
+    assert conversation_calls == [{"agent_id": "agent-1"}]
+    assert message_calls == [
+        (
+            "conv-1",
+            {
+                "input": "Remember my last question.",
+                "streaming": False,
+            },
+        )
+    ]
 
 def test_sdk_gateway_creates_and_attaches_missing_knowledge_block(
     monkeypatch: pytest.MonkeyPatch,
