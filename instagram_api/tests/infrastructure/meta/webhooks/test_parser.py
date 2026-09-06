@@ -6,7 +6,7 @@ import pytest
 
 from instagram_api.domain import (
     InstagramAccountId,
-    InstagramCommentChanged,
+    InstagramCommentCreated,
     InstagramCommentId,
     InstagramMessageReceived,
 )
@@ -28,8 +28,8 @@ def test_parser_normalizes_changes_and_messaging_for_multiple_accounts() -> None
 
     assert len(events) == 2
     assert events[0].provider_account_id == InstagramAccountId("account-a")
-    assert events[0].event_type == "comment:changed"
-    assert isinstance(events[0].payload, InstagramCommentChanged)
+    assert events[0].event_type == "comment:created"
+    assert isinstance(events[0].payload, InstagramCommentCreated)
     assert events[0].payload.comment_id == InstagramCommentId("comment")
     assert events[1].provider_account_id == InstagramAccountId("account-b")
     assert events[1].event_type == "messaging"

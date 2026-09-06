@@ -103,8 +103,8 @@ class MetaInstagramWebhookParser(InstagramWebhookParser):
                             field=field,
                             value=value,
                         )
-                        normalized_payload = self._comment_mapper.changed(dto)
-                        event_type = "comment:changed"
+                        normalized_payload = self._comment_mapper.created(dto)
+                        event_type = "comment:created"
 
                     events.append(
                         self._event_mapper.to_domain(
