@@ -19,6 +19,7 @@ from .send_errors import (
 from .send_policy import (
     INSTAGRAM_SEND_BASIC_PERMISSION,
     INSTAGRAM_SEND_MESSAGE_PERMISSION,
+    INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH,
     InstagramMessagePayloadPolicy,
     InstagramMessageSendAccessPolicy,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "INSTAGRAM_MANAGE_MESSAGES_PERMISSION",
     "INSTAGRAM_SEND_BASIC_PERMISSION",
     "INSTAGRAM_SEND_MESSAGE_PERMISSION",
+    "INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH",
     "InstagramConversationService",
     "InstagramMessagePayloadInvalidError",
     "InstagramMessagePayloadPolicy",
