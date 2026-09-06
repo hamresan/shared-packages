@@ -23,9 +23,7 @@ class LettaStreamingInteractionResponseMapper:
 
         async for event in response:
             if isinstance(event, LettaErrorMessage):
-                raise LettaProviderError(
-                    f"Letta conversation interaction failed: {event.message}"
-                )
+                raise LettaProviderError(f"Letta conversation interaction failed: {event.message}")
 
             if (
                 isinstance(event, AssistantMessage)
@@ -38,9 +36,7 @@ class LettaStreamingInteractionResponseMapper:
                 stop_reason = str(event.stop_reason)
 
         if stop_reason != "end_turn":
-            raise LettaProviderError(
-                "Letta conversation interaction did not complete successfully"
-            )
+            raise LettaProviderError("Letta conversation interaction did not complete successfully")
 
         return LettaInteractionResult(
             succeeded=True,
