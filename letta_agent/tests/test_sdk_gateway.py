@@ -256,29 +256,26 @@ def test_sdk_gateway_creates_and_interacts_in_conversation(
         conversation_calls.append(kwargs)
         return SimpleNamespace(id="conversation-1")
 
+    class FakeRawResponse:
+        async def parse(self, *, to: type[object]) -> SimpleNamespace:
+            del to
+            return SimpleNamespace(
+                messages=[
+                    SimpleNamespace(content="I remember the previous turn."),
+                ],
+                stop_reason=SimpleNamespace(stop_reason="end_turn"),
+            )
+
     async def fake_conversation_message_create(
         conversation_id: str,
         **kwargs: object,
-    ) -> FakeInteractionStream:
+    ) -> FakeRawResponse:
         message_calls.append((conversation_id, kwargs))
-        return FakeInteractionStream(
-            [
-                AssistantMessage(
-                    id="message-1",
-                    content="I remember the previous turn.",
-                    date=datetime.now(UTC),
-                ),
-                LettaStopReason(stop_reason="end_turn"),
-            ]
-        )
+        return FakeRawResponse()
 
+    monkeypatch.setattr(client.conversations, "create", fake_conversation_create)
     monkeypatch.setattr(
-        client.conversations,
-        "create",
-        fake_conversation_create,
-    )
-    monkeypatch.setattr(
-        client.conversations.messages,
+        client.conversations.messages.with_raw_response,
         "create",
         fake_conversation_message_create,
     )
