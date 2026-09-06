@@ -33,7 +33,7 @@ class LettaStreamingInteractionResponseMapper:
                 reply_text = event.content.strip()
 
             if isinstance(event, LettaStopReason):
-                stop_reason = str(event.stop_reason)
+                stop_reason = event.stop_reason
 
         if stop_reason != "end_turn":
             raise LettaProviderError("Letta conversation interaction did not complete successfully")
