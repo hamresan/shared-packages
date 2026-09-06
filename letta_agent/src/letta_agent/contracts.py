@@ -33,6 +33,12 @@ class LettaGateway(Protocol):
         tool_ids: Sequence[str],
     ) -> None: ...
 
+    async def disable_shared_memory_tools(
+        self,
+        *,
+        agent_id: str,
+    ) -> None: ...
+
     async def interact(
         self,
         *,
