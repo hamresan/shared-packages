@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.models import (
@@ -45,9 +46,9 @@ class FakeLettaGateway(LettaGateway):
         self,
         *,
         agent_id: str,
-        tool_ids: tuple[str, ...],
+        tool_ids: Sequence[str],
     ) -> None:
-        self.agent_tool_updates.append((agent_id, tool_ids))
+        self.agent_tool_updates.append((agent_id, tuple(tool_ids)))
 
     async def interact(
         self,
