@@ -138,7 +138,7 @@ class SdkLettaGateway(LettaGateway):
                 limit=100,
             )
             for tool in tools_page.items:
-                if tool.name not in self._shared_memory_tool_names or tool.id is None:
+                if tool.name not in self._shared_memory_tool_names:
                     continue
                 await self._client.agents.tools.detach(
                     tool.id,
