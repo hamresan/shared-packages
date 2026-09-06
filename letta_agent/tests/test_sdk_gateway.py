@@ -41,7 +41,10 @@ def test_sdk_gateway_maps_create_and_interaction(
         message_calls.append(kwargs)
         return SimpleNamespace(
             messages=[
-                SimpleNamespace(content="Here is the account reply."),
+                SimpleNamespace(
+                    message_type="assistant_message",
+                    content="Here is the account reply.",
+                ),
             ],
             stop_reason=SimpleNamespace(stop_reason="end_turn"),
         )
@@ -79,6 +82,39 @@ def test_sdk_gateway_maps_create_and_interaction(
             "input": message,
         }
     ]
+
+
+def test_sdk_gateway_ignores_internal_tool_messages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+
+    async def fake_message_create(**kwargs: object) -> SimpleNamespace:
+        del kwargs
+        return SimpleNamespace(
+            messages=[
+                SimpleNamespace(
+                    message_type="assistant_message",
+                    content="Customer-facing reply.",
+                ),
+                SimpleNamespace(
+                    message_type="tool_return_message",
+                    content="Internal memory tool failure details.",
+                ),
+            ],
+            stop_reason=SimpleNamespace(stop_reason="end_turn"),
+        )
+
+    monkeypatch.setattr(client.agents.messages, "create", fake_message_create)
+
+    result = asyncio.run(
+        SdkLettaGateway(client).interact(
+            agent_id="agent-1",
+            message="Hello",
+        )
+    )
+
+    assert result.reply_text == "Customer-facing reply."
 
 
 def test_sdk_gateway_creates_and_attaches_missing_knowledge_block(
