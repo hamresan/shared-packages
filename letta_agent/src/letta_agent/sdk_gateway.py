@@ -5,6 +5,7 @@ from letta_agent.errors import LettaProviderError
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
+    LettaCreatedConversation,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -32,6 +33,20 @@ class SdkLettaGateway(LettaGateway):
             raise LettaProviderError("Letta agent creation failed") from error
 
         return LettaCreatedAgent(agent_id=agent.id)
+
+    async def create_conversation(
+        self,
+        *,
+        agent_id: str,
+    ) -> LettaCreatedConversation:
+        try:
+            conversation = await self._client.conversations.create(
+                agent_id=agent_id,
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta conversation creation failed") from error
+
+        return LettaCreatedConversation(conversation_id=conversation.id)
 
     async def set_knowledge(
         self,
@@ -82,16 +97,40 @@ class SdkLettaGateway(LettaGateway):
         agent_id: str,
         message: str,
     ) -> LettaInteractionResult:
+        return await self.interact_in_conversation(
+            agent_id=agent_id,
+            conversation_id="default",
+            message=message,
+        )
+
+    async def interact_in_conversation(
+        self,
+        *,
+        agent_id: str,
+        conversation_id: str,
+        message: str,
+    ) -> LettaInteractionResult:
         try:
-            response = await self._client.agents.messages.create(
-                agent_id=agent_id,
-                input=message,
-            )
+            if conversation_id == "default":
+                response = await self._client.conversations.messages.create(
+                    conversation_id,
+                    agent_id=agent_id,
+                    input=message,
+                    streaming=False,
+                )
+            else:
+                response = await self._client.conversations.messages.create(
+                    conversation_id,
+                    input=message,
+                    streaming=False,
+                )
         except APIError as error:
             raise LettaProviderError("Letta agent interaction failed") from error
 
         if response.stop_reason.stop_reason != "end_turn":
-            raise LettaProviderError("Letta agent interaction did not complete successfully")
+            raise LettaProviderError(
+                "Letta agent interaction did not complete successfully"
+            )
 
         reply_text: str | None = None
         for response_message in reversed(response.messages):
