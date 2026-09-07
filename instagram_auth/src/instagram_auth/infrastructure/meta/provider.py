@@ -1,5 +1,7 @@
 """Meta implementation of the application authorization provider contract."""
 
+from dataclasses import replace
+
 from instagram_auth.application import InstagramAuthorizationGrant, InstagramAuthorizationProvider
 from instagram_auth.domain import InstagramExternalIdentity
 
@@ -26,11 +28,16 @@ class MetaInstagramAuthorizationProvider(InstagramAuthorizationProvider):
         authorization_code: str,
         redirect_uri: str,
     ) -> InstagramAuthorizationGrant:
-        dto = await self._client.exchange_authorization_code(
+        short_lived = await self._client.exchange_authorization_code(
             authorization_code=authorization_code,
             redirect_uri=redirect_uri,
         )
-        return self._grant_mapper.map(dto)
+        long_lived = await self._client.exchange_long_lived_access_token(
+            access_token=short_lived.access_token,
+        )
+        return self._grant_mapper.map(
+            replace(long_lived, permissions=short_lived.permissions)
+        )
 
     async def resolve_external_identity(self, *, access_token: str) -> InstagramExternalIdentity:
         dto = await self._client.resolve_identity(access_token=access_token)
