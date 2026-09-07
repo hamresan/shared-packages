@@ -53,7 +53,11 @@ from identity.presentation.request_metadata import (
     DirectRequestMetadataResolver,
     RequestMetadataResolver,
 )
-from identity.public import AccessTokenAuthenticator, IdentityPublicApi
+from identity.public import (
+    AccessTokenAuthenticator,
+    IdentityPublicApi,
+    PublicSessionRefresher,
+)
 
 
 def _empty_signing_secrets() -> dict[str, bytes]:
@@ -223,7 +227,7 @@ class IdentityModule:
             external_identity_authenticator=self.external_identity_authenticator,
             otp_requester=self.otp_requester,
             otp_verifier=self.otp_verifier,
-            session_refresher=self.session_refresher,
+            session_refresher=PublicSessionRefresher(self.session_refresher),
             session_revoker=self.session_revoker,
             session_bulk_revoker=self.session_bulk_revoker,
             data_retention_cleaner=self.data_retention_cleaner,
