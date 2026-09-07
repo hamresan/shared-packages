@@ -4,14 +4,12 @@ from collections.abc import Collection
 from dataclasses import replace
 from datetime import datetime, timedelta
 
-from instagram_auth.application.contracts import (
-    Clock,
-    InstagramAccessTokenProtector,
-    InstagramAccessTokenProvider,
-    InstagramAccessTokenRefresher,
-    InstagramAuthUnitOfWork,
-)
-from instagram_auth.application.credentials import InstagramProtectedCredentialFactory
+from instagram_auth.application.contracts.access_token_provider import InstagramAccessTokenProvider
+from instagram_auth.application.contracts.access_token_refresher import InstagramAccessTokenRefresher
+from instagram_auth.application.contracts.clock import Clock
+from instagram_auth.application.contracts.token_protector import InstagramAccessTokenProtector
+from instagram_auth.application.contracts.unit_of_work import InstagramAuthUnitOfWork
+from instagram_auth.application.credentials.factory import InstagramProtectedCredentialFactory
 from instagram_auth.application.errors import InstagramConnectionUnavailableError
 from instagram_auth.baseline import InstagramPermission
 from instagram_auth.domain import InstagramConnectionId
