@@ -1,5 +1,6 @@
 """Fakes for Instagram credential refresh tests."""
 
+from collections.abc import Collection
 from types import TracebackType
 from typing import Self
 
@@ -122,7 +123,7 @@ class FakeAccessTokenProvider(InstagramAccessTokenProvider):
         self,
         *,
         connection_id: InstagramConnectionId,
-        required_permissions: tuple[InstagramPermission, ...] = (),
+        required_permissions: Collection[InstagramPermission] = (),
     ) -> str:
         del required_permissions
         self.calls.append(connection_id)
