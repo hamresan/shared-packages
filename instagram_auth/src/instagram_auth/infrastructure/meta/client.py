@@ -66,7 +66,7 @@ class MetaInstagramOAuthClient:
         except MetaTransportError as exc:
             raise self._error_mapper.transport_error() from exc
         if response.status_code != 200:
-            raise self._error_mapper.token_refresh_error(response)
+            raise self._error_mapper.identity_error(response)
         return self._token_parser.parse(response.payload)
 
     async def resolve_identity(self, *, access_token: str) -> MetaInstagramIdentityDto:
