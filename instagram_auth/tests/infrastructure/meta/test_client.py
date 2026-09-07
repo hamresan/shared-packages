@@ -38,7 +38,10 @@ def build_client(transport: FakeMetaHttpTransport) -> MetaInstagramOAuthClient:
 def test_exchange_authorization_code_posts_expected_form_without_retry() -> None:
     transport = FakeMetaHttpTransport()
     transport.post_results.append(
-        MetaHttpResponse(200, {"access_token": "token", "expires_in": 3600})
+        MetaHttpResponse(200, {"access_token": "short-token", "expires_in": 3600})
+    )
+    transport.get_results.append(
+        MetaHttpResponse(200, {"access_token": "long-token", "expires_in": 5_184_000})
     )
 
     result = run(
@@ -48,8 +51,8 @@ def test_exchange_authorization_code_posts_expected_form_without_retry() -> None
         )
     )
 
-    assert result.access_token == "token"
-    assert result.expires_in == 3600
+    assert result.access_token == "long-token"
+    assert result.expires_in == 5_184_000
     assert transport.post_calls == [
         (
             "https://api.instagram.com/oauth/access_token",
@@ -59,6 +62,16 @@ def test_exchange_authorization_code_posts_expected_form_without_retry() -> None
                 "grant_type": "authorization_code",
                 "redirect_uri": "https://app.example/callback",
                 "code": "code",
+            },
+        )
+    ]
+    assert transport.get_calls == [
+        (
+            "https://graph.instagram.com/access_token",
+            {
+                "grant_type": "ig_exchange_token",
+                "client_secret": "client-secret",
+                "access_token": "short-token",
             },
         )
     ]
