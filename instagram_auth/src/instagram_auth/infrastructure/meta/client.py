@@ -1,5 +1,7 @@
 """Meta Instagram OAuth HTTP client."""
 
+from dataclasses import replace
+
 from .config import MetaInstagramOAuthConfig
 from .dto import MetaInstagramIdentityDto, MetaInstagramTokenDto
 from .http import MetaHttpTransport, MetaTransportError, MetaTransportTimeoutError
@@ -50,7 +52,11 @@ class MetaInstagramOAuthClient:
             raise self._error_mapper.transport_error() from exc
         if response.status_code != 200:
             raise self._error_mapper.token_exchange_error(response)
-        return self._token_parser.parse(response.payload)
+        short_lived = self._token_parser.parse(response.payload)
+        long_lived = await self.exchange_long_lived_access_token(
+            access_token=short_lived.access_token,
+        )
+        return replace(long_lived, permissions=short_lived.permissions)
 
     async def exchange_long_lived_access_token(
         self,
