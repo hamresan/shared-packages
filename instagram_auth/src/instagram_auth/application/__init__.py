@@ -4,8 +4,8 @@ from instagram_auth.application.access import (
     AuthorizedInstagramAccessTokenProvider,
     InstagramConnectionAccessPolicy,
     InstagramCredentialRefreshPolicy,
-    RefreshInstagramConnectionCredential,
     RefreshingInstagramAccessTokenProvider,
+    RefreshInstagramConnectionCredential,
 )
 from instagram_auth.application.authorization.callback import (
     ValidateInstagramAuthorizationCallback,

@@ -5,7 +5,9 @@ from dataclasses import replace
 from datetime import datetime, timedelta
 
 from instagram_auth.application.contracts.access_token_provider import InstagramAccessTokenProvider
-from instagram_auth.application.contracts.access_token_refresher import InstagramAccessTokenRefresher
+from instagram_auth.application.contracts.access_token_refresher import (
+    InstagramAccessTokenRefresher,
+)
 from instagram_auth.application.contracts.clock import Clock
 from instagram_auth.application.contracts.token_protector import InstagramAccessTokenProtector
 from instagram_auth.application.contracts.unit_of_work import InstagramAuthUnitOfWork

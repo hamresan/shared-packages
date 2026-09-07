@@ -6,8 +6,8 @@ from uuid import UUID
 
 from instagram_auth.application.access import (
     InstagramCredentialRefreshPolicy,
-    RefreshInstagramConnectionCredential,
     RefreshingInstagramAccessTokenProvider,
+    RefreshInstagramConnectionCredential,
 )
 from instagram_auth.application.credentials import InstagramProtectedCredentialFactory
 from instagram_auth.application.models import (
@@ -24,8 +24,8 @@ from tests.application.access.fakes import FakeInstagramAccessTokenProtector
 from tests.application.access.refresh_fakes import (
     FakeAccessTokenProvider,
     FakeAccessTokenRefresher,
-    FakeCredentialRepository,
     FakeConnectionRepository,
+    FakeCredentialRepository,
     FakeInstagramAuthUnitOfWork,
 )
 from tests.application.contracts.fakes import FixedClock
