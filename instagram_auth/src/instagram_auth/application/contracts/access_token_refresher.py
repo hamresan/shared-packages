@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from instagram_auth.application.models import InstagramAuthorizationGrant
+from instagram_auth.application.models.authorization_grant import InstagramAuthorizationGrant
 
 
 class InstagramAccessTokenRefresher(Protocol):
