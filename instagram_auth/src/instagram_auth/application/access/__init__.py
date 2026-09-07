@@ -2,8 +2,16 @@
 
 from .policy import InstagramConnectionAccessPolicy
 from .provider import AuthorizedInstagramAccessTokenProvider
+from .refresh import (
+    InstagramCredentialRefreshPolicy,
+    RefreshingInstagramAccessTokenProvider,
+    RefreshInstagramConnectionCredential,
+)
 
 __all__ = [
     "AuthorizedInstagramAccessTokenProvider",
     "InstagramConnectionAccessPolicy",
+    "InstagramCredentialRefreshPolicy",
+    "RefreshInstagramConnectionCredential",
+    "RefreshingInstagramAccessTokenProvider",
 ]

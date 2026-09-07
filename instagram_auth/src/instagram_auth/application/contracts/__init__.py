@@ -1,6 +1,9 @@
 """Public application contracts for Instagram authentication."""
 
 from instagram_auth.application.contracts.access_token_provider import InstagramAccessTokenProvider
+from instagram_auth.application.contracts.access_token_refresher import (
+    InstagramAccessTokenRefresher,
+)
 from instagram_auth.application.contracts.authorization_provider import (
     InstagramAuthorizationProvider,
 )
@@ -27,6 +30,7 @@ __all__ = [
     "Clock",
     "InstagramAccessTokenProtector",
     "InstagramAccessTokenProvider",
+    "InstagramAccessTokenRefresher",
     "InstagramAuthUnitOfWork",
     "InstagramAuthorizationProvider",
     "InstagramAuthorizationStateStore",

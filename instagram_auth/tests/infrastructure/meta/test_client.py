@@ -38,7 +38,10 @@ def build_client(transport: FakeMetaHttpTransport) -> MetaInstagramOAuthClient:
 def test_exchange_authorization_code_posts_expected_form_without_retry() -> None:
     transport = FakeMetaHttpTransport()
     transport.post_results.append(
-        MetaHttpResponse(200, {"access_token": "token", "expires_in": 3600})
+        MetaHttpResponse(200, {"access_token": "short-token", "expires_in": 3600})
+    )
+    transport.get_results.append(
+        MetaHttpResponse(200, {"access_token": "long-token", "expires_in": 5_184_000})
     )
 
     result = run(
@@ -48,8 +51,8 @@ def test_exchange_authorization_code_posts_expected_form_without_retry() -> None
         )
     )
 
-    assert result.access_token == "token"
-    assert result.expires_in == 3600
+    assert result.access_token == "long-token"
+    assert result.expires_in == 5_184_000
     assert transport.post_calls == [
         (
             "https://api.instagram.com/oauth/access_token",
@@ -59,6 +62,16 @@ def test_exchange_authorization_code_posts_expected_form_without_retry() -> None
                 "grant_type": "authorization_code",
                 "redirect_uri": "https://app.example/callback",
                 "code": "code",
+            },
+        )
+    ]
+    assert transport.get_calls == [
+        (
+            "https://graph.instagram.com/access_token",
+            {
+                "grant_type": "ig_exchange_token",
+                "client_secret": "client-secret",
+                "access_token": "short-token",
             },
         )
     ]
@@ -109,6 +122,38 @@ def test_exchange_authorization_code_normalizes_transport_failure() -> None:
         )
 
     assert exc_info.value.kind is InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
+
+
+def test_refresh_access_token_calls_meta_refresh_endpoint() -> None:
+    transport = FakeMetaHttpTransport()
+    transport.get_results.append(
+        MetaHttpResponse(200, {"access_token": "new-token", "expires_in": 5_184_000})
+    )
+
+    result = run(build_client(transport).refresh_access_token(access_token="old-token"))
+
+    assert result.access_token == "new-token"
+    assert result.expires_in == 5_184_000
+    assert transport.get_calls == [
+        (
+            "https://graph.instagram.com/refresh_access_token",
+            {
+                "grant_type": "ig_refresh_token",
+                "access_token": "old-token",
+            },
+        )
+    ]
+
+
+def test_refresh_access_token_normalizes_invalid_token() -> None:
+    transport = FakeMetaHttpTransport()
+    transport.get_results.append(MetaHttpResponse(400, {"error": "invalid"}))
+
+    with pytest.raises(InstagramProviderError) as exc_info:
+        run(build_client(transport).refresh_access_token(access_token="sensitive-token"))
+
+    assert exc_info.value.kind is InstagramProviderErrorKind.INVALID_TOKEN
+    assert "sensitive-token" not in str(exc_info.value)
 
 
 def test_identity_read_retries_transient_server_failure() -> None:

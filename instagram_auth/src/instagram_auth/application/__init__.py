@@ -3,6 +3,9 @@
 from instagram_auth.application.access import (
     AuthorizedInstagramAccessTokenProvider,
     InstagramConnectionAccessPolicy,
+    InstagramCredentialRefreshPolicy,
+    RefreshingInstagramAccessTokenProvider,
+    RefreshInstagramConnectionCredential,
 )
 from instagram_auth.application.authorization.callback import (
     ValidateInstagramAuthorizationCallback,
@@ -36,6 +39,7 @@ from instagram_auth.application.contracts import (
     Clock,
     InstagramAccessTokenProtector,
     InstagramAccessTokenProvider,
+    InstagramAccessTokenRefresher,
     InstagramAuthorizationProvider,
     InstagramAuthorizationStateStore,
     InstagramAuthorizationUrlBuilder,
@@ -93,6 +97,7 @@ __all__ = [
     "GetInstagramConnection",
     "InstagramAccessTokenProtector",
     "InstagramAccessTokenProvider",
+    "InstagramAccessTokenRefresher",
     "InstagramAuthUnitOfWork",
     "InstagramAuthorizationCorrelation",
     "InstagramAuthorizationFlow",
@@ -108,6 +113,7 @@ __all__ = [
     "InstagramAuthorizationUrlBuilder",
     "InstagramConnectionAccessError",
     "InstagramConnectionAccessPolicy",
+    "InstagramCredentialRefreshPolicy",
     "InstagramConnectionConcurrencyError",
     "InstagramConnectionFactory",
     "InstagramConnectionIdGenerator",
@@ -135,6 +141,8 @@ __all__ = [
     "ListInstagramConnections",
     "PrepareInstagramHostIdentityHandoff",
     "ReconnectInstagramConnection",
+    "RefreshInstagramConnectionCredential",
+    "RefreshingInstagramAccessTokenProvider",
     "ReauthorizeInstagramConnection",
     "ReauthorizeInstagramConnectionCommand",
     "StartInstagramAuthorization",

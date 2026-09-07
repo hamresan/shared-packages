@@ -50,7 +50,10 @@ def build_provider(transport: FakeMetaHttpTransport) -> MetaInstagramAuthorizati
 def test_provider_maps_token_to_transient_application_grant() -> None:
     transport = FakeMetaHttpTransport()
     transport.post_results.append(
-        MetaHttpResponse(200, {"access_token": "token", "expires_in": 3600})
+        MetaHttpResponse(200, {"access_token": "short-token", "expires_in": 3600})
+    )
+    transport.get_results.append(
+        MetaHttpResponse(200, {"access_token": "long-token", "expires_in": 5_184_000})
     )
 
     result = run(
@@ -60,8 +63,8 @@ def test_provider_maps_token_to_transient_application_grant() -> None:
         )
     )
 
-    assert result.access_token == "token"
-    assert result.expires_at == NOW + timedelta(hours=1)
+    assert result.access_token == "long-token"
+    assert result.expires_at == NOW + timedelta(days=60)
 
 
 def test_provider_maps_professional_identity_using_user_id() -> None:
