@@ -17,7 +17,10 @@ from identity.domain import IdentityType, OtpPurpose
 from identity.public.errors import (
     AccessTokenAuthenticationError,
     ExternalIdentityAuthenticationError,
+    SessionRefreshError,
+    SessionRefreshRejectedError,
 )
+from identity.public.session_refresh import PublicSessionRefresher
 from identity.public.services import (
     ExternalIdentityAuthenticator,
     IdentityDataRetentionCleaner,
@@ -74,7 +77,10 @@ __all__ = [
     "RefreshSessionCommand",
     "RequestOtpCommand",
     "RequestOtpResult",
+    "PublicSessionRefresher",
     "SessionBulkRevoker",
+    "SessionRefreshError",
+    "SessionRefreshRejectedError",
     "SessionRefresher",
     "SessionRevoker",
     "VerifyOtpCommand",
