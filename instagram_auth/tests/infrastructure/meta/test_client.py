@@ -111,6 +111,38 @@ def test_exchange_authorization_code_normalizes_transport_failure() -> None:
     assert exc_info.value.kind is InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
 
 
+def test_refresh_access_token_calls_meta_refresh_endpoint() -> None:
+    transport = FakeMetaHttpTransport()
+    transport.get_results.append(
+        MetaHttpResponse(200, {"access_token": "new-token", "expires_in": 5_184_000})
+    )
+
+    result = run(build_client(transport).refresh_access_token(access_token="old-token"))
+
+    assert result.access_token == "new-token"
+    assert result.expires_in == 5_184_000
+    assert transport.get_calls == [
+        (
+            "https://graph.instagram.com/refresh_access_token",
+            {
+                "grant_type": "ig_refresh_token",
+                "access_token": "old-token",
+            },
+        )
+    ]
+
+
+def test_refresh_access_token_normalizes_invalid_token() -> None:
+    transport = FakeMetaHttpTransport()
+    transport.get_results.append(MetaHttpResponse(400, {"error": "invalid"}))
+
+    with pytest.raises(InstagramProviderError) as exc_info:
+        run(build_client(transport).refresh_access_token(access_token="sensitive-token"))
+
+    assert exc_info.value.kind is InstagramProviderErrorKind.INVALID_TOKEN
+    assert "sensitive-token" not in str(exc_info.value)
+
+
 def test_identity_read_retries_transient_server_failure() -> None:
     transport = FakeMetaHttpTransport()
     transport.get_results.extend(
