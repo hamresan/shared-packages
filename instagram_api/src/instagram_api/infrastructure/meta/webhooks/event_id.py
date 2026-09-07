@@ -3,6 +3,7 @@
 import hashlib
 import json
 from collections.abc import Mapping
+from typing import cast
 
 
 class MetaInstagramWebhookEventIdFactory:
@@ -20,7 +21,8 @@ class MetaInstagramWebhookEventIdFactory:
 
         message = item.get("message")
         if event_type == "messaging" and isinstance(message, Mapping):
-            provider_message_id = message.get("mid")
+            typed_message = cast(Mapping[str, object], message)
+            provider_message_id = typed_message.get("mid")
             if isinstance(provider_message_id, str) and provider_message_id:
                 canonical = json.dumps(
                     {
