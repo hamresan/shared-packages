@@ -23,6 +23,21 @@ class MetaProviderErrorMapper:
             status_code=response.status_code,
         )
 
+    def token_refresh_error(self, response: MetaHttpResponse) -> InstagramProviderError:
+        if response.status_code == 429:
+            kind = InstagramProviderErrorKind.RATE_LIMITED
+        elif response.status_code >= 500:
+            kind = InstagramProviderErrorKind.PROVIDER_UNAVAILABLE
+        elif response.status_code in {400, 401}:
+            kind = InstagramProviderErrorKind.INVALID_TOKEN
+        else:
+            kind = InstagramProviderErrorKind.UNEXPECTED_PROVIDER_ERROR
+        return InstagramProviderError(
+            kind=kind,
+            message=f"Instagram provider error: {kind.value}",
+            status_code=response.status_code,
+        )
+
     def identity_error(self, response: MetaHttpResponse) -> InstagramProviderError:
         if response.status_code == 429:
             kind = InstagramProviderErrorKind.RATE_LIMITED
