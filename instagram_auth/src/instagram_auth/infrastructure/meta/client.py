@@ -52,6 +52,28 @@ class MetaInstagramOAuthClient:
             raise self._error_mapper.token_exchange_error(response)
         return self._token_parser.parse(response.payload)
 
+    async def exchange_long_lived_access_token(
+        self,
+        *,
+        access_token: str,
+    ) -> MetaInstagramTokenDto:
+        try:
+            response = await self._transport.get(
+                url=f"{self._config.graph_base_url}/access_token",
+                params={
+                    "grant_type": "ig_exchange_token",
+                    "client_secret": self._config.client_secret,
+                    "access_token": access_token,
+                },
+            )
+        except MetaTransportTimeoutError as exc:
+            raise self._error_mapper.timeout_error() from exc
+        except MetaTransportError as exc:
+            raise self._error_mapper.transport_error() from exc
+        if response.status_code != 200:
+            raise self._error_mapper.identity_error(response)
+        return self._token_parser.parse(response.payload)
+
     async def refresh_access_token(self, *, access_token: str) -> MetaInstagramTokenDto:
         try:
             response = await self._transport.get(
