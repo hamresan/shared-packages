@@ -20,7 +20,6 @@ from identity.public.errors import (
     SessionRefreshError,
     SessionRefreshRejectedError,
 )
-from identity.public.session_refresh import PublicSessionRefresher
 from identity.public.services import (
     ExternalIdentityAuthenticator,
     IdentityDataRetentionCleaner,
@@ -30,6 +29,7 @@ from identity.public.services import (
     SessionRefresher,
     SessionRevoker,
 )
+from identity.public.session_refresh import PublicSessionRefresher
 
 
 @dataclass(frozen=True, slots=True)
