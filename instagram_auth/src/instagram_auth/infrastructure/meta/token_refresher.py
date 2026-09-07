@@ -1,7 +1,7 @@
 """Meta implementation of Instagram access-token refresh."""
 
-from instagram_auth.application import InstagramAuthorizationGrant
-from instagram_auth.application.contracts import InstagramAccessTokenRefresher
+from instagram_auth.application.contracts.access_token_refresher import InstagramAccessTokenRefresher
+from instagram_auth.application.models.authorization_grant import InstagramAuthorizationGrant
 
 from .client import MetaInstagramOAuthClient
 from .mappers import MetaAuthorizationGrantMapper
