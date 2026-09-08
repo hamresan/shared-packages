@@ -153,5 +153,3 @@ def test_service_delegates_sender_identity_to_interactions() -> None:
             "identity-customer-1",
         )
     ]
-
-
