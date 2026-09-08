@@ -7,7 +7,6 @@ from letta_client import AsyncLetta
 from letta_agent.errors import LettaProviderError
 from letta_agent.models import LettaIdentity, LettaIdentitySpec
 from letta_agent.sdk_gateway import SdkLettaGateway
-
 from tests.support.http_errors import build_status_error
 
 
