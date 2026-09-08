@@ -76,9 +76,7 @@ class FakeLettaGateway(LettaGateway):
         message: str,
         sender_id: str | None = None,
     ) -> LettaInteractionResult:
-        self.conversation_interactions.append(
-            (agent_id, conversation_id, message, sender_id)
-        )
+        self.conversation_interactions.append((agent_id, conversation_id, message, sender_id))
         return LettaInteractionResult(succeeded=True)
 
 
@@ -146,9 +144,7 @@ def test_service_delegates_sender_identity_to_interactions() -> None:
         )
     )
 
-    assert gateway.interactions == [
-        ("agent-1", "Hello", "identity-customer-1")
-    ]
+    assert gateway.interactions == [("agent-1", "Hello", "identity-customer-1")]
     assert gateway.conversation_interactions == [
         (
             "agent-1",
