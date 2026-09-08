@@ -19,19 +19,6 @@ class LettaCreatedConversation:
 
 
 @dataclass(frozen=True, slots=True)
-class LettaIdentitySpec:
-    identifier_key: str
-    name: str
-
-
-@dataclass(frozen=True, slots=True)
-class LettaIdentity:
-    identity_id: str
-    identifier_key: str
-    name: str
-
-
-@dataclass(frozen=True, slots=True)
 class LettaInteractionResult:
     succeeded: bool
     reply_text: str | None = None
