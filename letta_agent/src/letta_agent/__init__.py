@@ -4,6 +4,8 @@ from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -15,6 +17,8 @@ __all__ = [
     "LettaAgentSpec",
     "LettaCreatedAgent",
     "LettaCreatedConversation",
+    "LettaIdentity",
+    "LettaIdentitySpec",
     "LettaInteractionResult",
     "LettaKnowledgeResult",
     "LettaProviderError",
