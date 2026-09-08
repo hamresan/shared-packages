@@ -8,7 +8,7 @@ from letta_agent.errors import LettaProviderError
 from letta_agent.models import LettaIdentity, LettaIdentitySpec
 from letta_agent.sdk_gateway import SdkLettaGateway
 
-from tests.test_sdk_gateway import build_status_error
+from tests.support.http_errors import build_status_error
 
 
 def test_sdk_gateway_upserts_user_identity(
