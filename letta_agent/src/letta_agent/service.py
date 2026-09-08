@@ -58,10 +58,12 @@ class LettaAgentService:
         *,
         agent_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         return await self._gateway.interact(
             agent_id=agent_id,
             message=message,
+            sender_id=sender_id,
         )
 
     async def interact_in_conversation(
@@ -70,9 +72,11 @@ class LettaAgentService:
         agent_id: str,
         conversation_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         return await self._gateway.interact_in_conversation(
             agent_id=agent_id,
             conversation_id=conversation_id,
             message=message,
+            sender_id=sender_id,
         )
