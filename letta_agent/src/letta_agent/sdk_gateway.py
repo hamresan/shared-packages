@@ -5,11 +5,15 @@ from letta_client.types.agents.letta_response import LettaResponse
 
 from letta_agent.contracts import LettaGateway
 from letta_agent.errors import LettaProviderError
+from letta_agent.identity_mapper import LettaIdentityResponseMapper
+from letta_agent.identity_response import LettaIdentityResponse
 from letta_agent.interaction_mapper import LettaInteractionResponseMapper
 from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -36,6 +40,7 @@ class SdkLettaGateway(LettaGateway):
     def __init__(self, client: AsyncLetta) -> None:
         self._client = client
         self._interaction_mapper = LettaInteractionResponseMapper()
+        self._identity_mapper = LettaIdentityResponseMapper()
 
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
         try:
@@ -69,6 +74,36 @@ class SdkLettaGateway(LettaGateway):
         return LettaCreatedConversation(
             conversation_id=conversation.id,
         )
+
+    async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        try:
+            response = await self._client.put(
+                "/v1/identities/",
+                cast_to=LettaIdentityResponse,
+                body={
+                    "identifier_key": spec.identifier_key,
+                    "identity_type": "user",
+                    "name": spec.name,
+                },
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta identity upsert failed") from error
+
+        return self._identity_mapper.to_identity(response)
+
+    async def attach_identity(
+        self,
+        *,
+        agent_id: str,
+        identity_id: str,
+    ) -> None:
+        try:
+            await self._client.agents.identities.attach(
+                identity_id,
+                agent_id=agent_id,
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta identity attachment failed") from error
 
     async def set_knowledge(
         self,
