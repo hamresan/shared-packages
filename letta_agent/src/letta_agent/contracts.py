@@ -44,6 +44,7 @@ class LettaGateway(Protocol):
         *,
         agent_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult: ...
 
     async def interact_in_conversation(
@@ -52,4 +53,5 @@ class LettaGateway(Protocol):
         agent_id: str,
         conversation_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult: ...
