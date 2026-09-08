@@ -1,27 +1,13 @@
 import asyncio
 from types import SimpleNamespace
 
-import httpx
 import pytest
-from letta_client import APIStatusError, AsyncLetta
+from letta_client import AsyncLetta
 
 from letta_agent.errors import LettaProviderError
 from letta_agent.models import LettaAgentSpec
 from letta_agent.sdk_gateway import SdkLettaGateway
-
-
-def build_status_error(status_code: int) -> APIStatusError:
-    request = httpx.Request("GET", "http://localhost/v1/test")
-    response = httpx.Response(status_code, request=request)
-    return APIStatusError(
-        f"HTTP {status_code}",
-        response=response,
-        body=None,
-    )
-
-
-def build_not_found() -> APIStatusError:
-    return build_status_error(404)
+from tests.support.http_errors import build_not_found, build_status_error
 
 
 @pytest.mark.parametrize("message", ["Ready?", "Confirm readiness."])

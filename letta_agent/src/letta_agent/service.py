@@ -5,6 +5,8 @@ from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -23,6 +25,20 @@ class LettaAgentService:
         agent_id: str,
     ) -> LettaCreatedConversation:
         return await self._gateway.create_conversation(agent_id=agent_id)
+
+    async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        return await self._gateway.upsert_identity(spec)
+
+    async def attach_identity(
+        self,
+        *,
+        agent_id: str,
+        identity_id: str,
+    ) -> None:
+        await self._gateway.attach_identity(
+            agent_id=agent_id,
+            identity_id=identity_id,
+        )
 
     async def set_knowledge(
         self,
@@ -58,10 +74,12 @@ class LettaAgentService:
         *,
         agent_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         return await self._gateway.interact(
             agent_id=agent_id,
             message=message,
+            sender_id=sender_id,
         )
 
     async def interact_in_conversation(
@@ -70,9 +88,11 @@ class LettaAgentService:
         agent_id: str,
         conversation_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         return await self._gateway.interact_in_conversation(
             agent_id=agent_id,
             conversation_id=conversation_id,
             message=message,
+            sender_id=sender_id,
         )

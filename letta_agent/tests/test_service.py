@@ -6,6 +6,8 @@ from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -18,9 +20,11 @@ class FakeLettaGateway(LettaGateway):
         self.knowledge_updates: list[tuple[str, str]] = []
         self.agent_tool_updates: list[tuple[str, tuple[str, ...]]] = []
         self.shared_memory_tool_disables: list[str] = []
-        self.interactions: list[tuple[str, str]] = []
+        self.interactions: list[tuple[str, str, str | None]] = []
         self.conversation_creations: list[str] = []
-        self.conversation_interactions: list[tuple[str, str, str]] = []
+        self.identity_upserts: list[LettaIdentitySpec] = []
+        self.identity_attachments: list[tuple[str, str]] = []
+        self.conversation_interactions: list[tuple[str, str, str, str | None]] = []
 
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
         self.created_specs.append(spec)
@@ -33,6 +37,22 @@ class FakeLettaGateway(LettaGateway):
     ) -> LettaCreatedConversation:
         self.conversation_creations.append(agent_id)
         return LettaCreatedConversation(conversation_id="conversation-1")
+
+    async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        self.identity_upserts.append(spec)
+        return LettaIdentity(
+            identity_id="identity-1",
+            identifier_key=spec.identifier_key,
+            name=spec.name,
+        )
+
+    async def attach_identity(
+        self,
+        *,
+        agent_id: str,
+        identity_id: str,
+    ) -> None:
+        self.identity_attachments.append((agent_id, identity_id))
 
     async def set_knowledge(
         self,
@@ -63,8 +83,9 @@ class FakeLettaGateway(LettaGateway):
         *,
         agent_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
-        self.interactions.append((agent_id, message))
+        self.interactions.append((agent_id, message, sender_id))
         return LettaInteractionResult(succeeded=True)
 
     async def interact_in_conversation(
@@ -73,8 +94,9 @@ class FakeLettaGateway(LettaGateway):
         agent_id: str,
         conversation_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
-        self.conversation_interactions.append((agent_id, conversation_id, message))
+        self.conversation_interactions.append((agent_id, conversation_id, message, sender_id))
         return LettaInteractionResult(succeeded=True)
 
 
@@ -115,8 +137,64 @@ def test_service_delegates_agent_creation_and_interaction() -> None:
     assert gateway.knowledge_updates == [("agent-1", "Account knowledge")]
     assert gateway.agent_tool_updates == [("agent-1", ())]
     assert gateway.shared_memory_tool_disables == ["agent-1"]
-    assert gateway.interactions == [("agent-1", "Are you ready?")]
+    assert gateway.interactions == [("agent-1", "Are you ready?", None)]
     assert gateway.conversation_creations == ["agent-1"]
     assert gateway.conversation_interactions == [
-        ("agent-1", "conversation-1", "What did I ask before?")
+        ("agent-1", "conversation-1", "What did I ask before?", None)
     ]
+
+
+def test_service_delegates_sender_identity_to_interactions() -> None:
+    gateway = FakeLettaGateway()
+    service = LettaAgentService(gateway)
+
+    asyncio.run(
+        service.interact(
+            agent_id="agent-1",
+            message="Hello",
+            sender_id="identity-customer-1",
+        )
+    )
+    asyncio.run(
+        service.interact_in_conversation(
+            agent_id="agent-1",
+            conversation_id="conversation-1",
+            message="Do you remember me?",
+            sender_id="identity-customer-1",
+        )
+    )
+
+    assert gateway.interactions == [("agent-1", "Hello", "identity-customer-1")]
+    assert gateway.conversation_interactions == [
+        (
+            "agent-1",
+            "conversation-1",
+            "Do you remember me?",
+            "identity-customer-1",
+        )
+    ]
+
+
+def test_service_delegates_identity_lifecycle() -> None:
+    gateway = FakeLettaGateway()
+    service = LettaAgentService(gateway)
+    spec = LettaIdentitySpec(
+        identifier_key="business-1:customer-1",
+        name="Instagram customer",
+    )
+
+    identity = asyncio.run(service.upsert_identity(spec))
+    asyncio.run(
+        service.attach_identity(
+            agent_id="agent-1",
+            identity_id=identity.identity_id,
+        )
+    )
+
+    assert identity == LettaIdentity(
+        identity_id="identity-1",
+        identifier_key="business-1:customer-1",
+        name="Instagram customer",
+    )
+    assert gateway.identity_upserts == [spec]
+    assert gateway.identity_attachments == [("agent-1", "identity-1")]
