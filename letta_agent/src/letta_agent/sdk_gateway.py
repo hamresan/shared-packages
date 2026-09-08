@@ -163,7 +163,7 @@ class SdkLettaGateway(LettaGateway):
             else:
                 response = await self._client.agents.messages.create(
                     agent_id=agent_id,
-                    input=[
+                    messages=[
                         {
                             "role": "user",
                             "content": message,
@@ -196,7 +196,7 @@ class SdkLettaGateway(LettaGateway):
                 response = await self._client.conversations.messages.with_raw_response.create(
                     conversation_id,
                     agent_id=agent_id,
-                    input=[
+                    messages=[
                         {
                             "role": "user",
                             "content": message,
