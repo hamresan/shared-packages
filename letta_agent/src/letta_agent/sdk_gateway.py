@@ -152,12 +152,25 @@ class SdkLettaGateway(LettaGateway):
         *,
         agent_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         try:
-            response = await self._client.agents.messages.create(
-                agent_id=agent_id,
-                input=message,
-            )
+            if sender_id is None:
+                response = await self._client.agents.messages.create(
+                    agent_id=agent_id,
+                    input=message,
+                )
+            else:
+                response = await self._client.agents.messages.create(
+                    agent_id=agent_id,
+                    input=[
+                        {
+                            "role": "user",
+                            "content": message,
+                            "sender_id": sender_id,
+                        }
+                    ],
+                )
         except APIError as error:
             raise LettaProviderError("Letta agent interaction failed") from error
 
@@ -169,14 +182,29 @@ class SdkLettaGateway(LettaGateway):
         agent_id: str,
         conversation_id: str,
         message: str,
+        sender_id: str | None = None,
     ) -> LettaInteractionResult:
         try:
-            response = await self._client.conversations.messages.with_raw_response.create(
-                conversation_id,
-                agent_id=agent_id,
-                input=message,
-                streaming=False,
-            )
+            if sender_id is None:
+                response = await self._client.conversations.messages.with_raw_response.create(
+                    conversation_id,
+                    agent_id=agent_id,
+                    input=message,
+                    streaming=False,
+                )
+            else:
+                response = await self._client.conversations.messages.with_raw_response.create(
+                    conversation_id,
+                    agent_id=agent_id,
+                    input=[
+                        {
+                            "role": "user",
+                            "content": message,
+                            "sender_id": sender_id,
+                        }
+                    ],
+                    streaming=False,
+                )
             raw_response = await response.json()
             parsed = LettaResponse.model_validate(raw_response)
         except APIError as error:
