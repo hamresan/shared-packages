@@ -10,6 +10,8 @@ from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -69,6 +71,36 @@ class SdkLettaGateway(LettaGateway):
         return LettaCreatedConversation(
             conversation_id=conversation.id,
         )
+
+    async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        try:
+            identity = await self._client.identities.upsert(
+                identifier_key=spec.identifier_key,
+                identity_type="user",
+                name=spec.name,
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta identity upsert failed") from error
+
+        return LettaIdentity(
+            identity_id=identity.id,
+            identifier_key=identity.identifier_key,
+            name=identity.name,
+        )
+
+    async def attach_identity(
+        self,
+        *,
+        agent_id: str,
+        identity_id: str,
+    ) -> None:
+        try:
+            await self._client.agents.identities.attach(
+                identity_id,
+                agent_id=agent_id,
+            )
+        except APIError as error:
+            raise LettaProviderError("Letta identity attachment failed") from error
 
     async def set_knowledge(
         self,
