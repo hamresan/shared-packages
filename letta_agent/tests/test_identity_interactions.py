@@ -39,7 +39,7 @@ def test_sdk_gateway_sends_sender_identity_for_direct_interaction(
     assert message_calls == [
         {
             "agent_id": "agent-1",
-            "input": [
+            "messages": [
                 {
                     "role": "user",
                     "content": "Do you remember my size?",
@@ -100,7 +100,7 @@ def test_sdk_gateway_sends_sender_identity_inside_conversation(
             "conversation-1",
             {
                 "agent_id": "agent-1",
-                "input": [
+                "messages": [
                     {
                         "role": "user",
                         "content": "Do you remember my size?",
