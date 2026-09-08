@@ -6,6 +6,8 @@ from letta_agent.models import (
     LettaAgentSpec,
     LettaCreatedAgent,
     LettaCreatedConversation,
+    LettaIdentity,
+    LettaIdentitySpec,
     LettaInteractionResult,
     LettaKnowledgeResult,
 )
@@ -20,6 +22,8 @@ class FakeLettaGateway(LettaGateway):
         self.shared_memory_tool_disables: list[str] = []
         self.interactions: list[tuple[str, str, str | None]] = []
         self.conversation_creations: list[str] = []
+        self.identity_upserts: list[LettaIdentitySpec] = []
+        self.identity_attachments: list[tuple[str, str]] = []
         self.conversation_interactions: list[tuple[str, str, str, str | None]] = []
 
     async def create_agent(self, spec: LettaAgentSpec) -> LettaCreatedAgent:
@@ -33,6 +37,22 @@ class FakeLettaGateway(LettaGateway):
     ) -> LettaCreatedConversation:
         self.conversation_creations.append(agent_id)
         return LettaCreatedConversation(conversation_id="conversation-1")
+
+    async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        self.identity_upserts.append(spec)
+        return LettaIdentity(
+            identity_id="identity-1",
+            identifier_key=spec.identifier_key,
+            name=spec.name,
+        )
+
+    async def attach_identity(
+        self,
+        *,
+        agent_id: str,
+        identity_id: str,
+    ) -> None:
+        self.identity_attachments.append((agent_id, identity_id))
 
     async def set_knowledge(
         self,
@@ -153,3 +173,28 @@ def test_service_delegates_sender_identity_to_interactions() -> None:
             "identity-customer-1",
         )
     ]
+
+
+def test_service_delegates_identity_lifecycle() -> None:
+    gateway = FakeLettaGateway()
+    service = LettaAgentService(gateway)
+    spec = LettaIdentitySpec(
+        identifier_key="business-1:customer-1",
+        name="Instagram customer",
+    )
+
+    identity = asyncio.run(service.upsert_identity(spec))
+    asyncio.run(
+        service.attach_identity(
+            agent_id="agent-1",
+            identity_id=identity.identity_id,
+        )
+    )
+
+    assert identity == LettaIdentity(
+        identity_id="identity-1",
+        identifier_key="business-1:customer-1",
+        name="Instagram customer",
+    )
+    assert gateway.identity_upserts == [spec]
+    assert gateway.identity_attachments == [("agent-1", "identity-1")]
