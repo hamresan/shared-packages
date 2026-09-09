@@ -128,7 +128,6 @@ def test_sdk_gateway_normalizes_identity_attachment_failure(
         )
 
 
-
 def test_sdk_gateway_creates_identity_when_upsert_returns_not_found(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
