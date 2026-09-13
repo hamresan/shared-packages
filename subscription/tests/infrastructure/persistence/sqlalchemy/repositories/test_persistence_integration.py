@@ -65,3 +65,44 @@ async def test_unit_of_work_persists_plan_subscription_trial_and_usage() -> None
     assert stored_subscription.source is SubscriptionSource.TRIAL
     assert counter.consumed == 7
     await database.dispose()
+
+
+async def test_usage_repository_add_once_reuses_persisted_record() -> None:
+    database = SqliteTestDatabase()
+    await database.create_schema()
+    factory = build_sqlalchemy_subscription_unit_of_work_factory(database.session_factory())
+    subject = SubjectReference("store", "store-42")
+    metric = UsageMetric("conversations")
+    now = datetime(2026, 8, 21, 12, 0, tzinfo=UTC)
+    first_record = UsageRecord(
+        subject=subject,
+        metric=metric,
+        amount=1,
+        occurred_at=now,
+        idempotency_key="conversation-session-1",
+    )
+    retried_record = UsageRecord(
+        subject=subject,
+        metric=metric,
+        amount=1,
+        occurred_at=now + timedelta(minutes=5),
+        idempotency_key="conversation-session-1",
+    )
+
+    async with factory() as unit_of_work:
+        first = await unit_of_work.usage.add_once(first_record)
+        await unit_of_work.commit()
+
+    async with factory() as unit_of_work:
+        retried = await unit_of_work.usage.add_once(retried_record)
+        await unit_of_work.commit()
+        counter = await unit_of_work.usage.get_counter(
+            subject,
+            metric,
+            UsagePeriod.ALL_TIME,
+            now + timedelta(hours=1),
+        )
+
+    assert retried == first
+    assert counter.consumed == 1
+    await database.dispose()
