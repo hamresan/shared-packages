@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Index, Integer, String
+from sqlalchemy import Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from subscription.infrastructure.persistence.sqlalchemy.base import SubscriptionBase
@@ -17,6 +17,13 @@ class UsageRecordModel(SubscriptionBase):
             "metric",
             "occurred_at",
         ),
+        UniqueConstraint(
+            "subject_type",
+            "subject_id",
+            "metric",
+            "idempotency_key",
+            name="uq_subscription_usage_idempotency",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -25,3 +32,4 @@ class UsageRecordModel(SubscriptionBase):
     metric: Mapped[str] = mapped_column(String(120))
     amount: Mapped[int] = mapped_column(Integer)
     occurred_at: Mapped[datetime] = mapped_column(UtcDateTime())
+    idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -18,8 +18,9 @@ class RecordUsageService:
             metric=command.metric,
             amount=command.amount,
             occurred_at=self._clock.now(),
+            idempotency_key=command.idempotency_key,
         )
         async with self._unit_of_work_factory() as unit_of_work:
-            await unit_of_work.usage.add(record)
+            persisted_record = await unit_of_work.usage.add_once(record)
             await unit_of_work.commit()
-        return record
+        return persisted_record
