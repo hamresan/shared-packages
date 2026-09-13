@@ -99,7 +99,7 @@ async def test_usage_repository_add_once_reuses_persisted_record() -> None:
         counter = await unit_of_work.usage.get_counter(
             subject,
             metric,
-            UsagePeriod.ALL_TIME,
+            UsagePeriod.LIFETIME,
             now + timedelta(hours=1),
         )
 
