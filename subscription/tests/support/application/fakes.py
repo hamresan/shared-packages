@@ -81,6 +81,9 @@ class FakeUsageRepository(UsageRepository):
         self.records: list[UsageRecord] = []
         self.counters: dict[tuple[SubjectReference, UsageMetric, UsagePeriod], int] = {}
 
+    async def add(self, record: UsageRecord) -> None:
+        self.records.append(record)
+
     async def add_once(self, record: UsageRecord) -> UsageRecord:
         if record.idempotency_key is not None:
             existing = next(
@@ -95,7 +98,7 @@ class FakeUsageRepository(UsageRepository):
             )
             if existing is not None:
                 return existing
-        self.records.append(record)
+        await self.add(record)
         return record
 
     async def get_counter(
