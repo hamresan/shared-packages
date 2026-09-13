@@ -10,6 +10,7 @@ class UsagePersistenceMapper:
             metric=record.metric.key,
             amount=record.amount,
             occurred_at=record.occurred_at,
+            idempotency_key=record.idempotency_key,
         )
 
     def to_domain(self, model: UsageRecordModel) -> UsageRecord:
@@ -18,4 +19,5 @@ class UsagePersistenceMapper:
             metric=UsageMetric(model.metric),
             amount=model.amount,
             occurred_at=model.occurred_at,
+            idempotency_key=model.idempotency_key,
         )
