@@ -38,7 +38,7 @@ class SubscriptionRepository(Protocol):
 
 
 class UsageRepository(Protocol):
-    async def add(self, record: UsageRecord) -> None: ...
+    async def add_once(self, record: UsageRecord) -> UsageRecord: ...
 
     async def get_counter(
         self,
