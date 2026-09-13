@@ -30,9 +30,12 @@ class SqlAlchemyUsageRepository(UsageRepository):
         self._mapper = mapper
         self._window_resolver = window_resolver
 
+    async def add(self, record: UsageRecord) -> None:
+        self._session.add(self._mapper.to_model(record))
+
     async def add_once(self, record: UsageRecord) -> UsageRecord:
         if record.idempotency_key is None:
-            self._session.add(self._mapper.to_model(record))
+            await self.add(record)
             return record
 
         existing = await self._get_by_idempotency_key(record)
