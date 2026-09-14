@@ -31,6 +31,7 @@ from .messaging import (
     InstagramMessageAttachmentType,
     InstagramMessageSendRequest,
     InstagramMessageSendResult,
+    InstagramQuickReply,
 )
 from .messaging_webhooks import (
     InstagramInboundMessageAttachment,
@@ -81,6 +82,7 @@ __all__ = [
     "InstagramPrivateCommentReplyRequest",
     "InstagramPrivateCommentReplyResult",
     "InstagramPrivateReplySource",
+    "InstagramQuickReply",
     "InstagramUserId",
     "InstagramWebhookEvent",
     "InstagramWebhookPayload",
