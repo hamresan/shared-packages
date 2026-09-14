@@ -14,7 +14,16 @@ class MetaInstagramOutboundPayloadMapper:
         recipient: Mapping[str, object] = {"id": str(request.recipient_id)}
 
         if request.text is not None:
-            message: Mapping[str, object] = {"text": request.text}
+            message: dict[str, object] = {"text": request.text}
+            if request.quick_replies:
+                message["quick_replies"] = [
+                    {
+                        "content_type": "text",
+                        "title": quick_reply.title,
+                        "payload": quick_reply.payload,
+                    }
+                    for quick_reply in request.quick_replies
+                ]
             return {"recipient": recipient, "message": message}
 
         attachment = request.attachment

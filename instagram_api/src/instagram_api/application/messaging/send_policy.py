@@ -11,6 +11,9 @@ from .send_errors import InstagramMessagePayloadInvalidError
 INSTAGRAM_SEND_BASIC_PERMISSION = "instagram_business_basic"
 INSTAGRAM_SEND_MESSAGE_PERMISSION = "instagram_business_manage_messages"
 INSTAGRAM_TEXT_MESSAGE_MAX_LENGTH = 1000
+INSTAGRAM_QUICK_REPLY_MAX_COUNT = 13
+INSTAGRAM_QUICK_REPLY_TITLE_MAX_LENGTH = 20
+INSTAGRAM_QUICK_REPLY_PAYLOAD_MAX_LENGTH = 1000
 
 
 class InstagramMessageSendAccessPolicy:
@@ -60,3 +63,25 @@ class InstagramMessagePayloadPolicy:
 
         if request.attachment is not None and not request.attachment.url.strip():
             raise InstagramMessagePayloadInvalidError("Attachment URL must not be blank.")
+
+        if request.quick_replies and request.text is None:
+            raise InstagramMessagePayloadInvalidError("Quick replies require a text message.")
+
+        if len(request.quick_replies) > INSTAGRAM_QUICK_REPLY_MAX_COUNT:
+            raise InstagramMessagePayloadInvalidError(
+                f"Quick replies must not exceed {INSTAGRAM_QUICK_REPLY_MAX_COUNT} items."
+            )
+
+        for quick_reply in request.quick_replies:
+            if not quick_reply.title.strip():
+                raise InstagramMessagePayloadInvalidError("Quick reply title must not be blank.")
+            if len(quick_reply.title) > INSTAGRAM_QUICK_REPLY_TITLE_MAX_LENGTH:
+                raise InstagramMessagePayloadInvalidError(
+                    "Quick reply title exceeds the supported length."
+                )
+            if not quick_reply.payload.strip():
+                raise InstagramMessagePayloadInvalidError("Quick reply payload must not be blank.")
+            if len(quick_reply.payload) > INSTAGRAM_QUICK_REPLY_PAYLOAD_MAX_LENGTH:
+                raise InstagramMessagePayloadInvalidError(
+                    "Quick reply payload exceeds the supported length."
+                )

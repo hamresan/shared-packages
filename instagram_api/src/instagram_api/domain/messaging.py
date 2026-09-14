@@ -49,12 +49,21 @@ class InstagramMessageAttachment:
 
 
 @dataclass(frozen=True, slots=True)
+class InstagramQuickReply:
+    """A text quick reply exposed by Instagram messaging."""
+
+    title: str
+    payload: str
+
+
+@dataclass(frozen=True, slots=True)
 class InstagramMessageSendRequest:
     """Normalized outbound message request."""
 
     recipient_id: InstagramUserId
     text: str | None = None
     attachment: InstagramMessageAttachment | None = None
+    quick_replies: tuple[InstagramQuickReply, ...] = ()
     correlation_id: str | None = None
 
 
