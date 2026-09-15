@@ -13,6 +13,7 @@ from .comment_webhooks import (
 )
 from .comments import InstagramComment, InstagramCommentReplyResult
 from .connections import InstagramConnection
+from .customer_profiles import InstagramCustomerProfile
 from .identifiers import (
     InstagramAccountId,
     InstagramCommentId,
@@ -61,6 +62,7 @@ __all__ = [
     "InstagramConnectionId",
     "InstagramConversation",
     "InstagramConversationId",
+    "InstagramCustomerProfile",
     "InstagramInboundMessageAttachment",
     "InstagramMedia",
     "InstagramMediaId",
