@@ -1,4 +1,5 @@
-from pydantic import BaseModel, ConfigDict
+from letta_client import BaseModel
+from pydantic import ConfigDict
 
 
 class LettaIdentityResponse(BaseModel):
