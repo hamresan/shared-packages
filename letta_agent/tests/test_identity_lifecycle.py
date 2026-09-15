@@ -126,3 +126,109 @@ def test_sdk_gateway_normalizes_identity_attachment_failure(
                 identity_id="identity-1",
             )
         )
+
+
+def test_sdk_gateway_creates_identity_when_upsert_returns_not_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    put_calls = 0
+    post_calls: list[tuple[str, type[object], dict[str, object]]] = []
+
+    async def fake_put(
+        path: str,
+        *,
+        cast_to: type[object],
+        body: dict[str, object],
+    ) -> object:
+        nonlocal put_calls
+        del path, cast_to, body
+        put_calls += 1
+        raise build_status_error(404)
+
+    async def fake_post(
+        path: str,
+        *,
+        cast_to: type[object],
+        body: dict[str, object],
+    ) -> LettaIdentityResponse:
+        post_calls.append((path, cast_to, body))
+        return LettaIdentityResponse(
+            id="identity-1",
+            identifier_key="business-1:customer-1",
+            name="Instagram customer",
+        )
+
+    monkeypatch.setattr(client, "put", fake_put)
+    monkeypatch.setattr(client, "post", fake_post)
+
+    result = asyncio.run(
+        SdkLettaGateway(client).upsert_identity(
+            LettaIdentitySpec(
+                identifier_key="business-1:customer-1",
+                name="Instagram customer",
+            )
+        )
+    )
+
+    assert put_calls == 1
+    assert post_calls == [
+        (
+            "/v1/identities/",
+            LettaIdentityResponse,
+            {
+                "identifier_key": "business-1:customer-1",
+                "identity_type": "user",
+                "name": "Instagram customer",
+            },
+        )
+    ]
+    assert result.identity_id == "identity-1"
+
+
+def test_sdk_gateway_retries_upsert_after_create_conflict(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = AsyncLetta(api_key="test-key")
+    put_calls = 0
+
+    async def fake_put(
+        path: str,
+        *,
+        cast_to: type[object],
+        body: dict[str, object],
+    ) -> LettaIdentityResponse:
+        nonlocal put_calls
+        del path, cast_to, body
+        put_calls += 1
+        if put_calls == 1:
+            raise build_status_error(404)
+        return LettaIdentityResponse(
+            id="identity-1",
+            identifier_key="business-1:customer-1",
+            name="Instagram customer",
+        )
+
+    async def fake_post(
+        path: str,
+        *,
+        cast_to: type[object],
+        body: dict[str, object],
+    ) -> object:
+        del path, cast_to, body
+        raise build_status_error(409)
+
+    monkeypatch.setattr(client, "put", fake_put)
+    monkeypatch.setattr(client, "post", fake_post)
+
+    result = asyncio.run(
+        SdkLettaGateway(client).upsert_identity(
+            LettaIdentitySpec(
+                identifier_key="business-1:customer-1",
+                name="Instagram customer",
+            )
+        )
+    )
+
+    assert put_calls == 2
+    assert result.identity_id == "identity-1"
