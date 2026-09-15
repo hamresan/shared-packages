@@ -76,16 +76,42 @@ class SdkLettaGateway(LettaGateway):
         )
 
     async def upsert_identity(self, spec: LettaIdentitySpec) -> LettaIdentity:
+        body = {
+            "identifier_key": spec.identifier_key,
+            "identity_type": "user",
+            "name": spec.name,
+        }
+
         try:
             response = await self._client.put(
                 "/v1/identities/",
                 cast_to=LettaIdentityResponse,
-                body={
-                    "identifier_key": spec.identifier_key,
-                    "identity_type": "user",
-                    "name": spec.name,
-                },
+                body=body,
             )
+        except APIStatusError as error:
+            if error.status_code != 404:
+                raise LettaProviderError("Letta identity upsert failed") from error
+
+            try:
+                response = await self._client.post(
+                    "/v1/identities/",
+                    cast_to=LettaIdentityResponse,
+                    body=body,
+                )
+            except APIStatusError as create_error:
+                if create_error.status_code != 409:
+                    raise LettaProviderError("Letta identity creation failed") from create_error
+
+                try:
+                    response = await self._client.put(
+                        "/v1/identities/",
+                        cast_to=LettaIdentityResponse,
+                        body=body,
+                    )
+                except APIError as retry_error:
+                    raise LettaProviderError("Letta identity upsert failed") from retry_error
+            except APIError as create_error:
+                raise LettaProviderError("Letta identity creation failed") from create_error
         except APIError as error:
             raise LettaProviderError("Letta identity upsert failed") from error
 
