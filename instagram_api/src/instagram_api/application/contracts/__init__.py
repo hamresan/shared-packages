@@ -11,6 +11,7 @@ from .comments import (
     InstagramPublicCommentReplyProvider,
 )
 from .connection import InstagramAccessTokenProvider, InstagramConnectionReader
+from .customer_profiles import InstagramCustomerProfileProvider
 from .media import InstagramMediaProvider, InstagramMediaReader
 from .messaging import (
     InstagramConversationProvider,
@@ -42,6 +43,7 @@ __all__ = [
     "InstagramConnectionReader",
     "InstagramConversationProvider",
     "InstagramConversationReader",
+    "InstagramCustomerProfileProvider",
     "InstagramMediaProvider",
     "InstagramMediaReader",
     "InstagramMessageProvider",
