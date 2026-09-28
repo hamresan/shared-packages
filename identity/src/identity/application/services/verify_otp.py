@@ -125,4 +125,5 @@ class VerifyOtpService:
             access_token_expires_at=access_token.expires_at,
             refresh_token=refresh_token,
             refresh_token_expires_at=session.expires_at,
+            purpose=verified_challenge.purpose,
         )
