@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from identity.application.contracts.database import AsyncSessionFactory
 from identity.application.errors import InvalidIdentityValueError
 from identity.domain import IdentityType
@@ -15,7 +17,7 @@ class PublicIdentityUserResolver:
         self._session_factory = session_factory
         self._normalizer = DefaultIdentityNormalizer()
 
-    async def resolve_user_id(self, identity_type: IdentityType, value: str):
+    async def resolve_user_id(self, identity_type: IdentityType, value: str) -> UUID | None:
         try:
             normalized = self._normalizer.normalize(identity_type, value)
         except InvalidIdentityValueError:
