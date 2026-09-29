@@ -1,6 +1,8 @@
 from typing import Protocol
 from uuid import UUID
 
+from identity.domain import IdentityType
+
 from identity.application.dto import (
     AuthSessionResult,
     DataRetentionCleanupResult,
@@ -41,3 +43,7 @@ class SessionBulkRevoker(Protocol):
 
 class IdentityDataRetentionCleaner(Protocol):
     async def execute(self) -> DataRetentionCleanupResult: ...
+
+
+class IdentityUserResolver(Protocol):
+    async def resolve_user_id(self, identity_type: IdentityType, value: str) -> UUID | None: ...
