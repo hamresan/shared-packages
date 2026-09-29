@@ -56,6 +56,7 @@ from identity.presentation.request_metadata import (
 from identity.public import (
     AccessTokenAuthenticator,
     IdentityPublicApi,
+    PublicIdentityUserProfileWriter,
     PublicIdentityUserResolver,
     PublicSessionRefresher,
 )
@@ -233,6 +234,7 @@ class IdentityModule:
             session_bulk_revoker=self.session_bulk_revoker,
             data_retention_cleaner=self.data_retention_cleaner,
             user_resolver=PublicIdentityUserResolver(config.session_factory),
+            user_profile_writer=PublicIdentityUserProfileWriter(config.session_factory),
         )
         self.fastapi = FastApiIdentityAdapter(
             access_token_authenticator=config.access_token_authenticator,
