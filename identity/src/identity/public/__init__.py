@@ -23,6 +23,7 @@ from identity.public.errors import (
 from identity.public.services import (
     ExternalIdentityAuthenticator,
     IdentityDataRetentionCleaner,
+    IdentityUserResolver,
     OtpRequester,
     OtpVerifier,
     SessionBulkRevoker,
@@ -30,6 +31,7 @@ from identity.public.services import (
     SessionRevoker,
 )
 from identity.public.session_refresh import PublicSessionRefresher
+from identity.public.user_resolution import PublicIdentityUserResolver
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +57,7 @@ class IdentityPublicApi:
     session_revoker: SessionRevoker
     session_bulk_revoker: SessionBulkRevoker
     data_retention_cleaner: IdentityDataRetentionCleaner
+    user_resolver: IdentityUserResolver
 
 
 __all__ = [
@@ -69,6 +72,7 @@ __all__ = [
     "ExternalIdentityAuthenticator",
     "IdentityDataRetentionCleaner",
     "IdentityPublicApi",
+    "IdentityUserResolver",
     "IdentityType",
     "IssuedAccessToken",
     "OtpPurpose",
@@ -78,6 +82,7 @@ __all__ = [
     "RequestOtpCommand",
     "RequestOtpResult",
     "PublicSessionRefresher",
+    "PublicIdentityUserResolver",
     "SessionBulkRevoker",
     "SessionRefreshError",
     "SessionRefreshRejectedError",
