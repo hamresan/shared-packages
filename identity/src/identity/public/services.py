@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from identity.domain import IdentityType
+from identity.domain import IdentityType, User
 
 from identity.application.dto import (
     AuthSessionResult,
@@ -47,3 +47,7 @@ class IdentityDataRetentionCleaner(Protocol):
 
 class IdentityUserResolver(Protocol):
     async def resolve_user_id(self, identity_type: IdentityType, value: str) -> UUID | None: ...
+
+
+class IdentityUserProfileWriter(Protocol):
+    async def update_full_name(self, user_id: UUID, full_name: str) -> User: ...
