@@ -88,20 +88,16 @@ async def test_identity_flow_enforces_registration_login_and_otp_rules() -> None
     module = IdentityTestModuleBuilder().build(database, sender)
 
     try:
-        missing_login = await module.otp_requester.execute(
-            RequestOtpCommand(
-                identity_type=IdentityType.EMAIL,
-                destination="missing@example.com",
-                purpose=OtpPurpose.LOGIN,
-            )
-        )
         with pytest.raises(IdentityNotRegisteredError):
-            await module.otp_verifier.execute(
-                VerifyOtpCommand(
-                    challenge_id=missing_login.challenge_id,
-                    code=latest_otp(sender),
+            await module.otp_requester.execute(
+                RequestOtpCommand(
+                    identity_type=IdentityType.EMAIL,
+                    destination="missing@example.com",
+                    purpose=OtpPurpose.LOGIN,
                 )
             )
+        assert sender.commands == []
+
 
         registration = await module.otp_requester.execute(
             RequestOtpCommand(
