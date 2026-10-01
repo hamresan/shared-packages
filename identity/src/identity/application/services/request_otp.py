@@ -61,6 +61,10 @@ class RequestOtpService:
 
         async with self._unit_of_work_factory() as uow:
             identity = await uow.identities.get_by_destination(command.identity_type, destination)
+            self._purpose_policy.validate_identity_state(
+                command.purpose,
+                is_registered=identity is not None,
+            )
             latest = await uow.otp_challenges.get_latest_active(
                 destination,
                 command.purpose,
