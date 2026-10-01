@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
@@ -97,7 +98,13 @@ async def test_identity_flow_enforces_registration_login_and_otp_rules() -> None
                 )
             )
         assert sender.commands == []
-
+        async with module.unit_of_work as uow:
+            challenge = await uow.otp_challenges.get_latest_active(
+                "missing@example.com",
+                OtpPurpose.LOGIN,
+                datetime.now(UTC),
+            )
+        assert challenge is None
 
         registration = await module.otp_requester.execute(
             RequestOtpCommand(
