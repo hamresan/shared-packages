@@ -1,0 +1,32 @@
+schema_version: 1
+name: sellora_deterministic_demo
+start: search
+nodes:
+  search:
+    handler: search_catalog
+  add_to_cart:
+    handler: add_to_cart
+  checkout:
+    handler: checkout
+  review:
+    handler: review_order
+  payment:
+    handler: mock_payment
+  tracking:
+    handler: track_order
+edges:
+  - from: search
+    router: selection_route
+    routes:
+      selected: add_to_cart
+      done: checkout
+  - from: add_to_cart
+    to: search
+  - from: checkout
+    to: review
+  - from: review
+    to: payment
+  - from: payment
+    to: tracking
+  - from: tracking
+    to: END
