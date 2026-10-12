@@ -59,6 +59,14 @@ class WorkflowDefinition(StrictDefinition):
     nodes: dict[NodeId, NodeDefinition] = Field(min_length=1)
     edges: tuple[EdgeDefinition, ...] = Field(default_factory=tuple)
 
+    @field_validator("edges", mode="before")
+    @classmethod
+    def normalize_edges(cls, value: object) -> object:
+        """Accept YAML-style lists while preserving tuple storage."""
+        if isinstance(value, list):
+            return tuple(value)
+        return value
+
     @field_validator("nodes")
     @classmethod
     def validate_node_names(
