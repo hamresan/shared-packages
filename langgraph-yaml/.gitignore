@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.wheel-smoke/
+.env
+.venv/
+venv/
+dist/
+build/
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.diff
+*.docx
+*.zip
+coverage.xml
+# uv.lock must be committed for reproducible development.
