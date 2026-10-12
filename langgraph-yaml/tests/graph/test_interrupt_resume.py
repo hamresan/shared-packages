@@ -15,7 +15,7 @@ class ChoiceState(TypedDict):
 
 
 def request_choice(state: ChoiceState) -> dict[str, str]:
-    response = interrupt({"question": "Choose a product"})
+    response: object = interrupt({"question": "Choose a product"})
     return {"choice": str(response)}
 
 
