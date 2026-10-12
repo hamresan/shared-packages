@@ -29,3 +29,14 @@ class Catalog:
 class SalesHandlers:
     def __init__(self, catalog: Catalog) -> None:
         self.catalog = catalog
+
+
+    def search(self, state: SalesState) -> dict[str, object]:
+        cursor = state['cursor']
+        selections = state['selections']
+        if cursor == len(selections):
+            return {'pending_sku': None, 'trace': [*state['trace'], 'search:done']}
+        sku = selections[cursor]
+        if not self.catalog.contains(sku):
+            raise ValueError(f'Unknown catalog SKU: {sku}')
+        return {'cursor': cursor + 1, 'pending_sku': sku, 'trace': [*state['trace'], f'search:{sku}']}
