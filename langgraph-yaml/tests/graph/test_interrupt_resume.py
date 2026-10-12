@@ -2,7 +2,7 @@
 
 # pyright: reportMissingTypeStubs=false
 
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command, interrupt
@@ -15,7 +15,7 @@ class ChoiceState(TypedDict):
 
 
 def request_choice(state: ChoiceState) -> dict[str, str]:
-    response: Any = interrupt({"question": "Choose a product"})
+    response = interrupt({"question": "Choose a product"})
     return {"choice": str(response)}
 
 
