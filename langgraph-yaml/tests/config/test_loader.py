@@ -44,8 +44,14 @@ def test_load_file(tmp_path: Path) -> None:
     [
         VALID_YAML + "\nname: duplicate\n",
         VALID_YAML.replace("      done: END", "      again: END"),
-        VALID_YAML.replace("    handler: first_handler", "    handler: first_handler\n    handler: duplicate"),
-        VALID_YAML.replace("  second:\n    handler: second_handler", "  first:\n    handler: second_handler"),
+        VALID_YAML.replace(
+            "    handler: first_handler",
+            "    handler: first_handler\n    handler: duplicate",
+        ),
+        VALID_YAML.replace(
+            "  second:\n    handler: second_handler",
+            "  first:\n    handler: second_handler",
+        ),
     ],
 )
 def test_duplicate_keys_are_rejected(text: str) -> None:
@@ -89,7 +95,10 @@ def test_unsupported_schema_version_has_context() -> None:
 
 def test_invalid_schema_has_source_context() -> None:
     with pytest.raises(WorkflowLoadError, match="custom.yaml"):
-        parse_workflow(VALID_YAML.replace("handler: first_handler", "handler: ''"), source="custom.yaml")
+        parse_workflow(
+            VALID_YAML.replace("handler: first_handler", "handler: ''"),
+            source="custom.yaml",
+        )
 
 
 def test_whitespace_and_unicode_are_supported() -> None:
