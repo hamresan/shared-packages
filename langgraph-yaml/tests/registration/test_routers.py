@@ -25,7 +25,8 @@ def test_resolves_router() -> None:
 
 def test_accepts_callable_object() -> None:
     implementation = CallableRouter()
-    assert RouterRegistry({"branch": implementation}).resolve("branch") is implementation
+    registry = RouterRegistry({"branch": implementation})
+    assert registry.resolve("branch") is implementation
 
 
 def test_register_router() -> None:
