@@ -12,15 +12,12 @@ htmlcov/
 venv/
 dist/
 build/
-example*
 .DS_Store
 .idea/
 .vscode/
 *.log
 *.diff
-uv.lock
 *.docx
-docs/
 *.zip
 coverage.xml
-
+# uv.lock must be committed for reproducible development.
