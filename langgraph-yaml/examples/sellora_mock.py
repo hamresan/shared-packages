@@ -34,7 +34,7 @@ class SalesHandlers:
     def search(self, state: SalesState) -> dict[str, object]:
         cursor = state['cursor']
         selections = state['selections']
-        if cursor == len(selections):
+        if cursor >= len(selections):
             return {'pending_sku': None, 'trace': [*state['trace'], 'search:done']}
         sku = selections[cursor]
         if not self.catalog.contains(sku):
