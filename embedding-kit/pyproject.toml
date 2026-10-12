@@ -15,7 +15,14 @@ openai = ["langchain-openai>=0.3,<2"]
 openrouter = ["langchain-openai>=0.3,<2"]
 ollama = ["langchain-ollama>=0.2,<2"]
 all = ["langchain-openai>=0.3,<2", "langchain-ollama>=0.2,<2"]
-test = ["pytest>=8,<10", "ruff>=0.9,<1"]
+dev = [
+  "langchain-openai>=0.3,<2",
+  "langchain-ollama>=0.2,<2",
+  "pytest>=8,<10",
+  "pytest-cov>=6,<8",
+  "pyright>=1.1,<2",
+  "ruff>=0.9,<1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/embedding_kit"]
@@ -24,6 +31,16 @@ artifacts = ["src/embedding_kit/py.typed"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["embedding_kit"]
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
 
 [tool.ruff]
 line-length = 100

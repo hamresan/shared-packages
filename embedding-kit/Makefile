@@ -20,12 +20,12 @@ test:
 	uv run --extra dev pytest
 
 coverage:
-	uv run --extra dev pytest --cov=langgraph_yaml --cov-report=term-missing
+	uv run --extra dev pytest --cov=embedding_kit --cov-report=term-missing
 
 build:
 	uv build --wheel
 
 wheel-smoke: build
-	uv run --extra dev python -c "import langgraph_yaml; print(langgraph_yaml.__version__)"
+	uv run --extra dev python -c "import embedding_kit; print(embedding_kit.__name__)"
 
 check: lint typecheck coverage wheel-smoke
