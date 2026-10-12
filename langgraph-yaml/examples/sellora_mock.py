@@ -16,3 +16,11 @@ class SalesState(TypedDict):
     status: str
     trace: list[str]
     tracking_id: str | None
+
+
+class Catalog:
+    def __init__(self, skus: frozenset[str]) -> None:
+        self.skus = skus
+
+    def contains(self, sku: str) -> bool:
+        return sku in self.skus
