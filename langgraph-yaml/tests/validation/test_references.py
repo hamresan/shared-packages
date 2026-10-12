@@ -29,15 +29,11 @@ def workflow(
             "schema_version": 1,
             "name": "sales",
             "start": start,
-            "nodes": nodes
-            if nodes is not None
-            else {
+            "nodes": nodes if nodes is not None else {
                 "search": {"handler": "search_handler"},
                 "checkout": {"handler": "checkout_handler"},
             },
-            "edges": edges
-            if edges is not None
-            else [
+            "edges": edges if edges is not None else [
                 {"from": "search", "to": "checkout"},
                 {"from": "checkout", "to": "END"},
             ],
@@ -53,9 +49,7 @@ def validate(
 ) -> None:
     WorkflowReferenceValidator().validate(
         definition,
-        handlers
-        if handlers is not None
-        else HandlerRegistry(
+        handlers if handlers is not None else HandlerRegistry(
             {"search_handler": step, "checkout_handler": step}
         ),
         routers if routers is not None else RouterRegistry({"choose": choose}),
