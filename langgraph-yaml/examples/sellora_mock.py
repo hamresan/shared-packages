@@ -82,3 +82,28 @@ def build_demo(catalog: Catalog | None = None) -> Any:
         }),
         routers=RouterRegistry({'selection_route': selection_route}),
     ).compile()
+
+
+def initial_state(selections: list[str]) -> SalesState:
+    return {
+        'selections': list(selections),
+        'cursor': 0,
+        'pending_sku': None,
+        'cart': {},
+        'status': 'new',
+        'trace': [],
+        'tracking_id': None,
+    }
+
+
+def run_demo(selections: list[str]) -> SalesState:
+    graph = build_demo()
+    return graph.invoke(initial_state(selections), config={'recursion_limit': 50})
+
+
+if __name__ == '__main__':
+    result = run_demo(['sku-1', 'sku-1', 'sku-2'])
+    print('Cart:', result['cart'])
+    print('Status:', result['status'])
+    print('Tracking:', result['tracking_id'])
+    print('Trace:', ' -> '.join(result['trace']))
