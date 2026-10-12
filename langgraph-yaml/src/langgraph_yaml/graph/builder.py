@@ -1,5 +1,8 @@
 """Compose validated YAML topology into LangGraph's native StateGraph."""
 
+# pyright: reportMissingTypeStubs=false, reportUnknownMemberType=false
+
+from collections.abc import Hashable
 from typing import Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -45,7 +48,7 @@ class GraphBuilder:
             graph.add_edge(START, self.definition.start)
             for edge in self.definition.edges:
                 if isinstance(edge, ConditionalEdge):
-                    destinations = {
+                    destinations: dict[Hashable, str] = {
                         route: END if target == "END" else target
                         for route, target in edge.routes.items()
                     }
