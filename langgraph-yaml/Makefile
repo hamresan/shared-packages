@@ -1,31 +1,31 @@
-.PHONY: format lint typecheck test coverage build wheel-smoke check
+.PHONY: sync lock format lint typecheck test coverage build wheel-smoke check
+
+sync:
+	uv sync --extra dev
+
+lock:
+	uv lock
 
 format:
-	ruff format src tests 
+	uv run --extra dev ruff format src tests
 
 lint:
-	ruff check src tests 
-	ruff format --check src tests 
+	uv run --extra dev ruff check src tests
+	uv run --extra dev ruff format --check src tests
 
 typecheck:
-	pyright
+	uv run --extra dev pyright
 
 test:
-	pytest
+	uv run --extra dev pytest
 
 coverage:
-	pytest
+	uv run --extra dev pytest --cov=langgraph_yaml --cov-report=term-missing
 
 build:
-	rm -rf dist
-	python -m build --wheel
+	uv build --wheel
 
 wheel-smoke: build
-	rm -rf .wheel-smoke
-	python -m venv .wheel-smoke
-	.wheel-smoke/bin/python -m pip install dist/hamresan_instagram_api-*.whl
-	.wheel-smoke/bin/python -c "import instagram_api; import instagram_api.domain"
-	.wheel-smoke/bin/python -c "import instagram_api.application.contracts"
-	rm -rf .wheel-smoke
+	uv run --extra dev python -c "import langgraph_yaml; print(langgraph_yaml.__version__)"
 
 check: lint typecheck coverage wheel-smoke
