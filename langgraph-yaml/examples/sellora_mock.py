@@ -60,3 +60,25 @@ class SalesHandlers:
 
     def tracking(self, state: SalesState) -> dict[str, object]:
         return {'status': 'tracked_mock', 'tracking_id': 'DEMO-0001', 'trace': [*state['trace'], 'tracking']}
+
+
+def selection_route(state: SalesState) -> str:
+    return 'selected' if state['pending_sku'] is not None else 'done'
+
+
+def build_demo(catalog: Catalog | None = None) -> Any:
+    handlers = SalesHandlers(catalog if catalog is not None else Catalog(frozenset({'sku-1', 'sku-2'})))
+    definition = load_workflow(Path(__file__).with_name('sellora_workflow.yaml'))
+    return GraphBuilder(
+        definition=definition,
+        state_schema=SalesState,
+        handlers=HandlerRegistry({
+            'search_catalog': handlers.search,
+            'add_to_cart': handlers.add_to_cart,
+            'checkout': handlers.checkout,
+            'review_order': handlers.review,
+            'mock_payment': handlers.payment,
+            'track_order': handlers.tracking,
+        }),
+        routers=RouterRegistry({'selection_route': selection_route}),
+    ).compile()
