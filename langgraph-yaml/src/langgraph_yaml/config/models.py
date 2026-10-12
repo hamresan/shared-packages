@@ -1,6 +1,6 @@
 """Strict, immutable schema for version 1 workflow definitions."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from pydantic import (
     BaseModel,
@@ -64,8 +64,7 @@ class WorkflowDefinition(StrictDefinition):
     def normalize_edges(cls, value: object) -> object:
         """Accept YAML-style lists while preserving tuple storage."""
         if isinstance(value, list):
-            items: list[object] = value
-            return tuple(items)
+            return tuple(cast(list[object], value))
         return value
 
     @field_validator("nodes")
