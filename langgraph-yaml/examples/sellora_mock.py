@@ -40,3 +40,23 @@ class SalesHandlers:
         if not self.catalog.contains(sku):
             raise ValueError(f'Unknown catalog SKU: {sku}')
         return {'cursor': cursor + 1, 'pending_sku': sku, 'trace': [*state['trace'], f'search:{sku}']}
+
+    def add_to_cart(self, state: SalesState) -> dict[str, object]:
+        sku = state['pending_sku']
+        if sku is None:
+            raise ValueError('No selected SKU')
+        cart = dict(state['cart'])
+        cart[sku] = cart.get(sku, 0) + 1
+        return {'cart': cart, 'pending_sku': None, 'trace': [*state['trace'], f'cart:{sku}']}
+
+    def checkout(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'checkout', 'trace': [*state['trace'], 'checkout']}
+
+    def review(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'reviewed', 'trace': [*state['trace'], 'review']}
+
+    def payment(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'paid_mock', 'trace': [*state['trace'], 'payment:mock']}
+
+    def tracking(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'tracked_mock', 'tracking_id': 'DEMO-0001', 'trace': [*state['trace'], 'tracking']}
