@@ -1,6 +1,9 @@
 """Integration tests for native LangGraph workflow composition."""
 
 from typing import TypedDict
+from unittest.mock import patch
+
+from langgraph.graph import StateGraph
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
@@ -52,9 +55,9 @@ def builder(
     return GraphBuilder(
         definition=definition(edges),
         state_schema=State,
-        handlers=handlers
-        if handlers is not None
-        else HandlerRegistry({"increment": increment, "finish": finish}),
+        handlers=handlers if handlers is not None else HandlerRegistry(
+            {"increment": increment, "finish": finish}
+        ),
         routers=routers if routers is not None else RouterRegistry({"route": route}),
     )
 
@@ -130,20 +133,12 @@ def test_checkpointer_is_forwarded() -> None:
 
 
 def test_langgraph_compile_error_preserves_cause() -> None:
-    workflow_builder = GraphBuilder(
-        definition=WorkflowDefinition.model_validate(
-            {
-                "schema_version": 1,
-                "name": "invalid_graph",
-                "start": "step",
-                "nodes": {"step": {"handler": "increment"}},
-                "edges": [{"from": "step", "to": "END"}],
-            }
-        ),
-        state_schema=State,
-        handlers=HandlerRegistry({"increment": increment}),
-        routers=RouterRegistry(),
+    workflow_builder = builder(
+        [{"from": "step", "to": "finish"}, {"from": "finish", "to": "END"}]
     )
-    with pytest.raises(GraphBuildError, match="invalid_graph") as exc:
-        workflow_builder.compile(checkpointer="invalid")  # type: ignore[arg-type]
-    assert exc.value.__cause__ is not None
+    with patch.object(
+        StateGraph, "compile", side_effect=ValueError("compile rejected")
+    ):
+        with pytest.raises(GraphBuildError, match="example") as exc:
+            workflow_builder.compile()
+    assert isinstance(exc.value.__cause__, ValueError)
