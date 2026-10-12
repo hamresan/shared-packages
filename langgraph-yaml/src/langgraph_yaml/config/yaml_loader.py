@@ -1,10 +1,16 @@
 """Safe YAML parsing with duplicate mapping key rejection."""
 
-from typing import cast
+from typing import Protocol, cast
 
 import yaml
 
 from langgraph_yaml.config.errors import WorkflowLoadError
+
+
+class YamlObjectConstructor(Protocol):
+    """Typed boundary for PyYAML's incompletely annotated constructor."""
+
+    def construct_object(self, node: yaml.Node, deep: bool = False) -> object: ...
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -18,8 +24,9 @@ def construct_unique_mapping(
     """Construct a mapping while preserving the location of duplicate keys."""
     loader.flatten_mapping(node)
     result: dict[object, object] = {}
+    constructor = cast(YamlObjectConstructor, loader)
     for key_node, value_node in node.value:
-        key = cast(object, loader.construct_object(key_node, deep=True))
+        key = constructor.construct_object(key_node, deep=True)
         try:
             duplicate = key in result
         except TypeError as exc:
@@ -36,7 +43,7 @@ def construct_unique_mapping(
                 f"duplicate key {key!r}",
                 key_node.start_mark,
             )
-        result[key] = cast(object, loader.construct_object(value_node, deep=True))
+        result[key] = constructor.construct_object(value_node, deep=True)
     return result
 
 
