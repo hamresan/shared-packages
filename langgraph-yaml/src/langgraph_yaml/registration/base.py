@@ -9,6 +9,7 @@ from langgraph_yaml.registration.errors import (
     UnknownRegistrationError,
 )
 
+
 class CallableRegistry[CallableType: Callable[..., object]]:
     """Keep an isolated, read-only snapshot of named callable implementations."""
 
@@ -32,9 +33,7 @@ class CallableRegistry[CallableType: Callable[..., object]]:
                 f"{self._kind} name must be a non-empty string"
             )
         if not callable(implementation):
-            raise InvalidRegistrationError(
-                f"{self._kind} {name!r} must be callable"
-            )
+            raise InvalidRegistrationError(f"{self._kind} {name!r} must be callable")
 
     def resolve(self, name: str) -> CallableType:
         """Resolve a named implementation or raise a typed lookup error."""
