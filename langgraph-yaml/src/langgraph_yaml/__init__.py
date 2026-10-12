@@ -9,7 +9,7 @@ from langgraph_yaml.config import (
     load_workflow,
     parse_workflow,
 )
-from langgraph_yaml.graph import GraphBuildError, GraphBuilder
+from langgraph_yaml.graph import GraphBuilder, GraphBuildError
 from langgraph_yaml.registration import HandlerRegistry, RouterRegistry
 from langgraph_yaml.validation import (
     WorkflowReferenceValidator,
