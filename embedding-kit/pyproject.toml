@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hamresan-embedding-kit"
+version = "0.1.0"
+description = "Configurable, reusable LangChain embedding providers for OpenAI, OpenRouter and Ollama."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["langchain-core>=0.3,<2"]
+
+[project.optional-dependencies]
+openai = ["langchain-openai>=0.3,<2"]
+openrouter = ["langchain-openai>=0.3,<2"]
+ollama = ["langchain-ollama>=0.2,<2"]
+all = ["langchain-openai>=0.3,<2", "langchain-ollama>=0.2,<2"]
+dev = [
+  "langchain-openai>=0.3,<2",
+  "langchain-ollama>=0.2,<2",
+  "pytest>=8,<10",
+  "pytest-cov>=6,<8",
+  "pyright>=1.1,<2",
+  "ruff>=0.9,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/embedding_kit"]
+artifacts = ["src/embedding_kit/py.typed"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["embedding_kit"]
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
