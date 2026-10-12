@@ -27,7 +27,7 @@ class CallableRegistry[CallableType: Callable[..., object]]:
 
     def validate_registration(self, name: str, implementation: object) -> None:
         """Reject invalid keys and non-callable implementations."""
-        if not isinstance(name, str) or not name.strip():
+        if not name.strip():
             raise InvalidRegistrationError(
                 f"{self._kind} name must be a non-empty string"
             )
