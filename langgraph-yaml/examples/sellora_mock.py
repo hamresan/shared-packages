@@ -24,3 +24,8 @@ class Catalog:
 
     def contains(self, sku: str) -> bool:
         return sku in self.skus
+
+
+class SalesHandlers:
+    def __init__(self, catalog: Catalog) -> None:
+        self.catalog = catalog
