@@ -2,7 +2,6 @@
 
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
-from typing import Generic, TypeVar
 
 from langgraph_yaml.registration.errors import (
     DuplicateRegistrationError,
@@ -10,10 +9,7 @@ from langgraph_yaml.registration.errors import (
     UnknownRegistrationError,
 )
 
-CallableType = TypeVar("CallableType", bound=Callable[..., object])
-
-
-class CallableRegistry(Generic[CallableType]):
+class CallableRegistry[CallableType: Callable[..., object]]:
     """Keep an isolated, read-only snapshot of named callable implementations."""
 
     def __init__(
