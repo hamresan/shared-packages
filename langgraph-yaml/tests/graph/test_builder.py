@@ -3,7 +3,6 @@
 from typing import TypedDict
 from unittest.mock import patch
 
-
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -54,9 +53,9 @@ def builder(
     return GraphBuilder(
         definition=definition(edges),
         state_schema=State,
-        handlers=handlers if handlers is not None else HandlerRegistry(
-            {"increment": increment, "finish": finish}
-        ),
+        handlers=handlers
+        if handlers is not None
+        else HandlerRegistry({"increment": increment, "finish": finish}),
         routers=routers if routers is not None else RouterRegistry({"route": route}),
     )
 
