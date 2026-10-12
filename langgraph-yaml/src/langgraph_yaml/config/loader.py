@@ -15,7 +15,8 @@ def parse_workflow(text: str, *, source: str = "<string>") -> WorkflowDefinition
     try:
         return WorkflowDefinition.model_validate(data)
     except ValidationError as exc:
-        raise WorkflowLoadError(f"{source}: invalid workflow definition: {exc}") from exc
+        message = f"{source}: invalid workflow definition: {exc}"
+        raise WorkflowLoadError(message) from exc
 
 
 def load_workflow(path: str | Path) -> WorkflowDefinition:
@@ -24,5 +25,6 @@ def load_workflow(path: str | Path) -> WorkflowDefinition:
     try:
         text = file_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
-        raise WorkflowLoadError(f"{file_path}: cannot read UTF-8 YAML file: {exc}") from exc
+        message = f"{file_path}: cannot read UTF-8 YAML file: {exc}"
+        raise WorkflowLoadError(message) from exc
     return parse_workflow(text, source=str(file_path))
