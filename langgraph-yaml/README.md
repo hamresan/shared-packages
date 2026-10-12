@@ -196,7 +196,10 @@ The final structure will be adjusted as necessary to preserve single responsibil
 Once `pyproject.toml` and the source package exist:
 
 ```bash
-python -m pip install -e ./langgraph-yaml
+cd langgraph-yaml
+uv sync --extra dev
+uv run pytest
+make check
 ```
 
 The distribution name, pinned dependency versions, release process, and optional PyPI publishing will be finalized during the packaging stage. No PyPI release or verified working implementation is claimed here.
@@ -204,3 +207,17 @@ The distribution name, pinned dependency versions, release process, and optional
 ## Engineering principles
 
 Python 3.12+, LangGraph, Pydantic v2, PyYAML (or a documented alternative), pytest, Ruff, and static type checking. Clean architecture and SOLID: small components, explicit dependency injection, sensible package public exports, dedicated test fakes/factories, no execution of arbitrary YAML and no custom persistence or graph runtime.
+
+## Development with uv
+
+From `langgraph-yaml/`, install [uv](https://docs.astral.sh/uv/) and run:
+
+```bash
+uv sync --extra dev
+uv lock
+make check
+```
+
+`uv sync` creates and manages `.venv` and installs the project in editable mode. `uv run` ensures pytest, Ruff, and Pyright use the same environment instead of system Python. Commit the generated `uv.lock` once dependency resolution succeeds. Until then, `uv run` may resolve packages online and is not reproducible from a committed lockfile.
+
+The `Makefile` runs checks and a wheel build using uv. The package's Python version is selected via `.python-version` (3.12).
