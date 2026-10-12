@@ -64,7 +64,8 @@ class WorkflowDefinition(StrictDefinition):
     def normalize_edges(cls, value: object) -> object:
         """Accept YAML-style lists while preserving tuple storage."""
         if isinstance(value, list):
-            return tuple(value)
+            items: list[object] = value
+            return tuple(items)
         return value
 
     @field_validator("nodes")
