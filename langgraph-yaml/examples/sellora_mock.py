@@ -1,0 +1,123 @@
+"""Run the deterministic Sellora example."""
+
+from pathlib import Path
+from typing import Any, TypedDict
+
+from langgraph_yaml.config.loader import load_workflow
+from langgraph_yaml.graph import GraphBuilder
+from langgraph_yaml.registration import HandlerRegistry, RouterRegistry
+
+
+class SalesState(TypedDict):
+    selections: list[str]
+    cursor: int
+    pending_sku: str | None
+    cart: dict[str, int]
+    status: str
+    trace: list[str]
+    tracking_id: str | None
+
+
+class Catalog:
+    def __init__(self, skus: frozenset[str]) -> None:
+        self.skus = skus
+
+    def contains(self, sku: str) -> bool:
+        return sku in self.skus
+
+
+class SalesHandlers:
+    def __init__(self, catalog: Catalog) -> None:
+        self.catalog = catalog
+
+
+    def search(self, state: SalesState) -> dict[str, object]:
+        cursor = state['cursor']
+        selections = state['selections']
+        if cursor >= len(selections):
+            return {'pending_sku': None, 'trace': [*state['trace'], 'search:done']}
+        sku = selections[cursor]
+        if not self.catalog.contains(sku):
+            raise ValueError(f'Unknown catalog SKU: {sku}')
+        return {
+            'cursor': cursor + 1,
+            'pending_sku': sku,
+            'trace': [*state['trace'], f'search:{sku}'],
+        }
+
+    def add_to_cart(self, state: SalesState) -> dict[str, object]:
+        sku = state['pending_sku']
+        if sku is None:
+            raise ValueError('No selected SKU')
+        cart = dict(state['cart'])
+        cart[sku] = cart.get(sku, 0) + 1
+        return {
+            'cart': cart,
+            'pending_sku': None,
+            'trace': [*state['trace'], f'cart:{sku}'],
+        }
+
+    def checkout(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'checkout', 'trace': [*state['trace'], 'checkout']}
+
+    def review(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'reviewed', 'trace': [*state['trace'], 'review']}
+
+    def payment(self, state: SalesState) -> dict[str, object]:
+        return {'status': 'paid_mock', 'trace': [*state['trace'], 'payment:mock']}
+
+    def tracking(self, state: SalesState) -> dict[str, object]:
+        return {
+            'status': 'tracked_mock',
+            'tracking_id': 'DEMO-0001',
+            'trace': [*state['trace'], 'tracking'],
+        }
+
+
+def selection_route(state: SalesState) -> str:
+    return 'selected' if state['pending_sku'] is not None else 'done'
+
+
+def build_demo(catalog: Catalog | None = None) -> Any:
+    handlers = SalesHandlers(
+        catalog if catalog is not None else Catalog(frozenset({'sku-1', 'sku-2'}))
+    )
+    definition = load_workflow(Path(__file__).with_name('sellora_workflow.yaml'))
+    return GraphBuilder(
+        definition=definition,
+        state_schema=SalesState,
+        handlers=HandlerRegistry({
+            'search_catalog': handlers.search,
+            'add_to_cart': handlers.add_to_cart,
+            'checkout': handlers.checkout,
+            'review_order': handlers.review,
+            'mock_payment': handlers.payment,
+            'track_order': handlers.tracking,
+        }),
+        routers=RouterRegistry({'selection_route': selection_route}),
+    ).compile()
+
+
+def initial_state(selections: list[str]) -> SalesState:
+    return {
+        'selections': list(selections),
+        'cursor': 0,
+        'pending_sku': None,
+        'cart': {},
+        'status': 'new',
+        'trace': [],
+        'tracking_id': None,
+    }
+
+
+def run_demo(selections: list[str]) -> SalesState:
+    graph = build_demo()
+    return graph.invoke(initial_state(selections), config={'recursion_limit': 50})
+
+
+if __name__ == '__main__':
+    result = run_demo(['sku-1', 'sku-1', 'sku-2'])
+    print('Cart:', result['cart'])
+    print('Status:', result['status'])
+    print('Tracking:', result['tracking_id'])
+    print('Trace:', ' -> '.join(result['trace']))
