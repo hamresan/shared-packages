@@ -1,71 +1,60 @@
 # LangGraph YAML
 
-A proposed configuration-driven Python package for building LangGraph `StateGraph` workflows from human-readable YAML, with behavior implemented exclusively by explicitly registered Python functions.
+Build native LangGraph `StateGraph` workflows from validated, declarative YAML.
+Python handlers and routers are registered explicitly by the host application;
+YAML cannot import Python code or execute expressions.
 
-> **Status: Design stage — not implemented or installable yet.** All Python APIs below are proposed contracts and may be refined during implementation. This README is the first documentation deliverable.
+**Status:** development release `0.1.0.dev0` (not published).
 
-## Overview
+## Compatibility
 
-LangGraph already handles graph execution, runtime state, graph validation, checkpoints, interrupts, and persistence integrations. This package will focus only on YAML loading, validated declarative topology, and graph assembly. It is independent of any application or LLM provider.
+| Component | Supported configuration |
+| --- | --- |
+| Python | 3.12+ |
+| LangGraph | exactly 1.2.14 |
+| Pydantic | 2.12.x or later, below 3 |
+| PyYAML | 6.0.3 or later, below 7 |
 
-### Intended first-release features
+LangGraph is pinned to preserve the validated graph compilation API. Other
+dependency ranges are intentionally bounded by major version. The repository
+does not currently commit `uv.lock`; installs resolve within those ranges.
 
-- Versioned YAML configuration (`schema_version: 1`).
-- Named nodes, ordinary edges, labeled conditional routes, and `END`.
-- Pydantic v2 configuration models and explicit errors for invalid configuration.
-- Separate handler and router registries populated by the host application.
-- A generic builder wrapping LangGraph `StateGraph`.
-- Host-provided state schema, checkpointer, and store, where supported by the pinned LangGraph version.
-- Deterministic execution, no arbitrary imports/evaluation from YAML.
+## Installation and development
 
-Not planned: a new workflow runtime, scheduler, database, expression interpreter, dynamic plugin loader, visual editor, or admin UI.
+From the `langgraph-yaml` directory:
 
-## Example YAML
+```bash
+uv sync --extra dev
+make check
+uv run --extra dev python examples/sellora_mock.py
+```
 
-Create `sellora_sales.yaml`:
+Install the local package into another environment with
+`uv pip install ./langgraph-yaml` from the monorepo root. No PyPI
+distribution is claimed.
+
+## Supported topology and public API
+
+The public imports are `load_workflow`, `parse_workflow`,
+`WorkflowDefinition`, `HandlerRegistry`, `RouterRegistry`,
+`WorkflowReferenceValidator`, `GraphBuilder`, and the corresponding
+configuration, validation, and graph build errors.
+
+A minimal configuration:
 
 ```yaml
 schema_version: 1
-name: sellora_sales
-start: search_product
-
+name: hello
+start: greet
 nodes:
-  search_product:
-    handler: search_product
-  add_to_cart:
-    handler: add_to_cart
-  checkout:
-    handler: checkout
-  review_order:
-    handler: review_order
-  payment:
-    handler: payment
-  track_order:
-    handler: track_order
-
+  greet:
+    handler: greet
 edges:
-  - from: search_product
-    to: add_to_cart
-  - from: add_to_cart
-    router: after_cart
-    routes:
-      continue_shopping: search_product
-      checkout: checkout
-  - from: checkout
-    to: review_order
-  - from: review_order
-    to: payment
-  - from: payment
-    to: track_order
-  - from: track_order
+  - from: greet
     to: END
 ```
 
-Node IDs are topology identifiers, **not** Python import paths. Each `handler` value resolves through the host-provided handler registry. Routers return declared **route keys**; YAML resolves those keys to destination node IDs (or `END`).
-
-## Proposed Python API usage
-
-The following is a **usage sketch, not executable code yet**. It shows how dependencies stay in Python and topology stays in YAML.
+Store that YAML as `hello.yaml`, then compose it in Python:
 
 ```python
 from typing import TypedDict
@@ -73,151 +62,143 @@ from typing import TypedDict
 from langgraph_yaml import GraphBuilder, HandlerRegistry, RouterRegistry, load_workflow
 
 
-class SalesState(TypedDict):
-    selections: list[str]
-    selection_index: int
-    cart: dict[str, int]
-    payment_status: str
-    tracking_status: str
+class State(TypedDict):
+    message: str
 
 
-def search_product(state: SalesState) -> dict:
-    # A real example will inject a mock catalog and a finite selection sequence.
-    return {"selection_index": state["selection_index"] + 1}
+def greet(state: State) -> dict[str, str]:
+    return {"message": "Hello from LangGraph"}
 
 
-def add_to_cart(state: SalesState) -> dict:
-    product_id = state["selections"][state["selection_index"] - 1]
-    cart = dict(state["cart"])
-    cart[product_id] = cart.get(product_id, 0) + 1
-    return {"cart": cart}
+definition = load_workflow("hello.yaml")
+graph = GraphBuilder(
+    definition=definition,
+    state_schema=State,
+    handlers=HandlerRegistry({"greet": greet}),
+    routers=RouterRegistry(),
+).compile()
+
+assert graph.invoke({"message": ""})["message"] == "Hello from LangGraph"
+```
+
+The loader validates the YAML schema; `GraphBuilder.compile()` performs
+reference validation before assembling the native LangGraph graph. Node
+identifiers and registry names are distinct: handlers and routers must be
+explicitly supplied. Conditional edges map router-returned keys to destination
+node IDs or `END`.
+
+For a real branching and looping example, see
+[`examples/sellora_workflow.yaml`](examples/sellora_workflow.yaml) and
+[`examples/sellora_mock.py`](examples/sellora_mock.py).
+That example runs a finite synthetic selection sequence in **one invocation**,
+not an interactive customer conversation. Mock payment and tracking do not
+contact external systems.
+
+## Runtime ownership: customer input and interrupts
+
+`langgraph-yaml` only composes a graph. The **host application** owns
+conversation transport, authentication, authorization, durable checkpoints,
+thread identifiers, retries, and external side effects.
+
+For a real multi-message conversation, a host-registered node can call
+LangGraph's `interrupt()` to request customer input. Compile with a
+host-provided checkpointer, invoke with a stable per-conversation
+`configurable.thread_id`, persist that thread identifier, and resume with
+`Command(resume=...)`. A minimal host-side pattern using the pinned
+LangGraph API:
+
+```python
+from typing import TypedDict
+
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command, interrupt
+
+from langgraph_yaml import GraphBuilder, HandlerRegistry, RouterRegistry, parse_workflow
 
 
-def after_cart(state: SalesState) -> str:
-    if state["selection_index"] < len(state["selections"]):
-        return "continue_shopping"
-    return "checkout"
+class State(TypedDict):
+    choice: str
 
 
-def checkout(state: SalesState) -> dict:
-    return {}
+def request_choice(state: State) -> dict[str, str]:
+    answer = interrupt({"question": "Choose a product"})
+    return {"choice": str(answer)}
 
 
-def review_order(state: SalesState) -> dict:
-    return {}
-
-
-def payment(state: SalesState) -> dict:
-    return {"payment_status": "paid"}
-
-
-def track_order(state: SalesState) -> dict:
-    return {"tracking_status": "processing"}
-
-
-definition = load_workflow("sellora_sales.yaml")
-
-handlers = HandlerRegistry({
-    "search_product": search_product,
-    "add_to_cart": add_to_cart,
-    "checkout": checkout,
-    "review_order": review_order,
-    "payment": payment,
-    "track_order": track_order,
-})
-routers = RouterRegistry({"after_cart": after_cart})
+definition = parse_workflow("""
+schema_version: 1
+name: choice_demo
+start: request
+nodes:
+  request:
+    handler: request_choice
+edges:
+  - from: request
+    to: END
+""")
 
 graph = GraphBuilder(
     definition=definition,
-    state_schema=SalesState,
-    handlers=handlers,
-    routers=routers,
-).compile()
+    state_schema=State,
+    handlers=HandlerRegistry({"request_choice": request_choice}),
+    routers=RouterRegistry(),
+).compile(checkpointer=InMemorySaver())
 
-result = graph.invoke({
-    "selections": ["sku-1", "sku-1", "sku-2"],
-    "selection_index": 0,
-    "cart": {},
-    "payment_status": "pending",
-    "tracking_status": "unknown",
-})
-# Intended cart result: {"sku-1": 2, "sku-2": 1}
-# Loop: search -> cart -> search -> cart -> search -> cart -> checkout -> ...
+config = {"configurable": {"thread_id": "example-conversation-1"}}
+paused = graph.invoke({"choice": ""}, config=config)
+assert paused["__interrupt__"]
+resumed = graph.invoke(Command(resume="sku-1"), config=config)
+assert resumed["choice"] == "sku-1"
 ```
 
-This single invocation models a bounded deterministic demonstration, **not** a real customer journey across separate chat messages.
+`InMemorySaver` is for demos/tests; production must use an appropriate
+durable LangGraph checkpointer. Interrupts can replay node execution on
+resume: place irreversible effects outside replayable code or guard them with
+host-managed idempotency. Do not assume a single graph invocation spans
+multiple inbound customer messages.
 
-For a real application, use supported LangGraph interrupts, thread-scoped checkpointing, and resume functionality to pause for customer input. Integrate payment callbacks through the host application; do not treat payment approval as a synchronous in-graph operation.
+## Payment and external integration boundaries
 
-## Proposed package structure
+A production payment provider and its webhooks belong to the **host**:
+the host creates payment intents/links, verifies provider signatures,
+deduplicates callbacks using stable provider event/transaction identifiers,
+persists payment transitions transactionally, and resumes the appropriate
+conversation thread only after verified payment state is recorded.
+Replayed graph nodes must not duplicate charges, orders, or notifications.
+The package does not implement payment processing, webhook validation,
+idempotency storage, or event transport.
 
-```text
-langgraph-yaml/
-├── README.md
-├── pyproject.toml
-├── src/langgraph_yaml/
-│   ├── __init__.py
-│   ├── config/
-│   │   ├── models.py
-│   │   └── loader.py
-│   ├── registration/
-│   │   ├── handlers.py
-│   │   └── routers.py
-│   ├── validation/
-│   │   └── references.py
-│   └── graph/
-│       └── builder.py
-├── examples/
-│   ├── sellora_sales.yaml
-│   └── sellora_mock.py
-└── tests/
-    ├── config/
-    ├── registration/
-    ├── validation/
-    ├── graph/
-    └── examples/
-```
+## Errors and diagnostics
 
-The final structure will be adjusted as necessary to preserve single responsibility and avoid unnecessary layers. Loading/parsing, validation, registration, and graph construction remain separate. LangGraph itself remains responsible for execution and graph-level validation.
+- `WorkflowLoadError`: invalid YAML, duplicate keys, unsafe tags,
+  unsupported schema data, or unreadable UTF-8 file. Error includes source.
+- `WorkflowValidationError`: unknown handlers/routers, invalid topology
+  references, conflicting outgoing edges, or missing required edges.
+- `GraphBuildError`: native LangGraph graph construction/compile failure;
+  the original exception is preserved as the cause.
 
-## Development plan
+Errors are raised during loading or compilation, not silently ignored.
 
-1. Verify current LangGraph APIs, compatibility, and existing configuration-first tools; select pinned versions.
-2. Define Pydantic config models, YAML loader, errors, and focused tests.
-3. Implement explicit typed handler/router registries and tests.
-4. Implement graph builder and compilation, relying on LangGraph validation where appropriate.
-5. Build the executable Sellora mock with bounded repeated selections, assertions, trace, and final state.
-6. Finalize packaging, documentation, installation instructions, and run pytest, Ruff, and a type checker.
-
-**Each implementation stage requires review before proceeding to the next major stage.**
-
-## Local installation (after implementation)
-
-Once `pyproject.toml` and the source package exist:
+## Quality and packaging
 
 ```bash
-cd langgraph-yaml
-uv sync --extra dev
-uv run pytest
+make lint
+make typecheck
+make coverage
+make wheel-smoke
 make check
 ```
 
-The distribution name, pinned dependency versions, release process, and optional PyPI publishing will be finalized during the packaging stage. No PyPI release or verified working implementation is claimed here.
+`make check` runs Ruff checks and formatting verification, strict Pyright,
+pytest with line coverage, wheel build, and an import smoke test. Before
+publishing, inspect `dist/` wheel contents for `py.typed`, install the wheel
+into a clean environment, verify the sdist if one is built, and review the
+distribution name, dependency pin, changelog, license, and release credentials.
+**No publication is performed by these commands.**
 
-## Engineering principles
+## Out of scope
 
-Python 3.12+, LangGraph, Pydantic v2, PyYAML (or a documented alternative), pytest, Ruff, and static type checking. Clean architecture and SOLID: small components, explicit dependency injection, sensible package public exports, dedicated test fakes/factories, no execution of arbitrary YAML and no custom persistence or graph runtime.
-
-## Development with uv
-
-From `langgraph-yaml/`, install [uv](https://docs.astral.sh/uv/) and run:
-
-```bash
-uv sync --extra dev
-uv lock
-make check
-```
-
-`uv sync` creates and manages `.venv` and installs the project in editable mode. `uv run` ensures pytest, Ruff, and Pyright use the same environment instead of system Python. Commit the generated `uv.lock` once dependency resolution succeeds. Until then, `uv run` may resolve packages online and is not reproducible from a committed lockfile.
-
-The `Makefile` runs checks and a wheel build using uv. The package's Python version is selected via `.python-version` (3.12).
+This library does not provide a workflow runner, scheduler, database, state
+storage implementation, visual editor, dynamic import system, commerce
+integration, or arbitrary expression interpreter. Native LangGraph remains
+responsible for graph execution, interrupts, and checkpoint behavior.
