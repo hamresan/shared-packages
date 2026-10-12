@@ -3,7 +3,6 @@
 from typing import TypedDict
 from unittest.mock import patch
 
-from langgraph.graph import StateGraph
 
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
@@ -136,8 +135,9 @@ def test_langgraph_compile_error_preserves_cause() -> None:
     workflow_builder = builder(
         [{"from": "step", "to": "finish"}, {"from": "finish", "to": "END"}]
     )
-    with patch.object(
-        StateGraph, "compile", side_effect=ValueError("compile rejected")
+    with patch(
+        "langgraph_yaml.graph.builder.StateGraph.compile",
+        side_effect=ValueError("compile rejected"),
     ):
         with pytest.raises(GraphBuildError, match="example") as exc:
             workflow_builder.compile()
