@@ -1,6 +1,7 @@
 # hamresan-scheduling — staged implementation roadmap
 
-> **Status:** Architecture outline and implementation stages documented; no executable package has been created yet.
+> **Status:** Stage 1 foundation now installs, builds, and has tested UTC/IANA primitives.
+> Calendar management, schedule composition, and the availability engine remain planned.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -26,15 +27,28 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 1. Define a generic external-scope model for organization/location/resource calendars, without importing consuming applications' entities.
 2. Define intersection and precedence rules: organization closures, location hours, resource shifts, breaks, date overrides, and blocked periods. Specify what happens when a scope has no calendar.
 3. Specify UTC/IANA time handling, overnight windows, DST ambiguity, slot steps, and whether buffers must fit entirely within operating windows.
-4. Evaluate existing scheduling libraries, including `slotify-scheduling`, using a repeatable benchmark against real scheduling cases. Prefer reuse when it passes correctness, maintenance and performance criteria.
+4. Implement the calculation engine independently, with no `slotify-scheduling` dependency.
+   Reuse standard Python `datetime` and `zoneinfo` for time handling and validate the new
+   engine against independently specified golden scheduling scenarios.
 5. Define the boundary between managed calendar data and externally supplied busy/reservation intervals. Avoid building booking storage or a second reservation lifecycle.
 6. Agree on the minimum public inputs/outputs, error codes and tenant-scope requirements; do not create a generic expression language, plugin registry or policy DSL.
 
 ### Gate
 
 - [ ] Golden test scenarios and precedence rules are documented and approved.
-- [ ] Reuse vs focused implementation is supported by a measured proof of concept.
+- [x] Independent calculation engine selected; Slotify excluded as a dependency.
 - [ ] Contract and persistence boundaries are agreed before coding.
+
+### Decisions already confirmed
+
+- Preserve the calendar's IANA timezone (for example, `Asia/Muscat` or `Europe/London`).
+- Store and compare absolute instants in UTC; define recurring working hours in local time.
+- Reject ambiguous or nonexistent local wall times by default at the conversion boundary.
+  An explicit earlier/later ambiguity choice is supported for individual instants.
+- Use half-open UTC intervals (`[start, end)`) to make adjacent appointments nonconflicting.
+
+Calendar hierarchy precedence, overnight exception ownership, missing-calendar behavior,
+and recurrence-specific DST policy still require agreed golden scenarios before Stage 3.
 
 ## Stage 1 — Package foundation
 
@@ -42,12 +56,17 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 1. Create `pyproject.toml`, `src/scheduling/`, controlled package exports, typing marker, `uv` lock and reproducible development setup.
 2. Establish domain, application/contracts, pure engine, infrastructure/adapters and composition folders only as features need them.
-3. Configure Ruff, strict Pyright, pytest, build/install checks and CI. Mirror production folders under tests and keep test fakes/factories in separate modules.
+3. Configure Ruff, strict Pyright, pytest with branch coverage, build/install checks and CI.
+   Mirror production folders under tests and keep independent test fakes/factories in
+   separate modules.
 4. Keep the core free from SQLAlchemy, FastAPI and external scheduling providers.
 
 ### Gate
 
-- [ ] Clean-environment installation, wheel/sdist and `uv` checks pass.
+- [x] Wheel/sdist build, locked dependency installation, Ruff, strict Pyright, and
+      the initial mirrored unit tests pass locally.
+- [x] Fresh-environment wheel installation passes locally.
+- [ ] Repository CI is verified on GitHub.
 - [ ] Dependencies and source/test structure comply with declared boundaries.
 
 ## Stage 2 — Calendar rules and domain model

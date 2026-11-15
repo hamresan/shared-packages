@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hamresan-scheduling"
+version = "0.1.0"
+description = "Framework-independent scheduling and calendar primitives for Python applications."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["tzdata>=2025.2; sys_platform == 'win32'"]
+
+[dependency-groups]
+dev = [
+  "build>=1.2,<2",
+  "pyright>=1.1,<2",
+  "pytest>=8,<10",
+  "pytest-cov>=6,<8",
+  "ruff>=0.9,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scheduling"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=scheduling --cov-branch --cov-report=term-missing --cov-fail-under=85"
+
+[tool.coverage.run]
+source = ["scheduling"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

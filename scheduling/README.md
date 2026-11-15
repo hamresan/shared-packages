@@ -2,7 +2,27 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: design and roadmap only.** This directory does not yet contain an installable package. Follow the independently tested stages in [ROADMAP.md](ROADMAP.md) before relying on any proposed API.
+> **Status: Stage 1 foundation implemented.** The distribution installs and the initial UTC/IANA
+> time primitives are tested. Calendar management and the availability engine are **not yet
+> implemented**. Follow the independently reviewed stages in [ROADMAP.md](ROADMAP.md).
+
+## Current installation and development
+
+From this directory, run `uv sync --frozen --group dev` and `make check`. The core currently
+requires no third-party runtime dependencies on Unix-like systems (and installs `tzdata`
+on Windows where the IANA database may be absent). Use `uv build` to produce an sdist and
+a wheel.
+
+The first stable, tested primitives are available from `scheduling.domain.time`:
+
+- `IanaTimeZone`: validates and preserves an IANA time zone name.
+- `resolve_local_datetime`: converts a calendar-local date and wall time to a zone-aware
+  instant; nonexistent DST times fail and ambiguous times require an explicit earlier/later
+  choice (the default is rejection).
+- `UtcInterval`: a nonempty, half-open `[start, end)` interval of UTC instants with overlap
+  and complete-containment checks.
+
+These are foundation primitives, **not** a public API for finding or booking appointments.
 
 ## Purpose
 
@@ -74,11 +94,14 @@ In both modes:
 
 The package may accept already-booked periods or capacity information from a host-defined reader/adapter, but it does not store bookings, issue booking IDs, own payment holds, or implement a second booking lifecycle.
 
-## Existing scheduling library assessment
+## Calculation engine implementation decision
 
-`slotify-scheduling` 0.5.x already provides useful primitives for weekly schedules, overrides, timezone/DST handling, candidate slots, buffers, and resource pools. However, it is pre-1.0, its bundled booking store is synchronous, and resource pools share a slot generator rather than modeling independently scheduled resources. Boundary cases such as buffers extending outside working hours require explicit policy tests.
-
-Stage 0 will compare **reuse behind a small adapter** against a focused implementation of the required calculation primitives. A public package contract must not expose Slotify-specific objects or require it before the proof of concept passes. Use Python's standard `datetime`/`zoneinfo` and mature date/time primitives where they fit; do not rebuild established timezone functionality.
+The availability engine will be an independent, focused implementation owned by this
+package. **Slotify is not a dependency or implementation backend.** Established Python
+`datetime` and `zoneinfo` primitives handle date/time representation and timezone rules;
+the package owns only its calendar-specific interval composition and slot calculation.
+The future engine must pass independently specified golden scenarios, rather than merely
+agreeing with another scheduler's output.
 
 ## Architecture principles
 
@@ -89,7 +112,7 @@ Stage 0 will compare **reuse behind a small adapter** against a focused implemen
 - Clean Architecture, SOLID, and small responsibility-based components rather than generic managers or registries.
 - Time-aware UTC instants internally, preserved IANA zone information, no silent DST guessing.
 - Mirrored test folders; dedicated fake repositories, factories, and builders in separate support modules.
-- Ruff, strict Pyright, pytest, CI, reproducible `uv` development locks and build/install verification.
+- Ruff, strict Pyright, pytest, CI, a committed `uv.lock` and build/install verification.
 
 ## Planned public usage
 
@@ -98,4 +121,6 @@ Stage 0 will compare **reuse behind a small adapter** against a focused implemen
 3. The availability engine calculates resource-specific candidate slots and returns typed results.
 4. The host performs any final reservation through its own authoritative transactional system.
 
-No working Python symbols or HTTP endpoints are claimed until their roadmap stages are implemented and tested.
+Only the time primitives described under **Current installation and development** are
+implemented. No calendar-management operations, slot-query API, or HTTP endpoints are
+claimed until their roadmap stages are implemented and tested.

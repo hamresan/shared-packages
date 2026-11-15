@@ -1,0 +1,36 @@
+name: Scheduling CI
+
+on:
+  pull_request:
+    paths:
+      - "scheduling/**"
+      - ".github/workflows/scheduling-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scheduling/**"
+      - ".github/workflows/scheduling-ci.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scheduling
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked development dependencies
+        run: uv sync --frozen --group dev
+      - name: Lint, types, tests, and build
+        run: make check
+      - name: Smoke test wheel in a clean environment
+        run: |
+          uv venv .wheel-smoke --python 3.12
+          uv pip install --python .wheel-smoke/bin/python dist/*.whl
+          .wheel-smoke/bin/python -c "from scheduling.domain.time import IanaTimeZone, UtcInterval; assert IanaTimeZone('Asia/Muscat').key == 'Asia/Muscat'"
