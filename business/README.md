@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: design and roadmap only.** This directory is not yet an installable Python distribution. Implementation will follow the independently testable stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stage 1 foundation implemented.** The source is locally installable, but no distribution has been published. Business/branch/membership use cases, persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
 
 ## Purpose
 
@@ -81,6 +81,28 @@ The existing [`hamresan-store`](../store) remains a separate package. Do not sil
 - Test directories mirror the source structure. Independent test doubles and builders live in separate support modules.
 - Ruff, strict Pyright, pytest unit/integration tests and reproducible CI gates; use `uv` for dependency locking and development.
 
+## Stage 1 development
+
+The package currently exposes framework-independent primitives: `AuthenticatedActor`,
+`BranchAddress` (including optional `city` and `country_code`), lifecycle and membership
+enums, and core field validators. It does **not** yet provide business or branch CRUD,
+membership enforcement, database models, or HTTP routes.
+
+From this directory, install the locked development environment and run quality checks:
+
+```bash
+uv sync --extra test --locked
+make check
+```
+
+The `check` target runs Ruff lint/format checks, strict Pyright, branch-aware pytest
+coverage (minimum 85%), and wheel/sdist builds. A dedicated GitHub Actions workflow
+also checks the distribution in a clean virtual environment.
+
+A business with zero branches remains a first-class use case for Stages 2 and 3;
+no branch is created implicitly. `BranchAddress` may contain only a city, and physical
+address information is optional even when a branch exists.
+
 ## Illustrative host flow
 
 1. A user signs in through Identity's OTP flow; Notification delivers the OTP via the host's configured provider.
@@ -92,4 +114,4 @@ The same identity may repeat this flow for another business without registering 
 
 ## Implementation
 
-The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. No API endpoint, import path beyond the proposed package name, or distribution release is claimed to exist yet.
+The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. No business-management endpoint, business-creation API, persistence adapter, or distribution release is claimed to exist yet.
