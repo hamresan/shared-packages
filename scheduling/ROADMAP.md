@@ -1,0 +1,154 @@
+# hamresan-scheduling — staged implementation roadmap
+
+> **Status:** Architecture outline and implementation stages documented; no executable package has been created yet.
+>
+> **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
+
+Finish, test, and review each stage before starting the next. Prioritize useful scheduling behavior over speculative abstractions or a full reservation platform.
+
+## Stage overview
+
+| Stage | Focus | Demonstrable result |
+| --- | --- | --- |
+| **0** | Requirements, library comparison and calendar semantics | Reviewed contracts, precedence rules and bounded proof of concept |
+| **1** | Python package foundation | Clean install, quality checks and a small dependency-injection boundary |
+| **2** | Calendar domain and validations | Typed weekly schedules, exceptions, closures and timezone rules |
+| **3** | Pure availability calculations | Correct per-resource slots, busy intervals, buffers and policies |
+| **4** | Calendar management use cases | Create/read/update/archive workflows through repository contracts |
+| **5** | Optional async SQLAlchemy persistence | Reusable adapters and host-owned Alembic integration |
+| **6** | Optional API adapter and consumer example | Calendar management + availability through a separate host |
+| **7** | Hardening, benchmarking and release | Verified correctness, performance and stable public API |
+
+## Stage 0 — Scope and proof of concept
+
+### Work
+
+1. Define a generic external-scope model for organization/location/resource calendars, without importing consuming applications' entities.
+2. Define intersection and precedence rules: organization closures, location hours, resource shifts, breaks, date overrides, and blocked periods. Specify what happens when a scope has no calendar.
+3. Specify UTC/IANA time handling, overnight windows, DST ambiguity, slot steps, and whether buffers must fit entirely within operating windows.
+4. Evaluate existing scheduling libraries, including `slotify-scheduling`, using a repeatable benchmark against real scheduling cases. Prefer reuse when it passes correctness, maintenance and performance criteria.
+5. Define the boundary between managed calendar data and externally supplied busy/reservation intervals. Avoid building booking storage or a second reservation lifecycle.
+6. Agree on the minimum public inputs/outputs, error codes and tenant-scope requirements; do not create a generic expression language, plugin registry or policy DSL.
+
+### Gate
+
+- [ ] Golden test scenarios and precedence rules are documented and approved.
+- [ ] Reuse vs focused implementation is supported by a measured proof of concept.
+- [ ] Contract and persistence boundaries are agreed before coding.
+
+## Stage 1 — Package foundation
+
+### Work
+
+1. Create `pyproject.toml`, `src/scheduling/`, controlled package exports, typing marker, `uv` lock and reproducible development setup.
+2. Establish domain, application/contracts, pure engine, infrastructure/adapters and composition folders only as features need them.
+3. Configure Ruff, strict Pyright, pytest, build/install checks and CI. Mirror production folders under tests and keep test fakes/factories in separate modules.
+4. Keep the core free from SQLAlchemy, FastAPI and external scheduling providers.
+
+### Gate
+
+- [ ] Clean-environment installation, wheel/sdist and `uv` checks pass.
+- [ ] Dependencies and source/test structure comply with declared boundaries.
+
+## Stage 2 — Calendar rules and domain model
+
+### Work
+
+1. Implement typed `Calendar`, `WeeklySchedule`, working windows, exceptions and blocked periods with explicit validators.
+2. Support single and split shifts, intervals crossing midnight, closed dates, annual holidays and date overrides.
+3. Define calendar scope, stable identifiers, optional organization/location/resource relationships, and archive semantics without a business-specific model.
+4. Normalize and validate timezone-aware data at the application boundary. Reject invalid ranges, overlapping contradictory windows and unsupported local DST times deterministically.
+
+### Gate
+
+- [ ] Valid weekly schedules and date overrides are represented without loss of meaning.
+- [ ] Invalid windows, timezone settings and contradictory exceptions fail predictably.
+- [ ] DST gaps/overlaps and overnight shifts have deterministic unit tests.
+
+## Stage 3 — Availability Engine
+
+### Work
+
+1. Implement a pure calculation use case accepting applicable calendar snapshots, requested date range, activity duration, slot interval and policy inputs.
+2. Intersect applicable location/organization opening periods with **each resource's own schedule**; do not assume every resource in a pool shares identical working hours.
+3. Apply breaks, time off, closures, external busy intervals, and minimum notice/maximum horizon.
+4. Include before/after buffers in the full occupied interval and verify that the entire interval is allowed by the applicable calendars.
+5. Return typed candidate slots with resource IDs and optional deterministic unavailability reasons. Treat results as advisory; no database writes in calculation code.
+6. Keep runtime complexity bounded through date-range limits and a focused benchmark dataset; do not optimize prematurely.
+
+### Gate
+
+- [ ] Two differently scheduled resources return accurate merged availability.
+- [ ] Busy periods, buffers, split shifts, closures and policies change availability correctly.
+- [ ] Boundary tests cover shift start/end buffers and overnight/DST transitions.
+- [ ] Repeated calculations with identical snapshots and a fixed clock are deterministic.
+
+## Stage 4 — Calendar Management use cases
+
+### Work
+
+1. Define repositories and Unit of Work contracts for creating, reading, modifying and archiving calendar configurations.
+2. Implement narrow use cases for weekly windows, overrides, closures and blocked periods. Avoid an all-purpose calendar-management service.
+3. Accept trusted tenant, actor and scope information from the host; authorize updates and validate scope relationships without depending on the host identity implementation.
+4. Add optimistic versioning or equivalent lost-update protection where concurrent calendar editing can cause conflicting changes.
+
+### Gate
+
+- [ ] Calendar changes are validated, scoped and independently testable with fake repositories.
+- [ ] Cross-tenant or cross-resource mutation attempts fail safely.
+- [ ] Conflicting edits cannot silently overwrite newer calendars.
+
+## Stage 5 — Optional persistence
+
+### Work
+
+1. Add optional async SQLAlchemy 2 models, mappers, repository implementations and Unit of Work adapters for **calendar configuration only**.
+2. Inject the host's async session factory; do not create an application-global database engine or own network credentials.
+3. Use `scheduling_`-prefixed tables and expose Alembic metadata/filter helpers. The host owns revision files and migration ordering.
+4. Keep calculated availability and external reservations out of durable calendar configuration tables; cache only when a real consumer requires it and defines freshness semantics.
+5. Test safe concurrency, rollback, archive behavior and tenant isolation in PostgreSQL.
+
+### Gate
+
+- [ ] Managed calendars survive process restarts and round-trip without losing timezone or exception information.
+- [ ] Host-composed Alembic autogeneration and migrations work alongside unrelated package metadata.
+- [ ] Core engine can be used without installing SQLAlchemy.
+
+## Stage 6 — Optional FastAPI adapter and consumer example
+
+### Work
+
+1. Provide an optional FastAPI adapter for calendar management and availability queries with strict request/response contracts.
+2. Demonstrate a small host that supplies trusted authentication/tenant context, calendar repository configuration and external busy periods.
+3. Keep employee details, booking operations, notifications and provider-specific authorization in the host; expose only the minimal subject/scope identifiers needed for scheduling.
+4. Test both in-memory and SQLAlchemy-backed composition paths and ensure unavailable resources are not returned as bookable.
+
+### Gate
+
+- [ ] Example host can manage two locations and independently scheduled resources.
+- [ ] API authorization rejects cross-tenant access and untrusted scope changes.
+- [ ] Availability remains advisory and no endpoint pretends to reserve inventory atomically.
+
+## Stage 7 — Hardening and release readiness
+
+### Work
+
+1. Run deterministic regression datasets for timezone/DST, overnight windows, resource intersections, closure precedence and occupied-interval buffers.
+2. Benchmark a practical range of resources, days, windows and busy intervals; document latency and memory rather than relying on synthetic claims.
+3. Review optional dependencies, strict typing, security boundaries, concurrency tests, clean builds, semantic versioning and public exports.
+4. Publish release notes only after consumer integration succeeds and README examples match implemented signatures.
+
+### Gate
+
+- [ ] Ruff, format, strict Pyright, pytest, integration tests and package build pass in CI.
+- [ ] Two independent host scenarios use the same package without application-specific imports.
+- [ ] Boundary and performance benchmarks are recorded with repeatable inputs.
+
+## Deliberately out of scope
+
+- Authoritative appointment/order/reservation creation, cancellation, rescheduling, payments, and idempotent booking writes.
+- Employee accounts, HR profiles, contracts, payroll, attendance, or qualifications.
+- External calendar-provider synchronization, webhook processing, built-in workers or message queues.
+- Generic workflow engines, universal resource-optimization solvers and arbitrary rule scripting.
+
+The package is reusable because it owns a narrow, well-tested scheduling capability — not because it attempts to own every surrounding application concern.
