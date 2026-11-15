@@ -15,7 +15,7 @@ def test_business_and_branch_have_distinct_lifecycle_statuses() -> None:
 
 
 def test_membership_roles_and_statuses_are_explicit() -> None:
-    assert {role.value for role in MembershipRole} == {"owner", "member"}
+    assert {role.value for role in MembershipRole} == {"owner", "manager", "member"}
     assert {status.value for status in MembershipStatus} == {"invited", "active", "revoked"}
 
 
