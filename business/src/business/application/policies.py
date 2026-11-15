@@ -13,3 +13,8 @@ class BusinessAccessPolicy:
         active_membership = self.require_member(membership)
         if active_membership.role is not MembershipRole.OWNER:
             raise BusinessPermissionDeniedError("Owner membership is required")
+
+    def require_manager(self, membership: BusinessMembership | None) -> None:
+        active_membership = self.require_member(membership)
+        if active_membership.role not in (MembershipRole.OWNER, MembershipRole.MANAGER):
+            raise BusinessPermissionDeniedError("Owner or manager membership is required")

@@ -67,6 +67,13 @@ class MembershipModel(BusinessBase):
             sqlite_where=text("status IN ('active', 'invited')"),
         ),
         Index("ix_business_memberships_user", "user_id"),
+        Index(
+            "uq_business_memberships_one_active_owner",
+            "business_id",
+            unique=True,
+            postgresql_where=text("role = 'owner' AND status = 'active'"),
+            sqlite_where=text("role = 'owner' AND status = 'active'"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)

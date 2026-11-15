@@ -45,10 +45,12 @@ class SetMemberBranchAccessService:
             if membership.status is MembershipStatus.REVOKED:
                 raise MembershipInvalidStateError("Revoked membership cannot change access")
             if (
-                membership.role is MembershipRole.OWNER
+                membership.role in (MembershipRole.OWNER, MembershipRole.MANAGER)
                 and command.scope is not BranchAccessScope.ALL
             ):
-                raise MembershipInvalidStateError("Owner must have full branch access")
+                raise MembershipInvalidStateError(
+                    "Owners and managers must have full branch access"
+                )
             if command.scope is BranchAccessScope.ALL and command.branch_ids:
                 raise MembershipInvalidStateError("ALL scope cannot specify selected branch IDs")
             branch_ids = (

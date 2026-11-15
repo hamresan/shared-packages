@@ -40,3 +40,7 @@ class MembershipInvalidStateError(BusinessError):
 
 class LastActiveOwnerError(BusinessError):
     """An active business must retain at least one active owner."""
+
+
+class OwnershipTransferError(BusinessError):
+    """Ownership transfer requires a different active member of the same business."""

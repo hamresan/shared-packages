@@ -32,7 +32,7 @@ class BranchBusinessAccess:
         membership = await unit_of_work.memberships.get_by_business_and_user(
             business_id, actor.user_id
         )
-        self._membership_policy.require_owner(membership)
+        self._membership_policy.require_manager(membership)
         business = await self._get_business(unit_of_work, business_id)
         if business.status is BusinessStatus.ARCHIVED:
             raise BusinessArchivedError("Archived businesses cannot change branches")

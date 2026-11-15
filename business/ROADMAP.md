@@ -89,8 +89,8 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 1. Extend the initial owner `BusinessMembership` with external `user_id`, `business_id`, role, active/invited/revoked state and timestamps.
 2. Enforce unique active membership per `(business_id, user_id)` while allowing the same user across multiple businesses.
-3. Provide minimum roles such as `Owner` and `Member`; consuming applications retain ownership of domain-specific permissions. Avoid a general role-policy DSL.
-4. Implement controlled add/invite, accept (if needed), list, role change and removal operations; protect against removing or demoting the last active owner.
+3. Provide `Owner`, `Manager`, and `Member` roles; one active Owner per business and multiple Managers. Consuming applications retain ownership of domain-specific permissions. Avoid a general role-policy DSL.
+4. Implement controlled add/invite, accept, list, Manager/Member role changes, removal, and an explicit atomic ownership transfer; never ordinarily demote or revoke the Owner.
 5. Add a narrow branch-access association for members restricted to selected branches; validate every branch belongs to the same business.
 6. Make authorization explicit and independently testable, including owner-only actions and a member's authorized branch scope.
 
@@ -98,7 +98,7 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 - [x] One user owns multiple businesses and can hold a non-owner role in another (existing multi-business tests plus membership scenarios).
 - [x] Business and branch membership changes are authorization-checked and auditable under the injected unit of work.
-- [x] The final active owner cannot be removed by ordinary membership operations (PostgreSQL concurrency verification deferred to Stage 5).
+- [x] The active Owner cannot be removed or demoted by ordinary membership operations; ownership transfers atomically to an active member.
 - [x] Members cannot gain access to a branch in another business by submitting its ID.
 
 ## Stage 5 — Async SQLAlchemy persistence and host-owned Alembic
@@ -108,12 +108,12 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 1. Build SQLAlchemy 2 async models, repositories, mappers and Unit of Work adapters implementing the application contracts.
 2. Use package-prefixed tables (`business_*`) and host-injected async session factory; do not create a global engine.
 3. Expose package metadata/name-filter helpers for a host-owned Alembic history, compatible with other shared packages.
-4. Apply appropriate uniqueness, foreign-key and branch-to-business invariants. Use transactional protection for membership/ownership mutations.
+4. Apply appropriate uniqueness (including at most one active Owner per business), foreign-key and branch-to-business invariants. Use transactional protection for membership/ownership mutations.
 5. Define safe transaction boundaries and document host-side tenant isolation and optional PostgreSQL RLS integration; no implicit trust in `business_id` alone.
 
 ### Gate
 
-- [ ] PostgreSQL concurrency test passes in CI (test and service configured; local PostgreSQL unavailable).
+- [ ] PostgreSQL concurrent ownership-transfer test passes in CI (test and service configured; local PostgreSQL unavailable).
 - [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; host migration upgrade across multiple packages remains to be exercised at Stage 7.
 - [x] Tenant-scoped repositories and composite foreign keys reject cross-business membership-to-branch references.
 

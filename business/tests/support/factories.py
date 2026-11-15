@@ -34,6 +34,7 @@ from business.application.services.invite_member import InviteMemberService
 from business.application.services.list_memberships import ListMembershipsService
 from business.application.services.revoke_membership import RevokeMembershipService
 from business.application.services.set_member_branch_access import SetMemberBranchAccessService
+from business.application.services.transfer_ownership import TransferOwnershipService
 from business.application.validators import (
     BusinessProfileValidator,
     CreateBusinessCommandValidator,
@@ -194,6 +195,14 @@ def build_set_member_branch_access_service(
 
 def build_list_memberships_service(uow: BusinessUnitOfWorkFactory) -> ListMembershipsService:
     return ListMembershipsService(uow, build_membership_access())
+
+
+def build_transfer_ownership_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> TransferOwnershipService:
+    return TransferOwnershipService(
+        uow, build_membership_access(), clock, MembershipAuditor(clock, ids)
+    )
 
 
 def build_update_branch_service(

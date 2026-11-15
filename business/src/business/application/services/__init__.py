@@ -13,6 +13,7 @@ from business.application.services.list_memberships import ListMembershipsServic
 from business.application.services.reactivate_branch import ReactivateBranchService
 from business.application.services.revoke_membership import RevokeMembershipService
 from business.application.services.set_member_branch_access import SetMemberBranchAccessService
+from business.application.services.transfer_ownership import TransferOwnershipService
 from business.application.services.update_branch import UpdateBranchService
 from business.application.services.update_business import UpdateBusinessService
 
@@ -32,6 +33,7 @@ __all__ = [
     "ReactivateBranchService",
     "RevokeMembershipService",
     "SetMemberBranchAccessService",
+    "TransferOwnershipService",
     "UpdateBusinessService",
     "UpdateBranchService",
 ]

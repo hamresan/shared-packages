@@ -26,12 +26,30 @@ class BusinessMembership:
     def change_role(self, role: MembershipRole, *, changed_at: datetime) -> None:
         if self.status is not MembershipStatus.ACTIVE:
             raise MembershipInvalidStateError("Only active members can change roles")
+        if self.role is MembershipRole.OWNER or role is MembershipRole.OWNER:
+            raise MembershipInvalidStateError(
+                "Ownership can only change through ownership transfer"
+            )
         if self.role is role:
             raise MembershipInvalidStateError("Membership already has this role")
         self.role = role
         self.branch_access_scope = (
-            BranchAccessScope.ALL if role is MembershipRole.OWNER else BranchAccessScope.SELECTED
+            BranchAccessScope.ALL if role is MembershipRole.MANAGER else BranchAccessScope.SELECTED
         )
+        self.updated_at = changed_at
+
+    def relinquish_ownership(self, *, changed_at: datetime) -> None:
+        if self.status is not MembershipStatus.ACTIVE or self.role is not MembershipRole.OWNER:
+            raise MembershipInvalidStateError("Only an active owner can transfer ownership")
+        self.role = MembershipRole.MANAGER
+        self.branch_access_scope = BranchAccessScope.ALL
+        self.updated_at = changed_at
+
+    def assume_ownership(self, *, changed_at: datetime) -> None:
+        if self.status is not MembershipStatus.ACTIVE or self.role is MembershipRole.OWNER:
+            raise MembershipInvalidStateError("Only an active non-owner can receive ownership")
+        self.role = MembershipRole.OWNER
+        self.branch_access_scope = BranchAccessScope.ALL
         self.updated_at = changed_at
 
     def revoke(self, *, revoked_at: datetime) -> None:
@@ -44,7 +62,10 @@ class BusinessMembership:
     def change_branch_scope(self, scope: BranchAccessScope, *, changed_at: datetime) -> None:
         if self.status is MembershipStatus.REVOKED:
             raise MembershipInvalidStateError("Revoked memberships cannot access branches")
-        if self.role is MembershipRole.OWNER and scope is not BranchAccessScope.ALL:
-            raise MembershipInvalidStateError("Owners must have full branch access")
+        if (
+            self.role in (MembershipRole.OWNER, MembershipRole.MANAGER)
+            and scope is not BranchAccessScope.ALL
+        ):
+            raise MembershipInvalidStateError("Owners and managers must have full branch access")
         self.branch_access_scope = scope
         self.updated_at = changed_at

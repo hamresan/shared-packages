@@ -123,6 +123,7 @@ class SqlAlchemyMembershipRepository(BusinessMembershipRepository):
         if model is None or model.business_id != membership.business_id:
             raise ValueError("Membership cannot be updated outside its business")
         self._mapper.update(model, membership)
+        await self._session.flush()
 
 
 class SqlAlchemyBranchRepository(BranchRepository):

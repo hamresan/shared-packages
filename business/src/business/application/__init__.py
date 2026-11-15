@@ -30,6 +30,7 @@ from business.application.dto_membership import (
     ChangeMemberRoleCommand,
     InviteMemberCommand,
     SetMemberBranchAccessCommand,
+    TransferOwnershipCommand,
 )
 from business.application.factories import BranchFactory, BusinessFactory, OwnerMembershipFactory
 from business.application.membership_access import (
@@ -54,6 +55,7 @@ from business.application.services import (
     ReactivateBranchService,
     RevokeMembershipService,
     SetMemberBranchAccessService,
+    TransferOwnershipService,
     UpdateBranchService,
     UpdateBusinessService,
 )
@@ -111,6 +113,8 @@ __all__ = [
     "RevokeMembershipService",
     "SetMemberBranchAccessCommand",
     "SetMemberBranchAccessService",
+    "TransferOwnershipCommand",
+    "TransferOwnershipService",
     "UpdateBranchCommand",
     "UpdateBranchCommandValidator",
     "UpdateBranchService",

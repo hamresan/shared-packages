@@ -5,7 +5,11 @@ from sqlalchemy import insert, select
 from sqlalchemy.exc import IntegrityError
 
 from business.application.dto import ListBranchesQuery
-from business.application.dto_membership import InviteMemberCommand, SetMemberBranchAccessCommand
+from business.application.dto_membership import (
+    InviteMemberCommand,
+    SetMemberBranchAccessCommand,
+    TransferOwnershipCommand,
+)
 from business.domain.enums import BranchAccessScope, MembershipRole, MembershipStatus
 from business.domain.errors import BranchNotFoundError
 from business.infrastructure.persistence.sqlalchemy import (
@@ -27,6 +31,7 @@ from tests.support.factories import (
     build_invite_member_service,
     build_list_branch_service,
     build_set_member_branch_access_service,
+    build_transfer_ownership_service,
 )
 from tests.support.membership_scenarios import clock, ids, member_actor, owner_actor
 from tests.support.sqlalchemy_environment import SqlAlchemyEnvironment
@@ -135,6 +140,51 @@ async def test_partial_unique_membership_index_and_reinvite(
         await uow.commit()
     async with sqlalchemy_environment.uow() as uow:
         assert len(await uow.memberships.list_for_business(TEST_BUSINESS_ID)) == 2
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_a_second_active_owner(
+    sqlalchemy_environment: SqlAlchemyEnvironment,
+) -> None:
+    async with sqlalchemy_environment.uow() as uow:
+        await uow.businesses.add(build_business())
+        await uow.memberships.add(build_membership())
+        await uow.commit()
+    with pytest.raises(IntegrityError):
+        async with sqlalchemy_environment.uow() as uow:
+            await uow.memberships.add(
+                build_membership(
+                    membership_id=uuid4(), user_id=OTHER_USER_ID, role=MembershipRole.OWNER
+                )
+            )
+            await uow.commit()
+
+
+@pytest.mark.asyncio
+async def test_transfer_ownership_changes_roles_in_one_sql_transaction(
+    sqlalchemy_environment: SqlAlchemyEnvironment,
+) -> None:
+    recipient_id = uuid4()
+    async with sqlalchemy_environment.uow() as uow:
+        await uow.businesses.add(build_business())
+        await uow.memberships.add(build_membership())
+        await uow.memberships.add(
+            build_membership(
+                membership_id=recipient_id, user_id=OTHER_USER_ID, role=MembershipRole.MANAGER
+            )
+        )
+        await uow.commit()
+    result = await build_transfer_ownership_service(
+        sqlalchemy_environment.uow, clock(), ids(uuid4())
+    ).execute(TransferOwnershipCommand(TEST_BUSINESS_ID, recipient_id), actor=owner_actor())
+    assert result.role is MembershipRole.OWNER
+    async with sqlalchemy_environment.uow() as uow:
+        assert await uow.memberships.count_active_owners(TEST_BUSINESS_ID) == 1
+        previous = await uow.memberships.get_for_business(TEST_BUSINESS_ID, TEST_MEMBERSHIP_ID)
+        assert previous is not None and previous.role is MembershipRole.MANAGER
+    async with sqlalchemy_environment.engine.connect() as connection:
+        audits = (await connection.execute(select(MembershipAuditModel))).all()
+        assert len(audits) == 1
 
 
 @pytest.mark.asyncio

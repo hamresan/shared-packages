@@ -7,6 +7,7 @@ from business.application.dto_membership import (
     ChangeMemberRoleCommand,
     InviteMemberCommand,
     SetMemberBranchAccessCommand,
+    TransferOwnershipCommand,
 )
 from business.domain.enums import (
     BranchAccessScope,
@@ -21,6 +22,7 @@ from business.domain.errors import (
     MembershipAlreadyExistsError,
     MembershipInvalidStateError,
     MembershipNotFoundError,
+    OwnershipTransferError,
 )
 from tests.support.builders import (
     OTHER_USER_ID,
@@ -37,6 +39,7 @@ from tests.support.factories import (
     build_list_memberships_service,
     build_revoke_membership_service,
     build_set_member_branch_access_service,
+    build_transfer_ownership_service,
 )
 from tests.support.fakes.unit_of_work import InMemoryBusinessUnitOfWorkFactory
 from tests.support.membership_scenarios import (
@@ -126,20 +129,43 @@ async def test_last_owner_cannot_be_demoted_or_revoked() -> None:
 
 
 @pytest.mark.asyncio
-async def test_promote_member_then_demote_original_owner() -> None:
+async def test_ownership_is_transferred_atomically_and_former_owner_becomes_manager() -> None:
     database = setup_membership_database()
     factory = InMemoryBusinessUnitOfWorkFactory(database)
-    promoted = await build_change_member_role_service(factory, clock(), ids(uuid4())).execute(
-        ChangeMemberRoleCommand(TEST_BUSINESS_ID, MEMBER_ID, MembershipRole.OWNER),
-        actor=owner_actor(),
+    with pytest.raises(MembershipInvalidStateError):
+        await build_change_member_role_service(factory, clock(), ids(uuid4())).execute(
+            ChangeMemberRoleCommand(TEST_BUSINESS_ID, MEMBER_ID, MembershipRole.OWNER),
+            actor=owner_actor(),
+        )
+    promoted = await build_transfer_ownership_service(factory, clock(), ids(uuid4())).execute(
+        TransferOwnershipCommand(TEST_BUSINESS_ID, MEMBER_ID), actor=owner_actor()
     )
+    assert promoted.role is MembershipRole.OWNER
     assert promoted.branch_access_scope is BranchAccessScope.ALL
-    demoted = await build_change_member_role_service(factory, clock(), ids(uuid4())).execute(
-        ChangeMemberRoleCommand(TEST_BUSINESS_ID, TEST_MEMBERSHIP_ID, MembershipRole.MEMBER),
-        actor=owner_actor(),
-    )
-    assert demoted.branch_access_scope is BranchAccessScope.SELECTED
-    assert database.membership_branch_ids[TEST_MEMBERSHIP_ID] == ()
+    assert database.memberships[TEST_MEMBERSHIP_ID].role is MembershipRole.MANAGER
+    assert database.memberships[TEST_MEMBERSHIP_ID].branch_access_scope is BranchAccessScope.ALL
+    assert sum(item.role is MembershipRole.OWNER for item in database.memberships.values()) == 1
+    with pytest.raises(BusinessPermissionDeniedError):
+        await build_transfer_ownership_service(factory, clock(), ids(uuid4())).execute(
+            TransferOwnershipCommand(TEST_BUSINESS_ID, TEST_MEMBERSHIP_ID), actor=owner_actor()
+        )
+
+
+@pytest.mark.asyncio
+async def test_transfer_to_invited_or_self_is_rejected_without_commit() -> None:
+    database = setup_membership_database()
+    factory = InMemoryBusinessUnitOfWorkFactory(database)
+    service = build_transfer_ownership_service(factory, clock(), ids(uuid4()))
+    with pytest.raises(OwnershipTransferError):
+        await service.execute(
+            TransferOwnershipCommand(TEST_BUSINESS_ID, TEST_MEMBERSHIP_ID), actor=owner_actor()
+        )
+    seed_member(database, status=MembershipStatus.INVITED)
+    with pytest.raises(OwnershipTransferError):
+        await service.execute(
+            TransferOwnershipCommand(TEST_BUSINESS_ID, MEMBER_ID), actor=owner_actor()
+        )
+    assert database.commit_count == 0
 
 
 @pytest.mark.asyncio

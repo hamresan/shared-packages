@@ -17,10 +17,10 @@ The package manages business organization and access relationships; it does not 
 | Single-location business | One `Business` with one `Branch`; no special single-branch model needed. |
 | Multi-branch business | One `Business` with multiple independently identified branches. |
 | Multiple businesses per individual | One identity can own or belong to multiple distinct businesses. |
-| Multiple users per business | Several identities can have memberships with different roles. |
+| Multiple users per business | Exactly one active `Owner`, any number of `Manager` and `Member` users. |
 | Non-physical organization | A `Business` can exist before a branch is created; zero branches is valid during setup. |
 
-The business-to-branch relationship is one-to-many. The user-to-business relationship is many-to-many through memberships. Ownership is **a membership role**, not an exclusive `owner_user_id` column or a unique constraint on `user_id`.
+The business-to-branch relationship is one-to-many. The user-to-business relationship is many-to-many through memberships. Ownership is **a membership role**, not an exclusive `owner_user_id` column or a unique constraint on `user_id`. A business has one active Owner through the supported use cases; a database index prevents a second active Owner. The same user may own several different businesses.
 
 ## Core models and access extensions
 
@@ -34,17 +34,17 @@ Belongs to exactly one business and has its own UUID, name, optional address/con
 
 ### BusinessMembership
 
-Links an external identity `user_id` to a business, with a role and membership status. The same identity may have multiple memberships, including ownership in several businesses. An active business must not accidentally lose its final active owner.
+Links an external identity `user_id` to a business, with a role and membership status. Roles are `Owner`, `Manager`, and `Member`. Ownership changes only through an atomic transfer to another active member. The former Owner becomes a Manager.
 
 ### Branch access (narrow extension)
 
-Some applications need to restrict a member to selected branches. `BranchAccessScope.ALL` gives an active member access to the business's branches; `BranchAccessScope.SELECTED` uses an explicit membership-to-branch association. **An empty selected list means zero accessible branches**, not unrestricted access. Owners always have full branch visibility. Every selected branch ID is validated against the membership's business before the change is committed.
+Some applications need to restrict a member to selected branches. `BranchAccessScope.ALL` gives an active member access to the business's branches; `BranchAccessScope.SELECTED` uses an explicit membership-to-branch association. **An empty selected list means zero accessible branches**, not unrestricted access. Owners and Managers always have full branch visibility. Every selected branch ID is validated against the membership's business before the change is committed.
 
 ## Employee management boundary
 
 The package distinguishes **organization membership** from **employment**:
 
-- **In scope:** authenticated users' memberships, owner/member roles, invitation and membership status, and optional access to specific branches.
+- **In scope:** authenticated users' memberships, owner/manager/member roles, invitation and membership status, and optional access to specific branches.
 - **Out of scope:** employee records without user accounts, contracts, payroll, attendance, leave, professional qualifications, shift planning, resource capacity, and operational assignments.
 
 An employee may not have a login, and a business member may not be an employee. Keeping these concepts separate prevents unrelated applications from inheriting a workforce-management system. Applications can build their own staff domain or use a dedicated workforce package when there is proven shared demand.
@@ -99,7 +99,7 @@ The package exposes framework-independent primitives and use cases:
 - `BranchAddress` includes optional `city` and `country_code`, and `BranchContact`
   supports optional phone/email. A physical address is not required to create a branch.
 - Branch creation, updates, archival, and reactivation require an active business
-  owner and a non-archived parent business. Active business members can read its
+  Owner or Manager and a non-archived parent business. Active business members can read its
   branches within the member's configured branch access scope.
 - A branch's `business_id` is never mutable through the public use cases.
   Cross-business branch lookup and write operations are rejected, and archived
@@ -109,9 +109,13 @@ The package exposes framework-independent primitives and use cases:
   issuing credentials or sending messages); `AcceptMembershipService` accepts it
   only for that trusted actor. Invited users cannot read business resources.
 - `ListMembershipsService`, `ChangeMemberRoleService`, `RevokeMembershipService`
-  and `SetMemberBranchAccessService` are owner-only operations. The final active
-  owner cannot be demoted or revoked. Promoting a member to owner grants all
-  branches; demotion resets branch visibility to an empty selected list.
+  and `SetMemberBranchAccessService` are Owner-only operations. General role changes
+  switch between Manager and Member; Manager has full branch visibility and Member
+  starts with an empty selected list when demoted.
+- `TransferOwnershipService` is the only supported way to change Owner. The
+  recipient must be an active member of that business. The former Owner becomes
+  a Manager, both role updates and the audit entry commit atomically, and the
+  current Owner cannot be revoked or demoted through ordinary membership operations.
 - Membership changes and branch assignments are committed together with
   structured `MembershipAuditRecord` entries. A revoked user can be re-invited
   as a new membership while historical revoked memberships remain recorded.
@@ -136,7 +140,8 @@ without commit rolls it back. A partial unique index rejects duplicate current
 
 The membership-change lock uses PostgreSQL `SELECT ... FOR UPDATE` on the
 business row, and owner authorization is rechecked after taking the lock to
-avoid a stale-permission race. SQLite supports functional/integrity tests but
+avoid a stale-permission race. A partial database index also prevents two
+active Owners in the same business. SQLite supports functional/integrity tests but
 does **not** provide equivalent row-lock semantics. PostgreSQL concurrency
 tests require `BUSINESS_TEST_POSTGRES_DSN`; GitHub Actions provisions a
 PostgreSQL service for them.

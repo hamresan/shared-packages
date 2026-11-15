@@ -29,7 +29,7 @@ class MembershipBranchVisibility:
         self, uow: BusinessUnitOfWork, membership: BusinessMembership
     ) -> tuple[UUID, ...] | None:
         if (
-            membership.role is MembershipRole.OWNER
+            membership.role in (MembershipRole.OWNER, MembershipRole.MANAGER)
             or membership.branch_access_scope is BranchAccessScope.ALL
         ):
             return None

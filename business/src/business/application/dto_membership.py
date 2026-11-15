@@ -23,3 +23,9 @@ class SetMemberBranchAccessCommand:
     membership_id: UUID
     scope: BranchAccessScope
     branch_ids: tuple[UUID, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class TransferOwnershipCommand:
+    business_id: UUID
+    recipient_membership_id: UUID

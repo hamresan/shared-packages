@@ -13,6 +13,7 @@ class BranchStatus(StrEnum):
 
 class MembershipRole(StrEnum):
     OWNER = "owner"
+    MANAGER = "manager"
     MEMBER = "member"
 
 
@@ -33,3 +34,4 @@ class MembershipAuditAction(StrEnum):
     ROLE_CHANGED = "role_changed"
     REVOKED = "revoked"
     BRANCH_ACCESS_CHANGED = "branch_access_changed"
+    OWNERSHIP_TRANSFERRED = "ownership_transferred"

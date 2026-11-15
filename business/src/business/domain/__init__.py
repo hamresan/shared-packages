@@ -19,6 +19,7 @@ from business.domain.errors import (
     MembershipAlreadyExistsError,
     MembershipInvalidStateError,
     MembershipNotFoundError,
+    OwnershipTransferError,
 )
 from business.domain.membership import BusinessMembership
 from business.domain.membership_access import MembershipBranchAccess
@@ -64,6 +65,7 @@ __all__ = [
     "MembershipAlreadyExistsError",
     "MembershipInvalidStateError",
     "MembershipNotFoundError",
+    "OwnershipTransferError",
     "LastActiveOwnerError",
     "MembershipStatus",
     "TimeZoneValidator",
