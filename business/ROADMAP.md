@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 5 SQLAlchemy adapter and database constraints implemented; Stage 6 onward pending. PostgreSQL concurrency test is configured in CI but requires a running PostgreSQL server to execute.
+> **Status:** Stage 6 FastAPI adapter and Identity/Notification JWT host integration implemented; Stage 7 hardening pending. PostgreSQL concurrency test is configured in CI and requires a running PostgreSQL server.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -125,14 +125,14 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 2. Compose `hamresan-identity` with `hamresan-notification` in a small consumer example: OTP registration/login, session/JWT validation, then trusted `AuthenticatedActor` mapping.
 3. Keep Identity responsible for OTP codes, sessions and tokens. Keep Notification responsible for provider-neutral message delivery.
 4. If invitations need delivery, inject a notification contract or let the host coordinate it. Do not implement OTP, SMTP, queues or workers inside Business.
-5. Test cross-business authorization at the HTTP boundary. Never take owner/user IDs or member roles from untrusted request bodies.
+5. Test cross-business authorization at the HTTP boundary. Derive the acting user's identity from trusted authentication only; authorize requested invitees and role changes through business policies, never through the request body alone.
 
 ### Gate
 
-- [ ] Example authenticates through the shared Identity public API and uses Notification for OTP delivery.
-- [ ] Authenticated users can switch between their authorized businesses and branches.
-- [ ] Unauthorized or revoked members receive safe, deterministic failures.
-- [ ] OTP/session/token code is not duplicated in the Business package.
+- [x] Example authenticates through Identity OTP and signed JWT/session APIs; Notification queues OTP delivery.
+- [x] Authenticated users can access their authorized businesses and branches, and Manager branch operations are enforced.
+- [x] Unauthorized, foreign-business and revoked members receive safe, deterministic HTTP failures.
+- [x] OTP/session/token code remains inside Identity; the Business adapter accepts a trusted actor dependency.
 
 ## Stage 7 — Hardening and distribution
 

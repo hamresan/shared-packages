@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 5 async SQLAlchemy persistence implemented.** The source is locally installable, but no distribution has been published. HTTP integration remains planned for [Stage 6](ROADMAP.md). PostgreSQL concurrency verification runs in CI; local tests skip it unless a PostgreSQL DSN is provided.
+> **Status: Stage 6 FastAPI adapter and Identity/Notification host composition implemented.** The source is locally installable, but no distribution has been published. Stage 7 hardening remains. PostgreSQL concurrency verification is configured for CI; local tests skip it unless a PostgreSQL DSN is provided.
 
 ## Purpose
 
@@ -175,8 +175,29 @@ associations) and the partial unique membership index during migrations.
 SQLite integration tests run by default; set `BUSINESS_TEST_POSTGRES_DSN` to a
 dedicated test database URL to exercise the PostgreSQL concurrency scenario.
 Each PostgreSQL test uses and drops its own uniquely named schema.
-- Branch-scoped membership visibility applies to `GetBranchService` and
-  `ListBranchesService`; other branch mutations remain owner-only.
+
+### FastAPI composition (Stage 6)
+
+Install the optional `hamresan-business[fastapi]` extra. Build business, branch
+and membership use cases via `BusinessApplicationFactory` using the injected
+Unit of Work, clock, and identifier generator. Then pass the explicit use-case
+groups and a trusted `AuthenticatedActorDependency` to
+`business.presentation.build_fastapi_business_adapter(...)` and call
+`adapter.install(app)`. Business never validates JWTs or issues OTPs itself.
+
+The API includes business create/list/get/update/archive; branch
+create/list/get/update/archive/reactivate with optional city/country filters;
+membership invite/accept/list/role/branch-access/revoke; and atomic ownership
+transfer. Request bodies forbid undeclared fields. Only the trusted actor
+dependency supplies the acting user's identity, and the application use cases
+enforce tenant and membership authorization.
+
+See [`examples/identity_business_consumer`](../examples/identity_business_consumer)
+for the tested host composition of Identity OTP registration, Notification
+queue, signed JWT/session validation, and Business routes. This sample has a
+capturing notification queue for tests, **not a production delivery worker**.
+The host must validate invited user IDs against its Identity user records and
+decide how to send invitation notifications.
 
 From this directory, install the locked development environment and run quality checks:
 
