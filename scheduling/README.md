@@ -2,10 +2,11 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: Stages 1–3 pure core implemented.** The distribution installs, calendar snapshots
-> are validated, and the advisory availability engine has deterministic tests. Calendar
-> management CRUD, persistence, and HTTP integration remain **unimplemented**. See
-> [ROADMAP.md](ROADMAP.md) for the staged delivery and outstanding integration gates.
+> **Status: Stages 1–4 implemented with in-memory contract tests.** The distribution
+> installs, calendar snapshots are validated, the advisory availability engine is pure,
+> and authorized calendar-management use cases are implemented. PostgreSQL/SQLAlchemy
+> persistence and HTTP integration remain **unimplemented**. See [ROADMAP.md](ROADMAP.md)
+> for the outstanding integration gates.
 
 ## Current installation and development
 
@@ -27,6 +28,34 @@ The implemented calendar configuration objects are exported from
 `scheduling.domain.calendar`. `AvailabilityRequest`, `BusyInterval`, `AvailableSlot`, and
 `calculate_availability` are exported from `scheduling.engine`. The engine is purely
 computational: it does **not** reserve inventory or fetch authoritative bookings.
+
+## Implemented calendar management API
+
+`scheduling.application.use_cases` exports focused asynchronous operations:
+
+| Use case | Purpose |
+| --- | --- |
+| `CreateCalendar` | Create one authorized, active calendar at version 1. |
+| `GetCalendar` / `ListCalendars` | Read within the actor's trusted tenant and an authorized scope. |
+| `UpdateWeeklySchedule` | Replace recurring hours with an expected version. |
+| `SetDateException` / `RemoveDateException` | Add, replace or remove a closure/date override. |
+| `AddBlockedPeriod` / `RemoveBlockedPeriod` | Update explicit unavailable intervals. |
+| `ArchiveCalendar` | Archive without changing stable identity or deleting history. |
+
+The host injects `CalendarUnitOfWorkFactory` and `CalendarAuthorizer` implementations
+through contracts exported by `scheduling.application.contracts`. The `TrustedActor`
+value in `scheduling.application.models` must be constructed by the **host** from a
+verified authentication/tenant context, never from untrusted request fields.
+
+Reads and writes are tenant-scoped. Permission checks use the host-provided authorizer;
+it must verify ownership/relationships for external organization/location/resource IDs.
+Writes require the caller's `expected_version`; the repository's Unit of Work must enforce
+an **atomic compare-and-swap at commit** to prevent lost updates. Management errors
+are exported by `scheduling.application.errors`. An archived calendar cannot be modified.
+
+The current test suite supplies a dedicated transactional in-memory fake; it is a test
+implementation, **not** a production persistence adapter. Real PostgreSQL concurrency,
+transaction rollback, Alembic composition, and migration tests belong to Stage 5.
 
 ## Purpose
 
@@ -111,10 +140,11 @@ The current pure engine supports:
 
 ## Persistence and host integration
 
-The package will offer a small calendar-management application API and two ways to use it:
+The implemented calendar-management application API is designed for two integration modes:
 
 1. **In-memory/injected adapters:** for tests, lightweight hosts, and callers that already manage their own calendar records.
-2. **Optional async SQLAlchemy persistence:** repository and Unit of Work adapters implementing explicit contracts for managed calendars, schedules, and exceptions.
+2. **Optional async SQLAlchemy persistence (planned Stage 5):** repository and Unit of Work
+   adapters implementing explicit contracts for managed calendars, schedules, and exceptions.
 
 In both modes:
 
@@ -150,13 +180,13 @@ agreeing with another scheduler's output.
 - Mirrored test folders; dedicated fake repositories, factories, and builders in separate support modules.
 - Ruff, strict Pyright, pytest, CI, a committed `uv.lock` and build/install verification.
 
-## Planned public usage
+## Public host workflow
 
 1. The host obtains trusted tenant/owner scope and relevant calendars (either from its own data source or the optional managed persistence adapter).
 2. The host determines eligible resources and effective activity duration and supplies current occupied intervals.
 3. The availability engine calculates resource-specific candidate slots and returns typed results.
 4. The host performs any final reservation through its own authoritative transactional system.
 
-The pure slot-query API is implemented as described above. Calendar-management CRUD,
-provider persistence, and HTTP endpoints are deferred until their roadmap stages are
-implemented and tested.
+The pure slot-query and calendar-management use cases are implemented as described above.
+Production database adapters, host authorization implementations, and HTTP endpoints are
+deferred until their roadmap stages are implemented and tested.

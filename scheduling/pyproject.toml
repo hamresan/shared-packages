@@ -15,6 +15,7 @@ dev = [
   "build>=1.2,<2",
   "pyright>=1.1,<2",
   "pytest>=8,<10",
+  "pytest-asyncio>=0.24,<2",
   "pytest-cov>=6,<8",
   "ruff>=0.9,<1",
 ]
@@ -24,6 +25,8 @@ packages = ["src/scheduling"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "--cov=scheduling --cov-branch --cov-report=term-missing --cov-fail-under=85"
 
 [tool.coverage.run]

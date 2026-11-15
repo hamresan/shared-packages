@@ -1,8 +1,8 @@
 # hamresan-scheduling — staged implementation roadmap
 
-> **Status:** Stage 1 foundation, Stage 2 calendar snapshot domain, and initial Stage 3
-> deterministic calculation engine are implemented and locally tested. Stage 4+ managed
-> calendar operations, database adapters, and host integration are not implemented.
+> **Status:** Stages 1–4 (including authorization-aware, versioned calendar use cases)
+> are locally implemented and tested. Stage 5 PostgreSQL persistence, Stage 6 host/API
+> integration, and Stage 7 release hardening remain unimplemented.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -129,9 +129,17 @@ and final confirmation of the slot-grid policy remain release gates.
 
 ### Gate
 
-- [ ] Calendar changes are validated, scoped and independently testable with fake repositories.
-- [ ] Cross-tenant or cross-resource mutation attempts fail safely.
-- [ ] Conflicting edits cannot silently overwrite newer calendars.
+- [x] Calendar mutations are validated, tenant-scoped, and tested through injected
+      transactional repository/Unit of Work fakes.
+- [x] Cross-tenant reads/creates and unauthorized scope mutations fail safely.
+- [x] Conflicting edits and duplicate creates are rejected atomically by the test
+      contract implementation; optimistic versions cannot silently overwrite updates.
+
+The real SQLAlchemy adapter must enforce the **same atomic CAS and scope/uniqueness
+invariants at the database level** in Stage 5. Current fake-backed tests are not a
+substitute for PostgreSQL concurrency tests. Public application contracts now include
+`CalendarRepository`, `CalendarUnitOfWorkFactory`, and a host-injected
+`CalendarAuthorizer`, with verified host actor context.
 
 ## Stage 5 — Optional persistence
 
