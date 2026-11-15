@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "business/**"
+      - "examples/identity_business_consumer/**"
       - ".github/workflows/business-ci.yml"
   push:
     branches: [main]
     paths:
       - "business/**"
+      - "examples/identity_business_consumer/**"
       - ".github/workflows/business-ci.yml"
 
 jobs:
@@ -51,3 +53,13 @@ jobs:
           python -m venv "$RUNNER_TEMP/business-wheel-check"
           "$RUNNER_TEMP/business-wheel-check/bin/python" -m pip install dist/*.whl
           "$RUNNER_TEMP/business-wheel-check/bin/python" -c "from business import BranchAddress; assert BranchAddress(city='Muscat').city == 'Muscat'"
+      - name: Install composed Identity/Notification/Business example
+        working-directory: examples/identity_business_consumer
+        run: uv sync --extra test --locked
+      - name: Verify OTP/JWT integration and example typing
+        working-directory: examples/identity_business_consumer
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync pyright
+          uv run --no-sync pytest -q
