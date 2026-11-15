@@ -1,8 +1,9 @@
 # hamresan-scheduling — staged implementation roadmap
 
-> **Status:** Stages 1–4 (including authorization-aware, versioned calendar use cases)
-> are locally implemented and tested. Stage 5 PostgreSQL persistence, Stage 6 host/API
-> integration, and Stage 7 release hardening remain unimplemented.
+> **Status:** Stages 1–4 are implemented and tested. Stage 5 optional async SQLAlchemy
+> persistence is implemented with local transactional SQL tests; a dedicated PostgreSQL
+> concurrency and Alembic integration job has been added to CI, pending confirmation
+> of its remote result. Stage 6 host/API integration and Stage 7 release hardening remain.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -153,9 +154,24 @@ substitute for PostgreSQL concurrency tests. Public application contracts now in
 
 ### Gate
 
-- [ ] Managed calendars survive process restarts and round-trip without losing timezone or exception information.
-- [ ] Host-composed Alembic autogeneration and migrations work alongside unrelated package metadata.
-- [ ] Core engine can be used without installing SQLAlchemy.
+- [x] Calendar snapshots round-trip through a real SQL-backed repository across sessions,
+      including IANA timezone, exceptions, closures, blocked periods, version and archive state.
+- [x] SQL-backed tenant isolation, rollback, duplicate identity rejection and atomic
+      compare-and-swap are covered by local integration tests.
+- [x] Host-supplied async session factory; SQLAlchemy remains an optional extra and is
+      absent from core domain/application imports.
+- [x] Real PostgreSQL concurrency and Alembic mixed-metadata integration tests are
+      configured as a required separate CI job.
+- [ ] Verify that the PostgreSQL CI job executes successfully on the pull-request branch.
+- [ ] Verify a consumer-owned Alembic revision/autogenerate-and-upgrade lifecycle with
+      a second unrelated application schema (Stage 6 consumer example).
+
+The new SQLAlchemy adapter stores only calendar configuration in
+`scheduling_calendars`. PostgreSQL uses JSONB for typed snapshot data, a composite
+tenant/calendar primary key, a tenant/scope uniqueness constraint, and a version-guarded
+SQL update. No package-owned engine, credentials, migration revision history, or booking
+storage were introduced. Local SQLite exercises real SQL transactions; its tests are
+not presented as PostgreSQL concurrency proof.
 
 ## Stage 6 — Optional FastAPI adapter and consumer example
 

@@ -2,11 +2,10 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: Stages 1–4 implemented with in-memory contract tests.** The distribution
-> installs, calendar snapshots are validated, the advisory availability engine is pure,
-> and authorized calendar-management use cases are implemented. PostgreSQL/SQLAlchemy
-> persistence and HTTP integration remain **unimplemented**. See [ROADMAP.md](ROADMAP.md)
-> for the outstanding integration gates.
+> **Status: Stages 1–4 complete; Stage 5 adapter implemented.** Optional SQLAlchemy
+> persistence and PostgreSQL-only integration tests have been added. PostgreSQL tests
+> run in the dedicated CI job; host adoption and migration review remain release gates.
+> HTTP integration is Stage 6. See [ROADMAP.md](ROADMAP.md).
 
 ## Current installation and development
 
@@ -53,9 +52,9 @@ Writes require the caller's `expected_version`; the repository's Unit of Work mu
 an **atomic compare-and-swap at commit** to prevent lost updates. Management errors
 are exported by `scheduling.application.errors`. An archived calendar cannot be modified.
 
-The current test suite supplies a dedicated transactional in-memory fake; it is a test
-implementation, **not** a production persistence adapter. Real PostgreSQL concurrency,
-transaction rollback, Alembic composition, and migration tests belong to Stage 5.
+The test suite supplies a dedicated transactional in-memory fake and exercises the optional
+SQLAlchemy adapter with real SQL transactions. A dedicated PostgreSQL CI job tests concurrent
+version conflicts and mixed host/package Alembic metadata.
 
 ## Purpose
 
@@ -143,12 +142,13 @@ The current pure engine supports:
 The implemented calendar-management application API is designed for two integration modes:
 
 1. **In-memory/injected adapters:** for tests, lightweight hosts, and callers that already manage their own calendar records.
-2. **Optional async SQLAlchemy persistence (planned Stage 5):** repository and Unit of Work
-   adapters implementing explicit contracts for managed calendars, schedules, and exceptions.
+2. **Optional async SQLAlchemy persistence (Stage 5):** repository and Unit of Work
+   adapters implementing the same calendar-management contracts.
 
 In both modes:
 
-- The **host** owns database connections, async session lifecycle, deployment, and Alembic revision history.
+- The **host** owns database engines, session-factory configuration, deployment, and Alembic
+  revision history. A Unit of Work owns and closes each session it obtains from the factory.
 - SQLAlchemy adapters receive a host-supplied session factory. Migrations are composed through public metadata helpers and package-prefixed tables (`scheduling_*`).
 - The package never imports host-specific Business, Identity, Employee, or Reservation entities or their persistence models.
 - The host supplies trusted tenant and actor scope. Calendar-management use cases enforce authorization through injected contracts/policies rather than trusting arbitrary request fields.
@@ -188,5 +188,33 @@ agreeing with another scheduler's output.
 4. The host performs any final reservation through its own authoritative transactional system.
 
 The pure slot-query and calendar-management use cases are implemented as described above.
-Production database adapters, host authorization implementations, and HTTP endpoints are
-deferred until their roadmap stages are implemented and tested.
+Host authorization implementations and HTTP endpoints remain application responsibilities
+or later roadmap work.
+
+## Optional SQLAlchemy persistence integration
+
+Install `hamresan-scheduling[persistence]` for the async persistence adapter, or
+`hamresan-scheduling[migrations]` for Alembic composition. Neither dependency is loaded by
+the pure calculation engine.
+
+The host constructs its own `async_sessionmaker` and injects it into
+`SqlAlchemyCalendarUnitOfWorkFactory`, alongside a
+`SqlAlchemyCalendarRepositoryFactory(CalendarPersistenceMapper())`. These types are
+exported by `scheduling.infrastructure.persistence.sqlalchemy`. The resulting factory
+fulfills the public `CalendarUnitOfWorkFactory` contract and can be passed unchanged to
+calendar-management use cases. The host's `CalendarAuthorizer` remains mandatory for
+authorization; persistence is **not** a substitute for it.
+
+The host adds `scheduling_metadata()` to its Alembic `target_metadata` sequence and
+generates/reviews its own revision files. `is_scheduling_table` is an optional table-name
+predicate for the host's migration filters; it must be composed with any existing host
+filters. The package provides **no** auto-running migrations. The table
+`scheduling_calendars` has tenant-scoped identifiers and a unique tenant/scope key,
+optimistic version checks, JSONB configuration snapshots on PostgreSQL, and an archive
+flag. There are no booking, slot-cache, or reservation tables.
+
+For local adapter tests run `uv run --frozen pytest tests/infrastructure/persistence/sqlalchemy`.
+To exercise the real PostgreSQL integration suite, set
+`SCHEDULING_TEST_POSTGRES_URL=postgresql+asyncpg://...` to a dedicated disposable test
+database; the integration fixtures recreate the scheduling tables. The PostgreSQL CI
+job provisions its own disposable server.

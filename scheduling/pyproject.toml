@@ -10,14 +10,22 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["tzdata>=2025.2; sys_platform == 'win32'"]
 
+[project.optional-dependencies]
+persistence = ["sqlalchemy[asyncio]>=2.0,<3"]
+migrations = ["alembic>=1.14,<2", "sqlalchemy[asyncio]>=2.0,<3"]
+
 [dependency-groups]
 dev = [
   "build>=1.2,<2",
+  "aiosqlite>=0.20,<1",
+  "asyncpg>=0.30,<1",
+  "alembic>=1.14,<2",
   "pyright>=1.1,<2",
   "pytest>=8,<10",
   "pytest-asyncio>=0.24,<2",
   "pytest-cov>=6,<8",
   "ruff>=0.9,<1",
+  "sqlalchemy[asyncio]>=2.0,<3",
 ]
 
 [tool.hatch.build.targets.wheel]

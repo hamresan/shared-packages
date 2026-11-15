@@ -34,3 +34,36 @@ jobs:
           uv venv .wheel-smoke --python 3.12
           uv pip install --python .wheel-smoke/bin/python dist/*.whl
           .wheel-smoke/bin/python tests/packaging/smoke_install.py
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: scheduling_test
+          POSTGRES_PASSWORD: scheduling_test
+          POSTGRES_DB: scheduling_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U scheduling_test -d scheduling_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: scheduling
+    env:
+      SCHEDULING_TEST_POSTGRES_URL: postgresql+asyncpg://scheduling_test:scheduling_test@localhost:5432/scheduling_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install locked development dependencies
+        run: uv sync --frozen --group dev
+      - name: Run PostgreSQL integration gates
+        run: uv run --frozen pytest -q tests/infrastructure/persistence/sqlalchemy/test_postgresql.py
