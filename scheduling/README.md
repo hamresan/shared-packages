@@ -2,10 +2,10 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: Stages 1–4 complete; Stage 5 adapter implemented.** Optional SQLAlchemy
-> persistence and PostgreSQL-only integration tests have been added. PostgreSQL tests
-> run in the dedicated CI job; host adoption and migration review remain release gates.
-> HTTP integration is Stage 6. See [ROADMAP.md](ROADMAP.md).
+> **Status: Stages 1–6 implemented.** Calendar management, advisory availability,
+> optional SQLAlchemy persistence, optional FastAPI endpoints, and a consumer example
+> have automated tests. Real PostgreSQL and host-owned Alembic upgrade verification
+> remain release gates. See [ROADMAP.md](ROADMAP.md).
 
 ## Current installation and development
 
@@ -188,8 +188,8 @@ agreeing with another scheduler's output.
 4. The host performs any final reservation through its own authoritative transactional system.
 
 The pure slot-query and calendar-management use cases are implemented as described above.
-Host authorization implementations and HTTP endpoints remain application responsibilities
-or later roadmap work.
+The host owns authentication and scope authorization; the optional FastAPI transport
+adapter is provided in Stage 6.
 
 ## Optional SQLAlchemy persistence integration
 
@@ -218,3 +218,29 @@ To exercise the real PostgreSQL integration suite, set
 `SCHEDULING_TEST_POSTGRES_URL=postgresql+asyncpg://...` to a dedicated disposable test
 database; the integration fixtures recreate the scheduling tables. The PostgreSQL CI
 job provisions its own disposable server.
+
+## Optional FastAPI host integration
+
+Install `hamresan-scheduling[api]` to enable the HTTP adapter. The host supplies all
+dependencies to `CalendarHttpDependencies` and mounts `create_calendar_router(deps)` on
+its own FastAPI application. Call `install_calendar_error_handlers(app)` once to map
+domain/application failures to HTTP status codes. These functions are exported by
+`scheduling.infrastructure.api.fastapi`. Importing the pure domain/engine does not
+load FastAPI or SQLAlchemy.
+
+Endpoints under `/scheduling` include create/read/list calendars, replace weekly
+schedules, set/remove date exceptions, add/remove blocked periods, archive a calendar,
+and query advisory availability. Update requests require an `expected_version`.
+Requests cannot choose their tenant or authenticated actor: the host injects
+`get_actor` and must verify authorization with its `CalendarAuthorizer`. The router
+uses dedicated Pydantic DTOs and mappers; no persistence or domain logic lives in
+route functions. The host injects a `Clock` for authoritative current time and a
+`BusyIntervalReader` for real external booking occupancy, rather than trusting
+client-supplied busy periods.
+
+The runnable example under [examples/fastapi_host](examples/fastapi_host/README.md)
+uses an authenticated demo principal, two locations, two resources, a host-owned
+SQLite/SQLAlchemy session factory, and host-controlled lifecycle. Replace its
+demo API key and empty busy reader with production authentication and booking
+integration. Run mirrored HTTP acceptance tests with
+`uv run --frozen pytest tests/infrastructure/api/fastapi tests/examples`.

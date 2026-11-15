@@ -1,9 +1,10 @@
 # hamresan-scheduling — staged implementation roadmap
 
 > **Status:** Stages 1–4 are implemented and tested. Stage 5 optional async SQLAlchemy
-> persistence is implemented with local transactional SQL tests; a dedicated PostgreSQL
-> concurrency and Alembic integration job has been added to CI, pending confirmation
-> of its remote result. Stage 6 host/API integration and Stage 7 release hardening remain.
+> persistence is locally tested, with remote PostgreSQL CI confirmation outstanding.
+> Stage 6 optional FastAPI adapter and independent consumer example are implemented
+> with HTTP integration tests, pending final consumer/PostgreSQL migration validation.
+> Stage 7 release hardening remains.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -184,9 +185,23 @@ not presented as PostgreSQL concurrency proof.
 
 ### Gate
 
-- [ ] Example host can manage two locations and independently scheduled resources.
-- [ ] API authorization rejects cross-tenant access and untrusted scope changes.
-- [ ] Availability remains advisory and no endpoint pretends to reserve inventory atomically.
+- [x] A separate example host configures its own SQLAlchemy session factory, API-key
+      authentication, authorization, two locations, resources, and database lifecycle.
+- [x] All calendar operations are available through optional FastAPI endpoints with
+      explicit request/response DTOs, transport mappers, and application use cases.
+- [x] Authentication, forbidden scope access, ignored user-supplied tenant fields,
+      version conflicts, and invalid schedules are exercised through HTTP requests.
+- [x] Independently scheduled resources and externally supplied busy intervals are
+      tested through HTTP against both in-memory and real SQL-backed repositories.
+- [x] Availability remains advisory; no API endpoint creates or reserves appointments.
+- [ ] Confirm a production consumer's own Alembic autogenerate/revision/upgrade path
+      against PostgreSQL (remaining Stage 5/6 cross-integration gate).
+
+The FastAPI integration requires the optional `api` extra. `FindAvailability` performs
+host-authorized calendar reads and requests authoritative external busy periods through
+an injected `BusyIntervalReader`; the endpoint does not trust caller-supplied bookings,
+current time, actor, or tenant identity. The example explicitly labels demo API keys
+and create-all as unsuitable for production authentication or migration practices.
 
 ## Stage 7 — Hardening and release readiness
 

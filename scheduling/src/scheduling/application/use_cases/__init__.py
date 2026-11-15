@@ -3,6 +3,7 @@
 from .add_blocked_period import AddBlockedPeriod
 from .archive_calendar import ArchiveCalendar
 from .create_calendar import CreateCalendar
+from .find_availability import FindAvailability
 from .get_calendar import GetCalendar
 from .list_calendars import ListCalendars
 from .remove_blocked_period import RemoveBlockedPeriod
@@ -14,6 +15,7 @@ __all__ = [
     "AddBlockedPeriod",
     "ArchiveCalendar",
     "CreateCalendar",
+    "FindAvailability",
     "GetCalendar",
     "ListCalendars",
     "RemoveBlockedPeriod",
