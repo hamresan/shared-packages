@@ -92,6 +92,10 @@ async def test_denied_unauthenticated_and_untrusted_scope(
     payload = calendar_payload("resource", "resource-1")
     payload["tenant_id"] = "tenant-b"
 
+    untrusted_tenant = await client.post("/scheduling/calendars", json=payload)
+    assert untrusted_tenant.status_code == 422
+
+    payload.pop("tenant_id")
     denied = await client.post("/scheduling/calendars", json=payload)
     assert denied.status_code == 403
 

@@ -1,0 +1,51 @@
+# Stage 7 correctness, dependency and security audit
+
+This is an implementation review, not an external security audit or a production
+release approval. All commands should be run against the branch in
+`hamresan/shared-packages` and the `scheduling/` package root.
+
+## Verified locally
+
+- Independent golden expectations for resource-specific shifts, organization annual
+  closure veto, location date overrides, overnight working hours, and full-buffer fit.
+  Existing regression tests also cover DST gaps/folds, archived calendars, external
+  busy intervals, minimum notice, and date/tenant validations.
+- Two distinct consumer contexts (clinical staff and meeting rooms) using only public
+  domain/engine types, independent of any host entity models.
+- Thin HTTP adapter depends on injected application use cases, an authenticated host
+  actor, an authoritative clock, and a host-supplied busy interval reader. Unknown
+  HTTP fields such as a client-supplied `tenant_id` are rejected.
+- Persistence uses host-owned SQLAlchemy async sessions, tenant-filtered repository
+  access, an atomic version-conditioned SQL update, and a unique tenant/scope
+  constraint. No reservation, payment or customer records are stored.
+- Core remains free of SQLAlchemy and FastAPI runtime dependencies. A clean wheel
+  installation with the optional API, persistence and migration extras can import
+  each public adapter without the development environment.
+- The PostgreSQL CI job now uses `--no-cov` for its focused integration test subset;
+  overall branch coverage remains enforced by the full `make check` job. This fixes
+  a CI-only false failure that occurs when applying whole-package thresholds to only
+  three integration tests.
+- Performance measurements use fixed workloads and explicitly report instrumented
+  elapsed time and traced Python allocation, with no hardware-independent SLA claim.
+
+## Boundaries that still require external verification
+
+1. GitHub Actions jobs are not considered green until GitHub reports their outcomes.
+2. The user reported **147 passing tests with 98.78% combined coverage**, including
+   PostgreSQL integration. The local execution environment has no PostgreSQL service;
+   its local focused suite correctly skips those server-only tests.
+3. An independent production-style host must generate, review and apply an actual
+   Alembic revision/upgrade on its PostgreSQL database, alongside an unrelated host
+   schema. Current PostgreSQL integration checks SQLAlchemy concurrency and migration
+   metadata compatibility, not a deployed host revision lifecycle.
+4. The demo host uses an environment-supplied test API key and an empty occupied-period
+   reader. Real authentication, permission relationships, booking conflict enforcement,
+   deployment secrets, rate limiting and observability are owned by the consuming host.
+5. The advisory engine does not atomically reserve resources. Before authoritative
+   booking, host applications must revalidate availability and enforce collision rules.
+
+## Release recommendation
+
+Keep the PR in draft pending actual GitHub CI verification and the consumer-owned
+Alembic migration acceptance test. No package release or version bump should imply
+those gates are complete. See [ROADMAP.md](ROADMAP.md) and [BENCHMARKS.md](BENCHMARKS.md).

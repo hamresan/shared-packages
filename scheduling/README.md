@@ -4,8 +4,9 @@ Reusable calendar management and time-based availability calculation for Python 
 
 > **Status: Stages 1–6 implemented.** Calendar management, advisory availability,
 > optional SQLAlchemy persistence, optional FastAPI endpoints, and a consumer example
-> have automated tests. Real PostgreSQL and host-owned Alembic upgrade verification
-> remain release gates. See [ROADMAP.md](ROADMAP.md).
+> have automated tests. PostgreSQL integration was reported passing by the consumer;
+> remote CI and host-owned Alembic upgrade verification remain release gates.
+> Stage 7 regression and benchmark evidence is documented. See [ROADMAP.md](ROADMAP.md).
 
 ## Current installation and development
 
@@ -244,3 +245,18 @@ SQLite/SQLAlchemy session factory, and host-controlled lifecycle. Replace its
 demo API key and empty busy reader with production authentication and booking
 integration. Run mirrored HTTP acceptance tests with
 `uv run --frozen pytest tests/infrastructure/api/fastapi tests/examples`.
+
+## Stage 7 verification and performance
+
+Run `make check` for Ruff, formatting, strict Pyright, full branch-coverage tests and
+wheel/sdist build. For a focused subset of tests, use `--no-cov` so the full-project
+85% threshold is not mistakenly applied to only one module. With a dedicated
+PostgreSQL test database configured in `SCHEDULING_TEST_POSTGRES_URL`, the full test
+suite also runs the PostgreSQL integration cases.
+
+Run `make benchmark` to measure the pure availability engine on deterministic pools of
+10, 50 and 100 resources across 7 and 31 days. Recorded sample timings and memory
+methodology are in [BENCHMARKS.md](BENCHMARKS.md). See
+[HARDENING.md](HARDENING.md) for the exact security/dependency audit and outstanding
+release blockers. The package is not declared production-ready solely because
+branch coverage is high.

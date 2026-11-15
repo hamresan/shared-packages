@@ -4,7 +4,8 @@
 > persistence is locally tested, with remote PostgreSQL CI confirmation outstanding.
 > Stage 6 optional FastAPI adapter and independent consumer example are implemented
 > with HTTP integration tests, pending final consumer/PostgreSQL migration validation.
-> Stage 7 release hardening remains.
+> Stage 7 has repeatable benchmarks, golden regression data and a documented security/
+> dependency audit; full release approval awaits remote CI and host-owned Alembic upgrade.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -189,7 +190,7 @@ not presented as PostgreSQL concurrency proof.
       authentication, authorization, two locations, resources, and database lifecycle.
 - [x] All calendar operations are available through optional FastAPI endpoints with
       explicit request/response DTOs, transport mappers, and application use cases.
-- [x] Authentication, forbidden scope access, ignored user-supplied tenant fields,
+- [x] Authentication, forbidden scope access, rejected user-supplied tenant fields,
       version conflicts, and invalid schedules are exercised through HTTP requests.
 - [x] Independently scheduled resources and externally supplied busy intervals are
       tested through HTTP against both in-memory and real SQL-backed repositories.
@@ -215,8 +216,18 @@ and create-all as unsuitable for production authentication or migration practice
 ### Gate
 
 - [ ] Ruff, format, strict Pyright, pytest, integration tests and package build pass in CI.
-- [ ] Two independent host scenarios use the same package without application-specific imports.
-- [ ] Boundary and performance benchmarks are recorded with repeatable inputs.
+- [x] Two independent host scenarios (clinical staff and meeting rooms) use the same
+      package without application-specific imports.
+- [x] Golden boundaries and resource/day performance benchmarks are recorded with
+      repeatable inputs and no flaky runtime threshold; see [BENCHMARKS.md](BENCHMARKS.md).
+- [x] Clean-wheel optional-extras install smoke passes locally; CI includes matching
+      smoke checks and a PostgreSQL-only job with focused-test coverage settings.
+- [x] Static typing, test coverage, and authenticated HTTP/scope boundaries reviewed;
+      see [HARDENING.md](HARDENING.md) for checks and limitations.
+- [ ] Consumer-owned Alembic revision/upgrade is verified against a real PostgreSQL
+      database with unrelated host tables.
+- [ ] Remote GitHub CI is confirmed green and a production-like performance baseline
+      is reviewed before declaring the public API release-ready.
 
 ## Deliberately out of scope
 

@@ -1,4 +1,4 @@
-.PHONY: sync check lint format-check typecheck test build
+.PHONY: sync check lint format-check typecheck test build benchmark
 
 sync:
 	uv sync --frozen --group dev
@@ -19,3 +19,6 @@ test:
 
 build:
 	uv build
+
+benchmark:
+	uv run --frozen python -m benchmarks.availability_benchmark

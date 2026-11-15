@@ -2,43 +2,49 @@
 
 from datetime import date, datetime, time
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from scheduling.domain.calendar import CalendarScope
 
 
-class WindowSchema(BaseModel):
+class StrictSchema(BaseModel):
+    """Reject unknown request fields instead of silently accepting untrusted input."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class WindowSchema(StrictSchema):
     start: time
     end: time
 
 
-class DaySchema(BaseModel):
+class DaySchema(StrictSchema):
     weekday: int = Field(ge=0, le=6)
     windows: list[WindowSchema]
 
 
-class ScheduleSchema(BaseModel):
+class ScheduleSchema(StrictSchema):
     days: list[DaySchema] = Field(default_factory=lambda: list[DaySchema]())
 
 
-class ExceptionSchema(BaseModel):
+class ExceptionSchema(StrictSchema):
     day: date
     closed: bool = False
     override_windows: list[WindowSchema] | None = None
 
 
-class ClosureSchema(BaseModel):
+class ClosureSchema(StrictSchema):
     month: int
     day: int
 
 
-class BlockSchema(BaseModel):
+class BlockSchema(StrictSchema):
     start: datetime
     end: datetime
     reason: str | None = None
 
 
-class CreateCalendarSchema(BaseModel):
+class CreateCalendarSchema(StrictSchema):
     calendar_id: str = Field(min_length=1)
     scope: CalendarScope
     scope_id: str = Field(min_length=1)
@@ -55,26 +61,26 @@ class CalendarSchema(CreateCalendarSchema):
     archived: bool
 
 
-class UpdateScheduleSchema(BaseModel):
+class UpdateScheduleSchema(StrictSchema):
     expected_version: int = Field(ge=1)
     weekly_schedule: ScheduleSchema
 
 
-class SetExceptionSchema(BaseModel):
+class SetExceptionSchema(StrictSchema):
     expected_version: int = Field(ge=1)
     exception: ExceptionSchema
 
 
-class ChangeBlockSchema(BaseModel):
+class ChangeBlockSchema(StrictSchema):
     expected_version: int = Field(ge=1)
     block: BlockSchema
 
 
-class VersionSchema(BaseModel):
+class VersionSchema(StrictSchema):
     expected_version: int = Field(ge=1)
 
 
-class AvailabilitySchema(BaseModel):
+class AvailabilitySchema(StrictSchema):
     organization_id: str = Field(min_length=1)
     location_id: str = Field(min_length=1)
     resource_ids: list[str] = Field(min_length=1)
@@ -88,7 +94,7 @@ class AvailabilitySchema(BaseModel):
     maximum_horizon_days: int = Field(default=31, ge=1, le=31)
 
 
-class SlotSchema(BaseModel):
+class SlotSchema(StrictSchema):
     resource_id: str
     start: datetime
     end: datetime

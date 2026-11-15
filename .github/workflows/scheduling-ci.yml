@@ -34,6 +34,12 @@ jobs:
           uv venv .wheel-smoke --python 3.12
           uv pip install --python .wheel-smoke/bin/python dist/*.whl
           .wheel-smoke/bin/python tests/packaging/smoke_install.py
+      - name: Smoke test optional extras in a clean environment
+        run: |
+          uv venv .extras-smoke --python 3.12
+          wheels=(dist/*.whl)
+          uv pip install --python .extras-smoke/bin/python "${wheels[0]}[api,persistence,migrations]"
+          .extras-smoke/bin/python tests/packaging/smoke_optional_install.py
   postgres-integration:
     runs-on: ubuntu-latest
     services:
@@ -66,4 +72,4 @@ jobs:
       - name: Install locked development dependencies
         run: uv sync --frozen --group dev
       - name: Run PostgreSQL integration gates
-        run: uv run --frozen pytest -q tests/infrastructure/persistence/sqlalchemy/test_postgresql.py
+        run: uv run --frozen pytest -q --no-cov tests/infrastructure/persistence/sqlalchemy/test_postgresql.py
