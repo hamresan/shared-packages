@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from business.domain.branch import Branch
 from business.domain.business import Business
 from business.domain.membership import BusinessMembership
 
@@ -27,12 +28,27 @@ class BusinessMembershipRepository(Protocol):
     async def list_by_user_id(self, user_id: UUID) -> tuple[BusinessMembership, ...]: ...
 
 
+class BranchRepository(Protocol):
+    async def add(self, branch: Branch) -> None: ...
+
+    async def get_for_business(self, business_id: UUID, branch_id: UUID) -> Branch | None: ...
+
+    async def list_for_business(
+        self, business_id: UUID, *, city: str | None, country_code: str | None
+    ) -> tuple[Branch, ...]: ...
+
+    async def save(self, branch: Branch) -> None: ...
+
+
 class BusinessUnitOfWork(Protocol):
     @property
     def businesses(self) -> BusinessRepository: ...
 
     @property
     def memberships(self) -> BusinessMembershipRepository: ...
+
+    @property
+    def branches(self) -> BranchRepository: ...
 
     async def commit(self) -> None: ...
 

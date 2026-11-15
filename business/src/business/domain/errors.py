@@ -12,3 +12,15 @@ class BusinessPermissionDeniedError(BusinessError):
 
 class BusinessArchivedError(BusinessError):
     """An archived business cannot be modified or archived again."""
+
+
+class BranchNotFoundError(BusinessError):
+    """The requested branch is absent or belongs to another business."""
+
+
+class BranchArchivedError(BusinessError):
+    """An archived branch cannot be changed or archived again."""
+
+
+class BranchAlreadyActiveError(BusinessError):
+    """An active branch cannot be reactivated again."""

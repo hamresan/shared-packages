@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from business.domain import BranchAddress
+from business.domain import BranchAddress, BranchContact
 
 
 def test_branch_address_can_contain_only_a_city() -> None:
@@ -25,3 +25,12 @@ def test_branch_address_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         address.__setattr__("city", "Salalah")
+
+
+def test_branch_contact_is_immutable_and_optional() -> None:
+    contact = BranchContact(email="example@example.com")
+
+    assert contact.phone is None
+    assert contact.email == "example@example.com"
+    with pytest.raises(FrozenInstanceError):
+        contact.__setattr__("phone", "+96899999999")

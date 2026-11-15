@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 2 application core and local quality checks implemented; Stage 3 onward pending.
+> **Status:** Stage 3 application core and local quality checks implemented; Stage 4 onward pending.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -79,9 +79,9 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] One business manages two independent branches; another manages a single branch.
-- [ ] Cross-business branch updates and access are rejected.
-- [ ] Archive/reactivation policies preserve referential integrity.
+- [x] One business manages two independent branches; another manages a single branch.
+- [x] Cross-business branch updates and access are rejected.
+- [x] Archive/reactivation policies preserve referential integrity.
 
 ## Stage 4 — Business memberships and branch access
 

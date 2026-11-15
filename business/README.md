@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 2 business application core implemented.** The source is locally installable, but no distribution has been published. Branch management, general membership operations, SQLAlchemy persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stage 3 business and branch application core implemented.** The source is locally installable, but no distribution has been published. General membership and branch-scoped access operations, SQLAlchemy persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
 
 ## Purpose
 
@@ -22,7 +22,7 @@ The package manages business organization and access relationships; it does not 
 
 The business-to-branch relationship is one-to-many. The user-to-business relationship is many-to-many through memberships. Ownership is **a membership role**, not an exclusive `owner_user_id` column or a unique constraint on `user_id`.
 
-## Planned core models
+## Core models and planned access extensions
 
 ### Business
 
@@ -81,7 +81,7 @@ The existing [`hamresan-store`](../store) remains a separate package. Do not sil
 - Test directories mirror the source structure. Independent test doubles and builders live in separate support modules.
 - Ruff, strict Pyright, pytest unit/integration tests and reproducible CI gates; use `uv` for dependency locking and development.
 
-## Implemented application core (Stages 1–2)
+## Implemented application core (Stages 1–3)
 
 The package exposes framework-independent primitives and use cases:
 
@@ -93,15 +93,31 @@ The package exposes framework-independent primitives and use cases:
   the actor through active membership.
 - `UpdateBusinessService` and `ArchiveBusinessService` require an active owner role.
   An archived business can still be read, but cannot be edited or archived twice.
-- `BranchAddress` includes optional `city` and `country_code`. Branch CRUD and
-  branch-scoped permissions are not part of Stage 2.
+- `CreateBranchService`, `GetBranchService`, `ListBranchesService`,
+  `UpdateBranchService`, `ArchiveBranchService`, and `ReactivateBranchService`
+  manage zero, one, or many branches within their parent business.
+- `BranchAddress` includes optional `city` and `country_code`, and `BranchContact`
+  supports optional phone/email. A physical address is not required to create a branch.
+- Branch creation, updates, archival, and reactivation require an active business
+  owner and a non-archived parent business. Active business members can read its
+  branches; fine-grained member-to-branch restrictions are **not yet implemented**
+  (planned for Stage 4).
+- A branch's `business_id` is never mutable through the public use cases.
+  Cross-business branch lookup and write operations are rejected, and archived
+  branches remain readable with stable IDs.
+- Branch listing supports optional case-insensitive city and country-code filters.
 
 The public business profile update is a **full profile replacement** (`name` and
 `business_type`); passing `business_type=None` explicitly clears it. Country,
 language, and currency settings are retained by profile updates.
 
+`UpdateBranchCommand` also uses explicit full replacement semantics for `name`,
+`timezone`, optional `address`, and optional `contact`. Pass `None` explicitly to
+clear an address or contact. Branches require a valid IANA timezone and do not
+inherit a default timezone implicitly.
+
 The application services require injected `BusinessUnitOfWorkFactory`, factories,
-validators, policies, and clocks. Stage 2 tests exercise those use cases against an
+validators, policies, and clocks. Stages 2–3 tests exercise those use cases against an
 explicit in-memory implementation of the repository/unit-of-work contracts.
 Database-backed transaction guarantees will be implemented and PostgreSQL-tested
 in Stage 5; no SQLAlchemy adapter or HTTP route is claimed to exist yet.
@@ -118,8 +134,8 @@ coverage (minimum 85%), and wheel/sdist builds. A dedicated GitHub Actions workf
 also checks the distribution in a clean virtual environment.
 
 A business with zero branches is a first-class use case. Creating a business does not
-implicitly create a branch; Stage 3 will introduce independent branch management.
-`BranchAddress` may contain only a city, and physical address information will remain
+implicitly create a branch, and no virtual/default branch is used.
+`BranchAddress` may contain only a city, and physical address information remains
 optional even when a branch exists.
 
 ## Illustrative host flow
@@ -133,4 +149,4 @@ The same identity may repeat this flow for another business without registering 
 
 ## Implementation
 
-The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business creation and management use cases are available through the Python application API; HTTP endpoints, persistence adapters, and distribution publication are not yet available.
+The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business and branch management use cases are available through the Python application API; HTTP endpoints, persistence adapters, and distribution publication are not yet available.

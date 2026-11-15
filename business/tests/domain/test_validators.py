@@ -1,11 +1,13 @@
 import pytest
 
 from business.domain import (
+    BranchNameValidator,
     BusinessNameValidator,
     BusinessTypeValidator,
     CountryCodeValidator,
     CurrencyCodeValidator,
     LanguageCodeValidator,
+    OptionalTextValidator,
     TimeZoneValidator,
 )
 
@@ -78,3 +80,26 @@ def test_business_type_validator_normalizes_optional_type() -> None:
 def test_business_type_validator_rejects_excessive_length() -> None:
     with pytest.raises(ValueError, match="Business type"):
         BusinessTypeValidator().validate("x" * 81)
+
+
+def test_branch_name_validator_normalizes_valid_name() -> None:
+    assert BranchNameValidator().validate("  Muscat Branch  ") == "Muscat Branch"
+
+
+@pytest.mark.parametrize("invalid", ["", "   ", "x" * 161])
+def test_branch_name_validator_rejects_invalid_name(invalid: str) -> None:
+    with pytest.raises(ValueError, match="Branch name"):
+        BranchNameValidator().validate(invalid)
+
+
+def test_optional_text_validator_normalizes_or_removes_empty_fields() -> None:
+    validator = OptionalTextValidator()
+
+    assert validator.validate("  Muscat ", label="City", max_length=120) == "Muscat"
+    assert validator.validate("   ", label="City", max_length=120) is None
+    assert validator.validate(None, label="City", max_length=120) is None
+
+
+def test_optional_text_validator_rejects_excessive_length() -> None:
+    with pytest.raises(ValueError, match="City"):
+        OptionalTextValidator().validate("x" * 121, label="City", max_length=120)
