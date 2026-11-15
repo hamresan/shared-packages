@@ -33,4 +33,4 @@ jobs:
         run: |
           uv venv .wheel-smoke --python 3.12
           uv pip install --python .wheel-smoke/bin/python dist/*.whl
-          .wheel-smoke/bin/python -c "from scheduling.domain.time import IanaTimeZone, UtcInterval; assert IanaTimeZone('Asia/Muscat').key == 'Asia/Muscat'"
+          .wheel-smoke/bin/python tests/packaging/smoke_install.py

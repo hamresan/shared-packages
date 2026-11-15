@@ -1,7 +1,8 @@
 # hamresan-scheduling — staged implementation roadmap
 
-> **Status:** Stage 1 foundation now installs, builds, and has tested UTC/IANA primitives.
-> Calendar management, schedule composition, and the availability engine remain planned.
+> **Status:** Stage 1 foundation, Stage 2 calendar snapshot domain, and initial Stage 3
+> deterministic calculation engine are implemented and locally tested. Stage 4+ managed
+> calendar operations, database adapters, and host integration are not implemented.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -47,8 +48,20 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
   An explicit earlier/later ambiguity choice is supported for individual instants.
 - Use half-open UTC intervals (`[start, end)`) to make adjacent appointments nonconflicting.
 
-Calendar hierarchy precedence, overnight exception ownership, missing-calendar behavior,
-and recurrence-specific DST policy still require agreed golden scenarios before Stage 3.
+The current implementation also records these additional conservative policies:
+
+- Organization closures and location closures veto all resource schedules and overrides.
+- Day-specific replacements apply to shifts starting on that local date; hard closed days
+  also remove any prior day's overnight shift portion crossing into the closed day.
+- Organization, location, and resource calendar snapshots are all explicitly required;
+  a missing scope is not treated as open or inherited.
+- Ambiguous or nonexistent **recurring window endpoints** raise errors; UTC-stepped slots
+  may validly span timezone transitions with two repeated local-hour occurrences.
+- Slot-step anchoring at the start of each intersection window is provisional and must
+  remain documented until confirmed against real consumers.
+
+The golden tests exercise these policies, but Stage 0's full API and persistence contracts
+still need review before management/persistence work.
 
 ## Stage 1 — Package foundation
 
@@ -80,9 +93,9 @@ and recurrence-specific DST policy still require agreed golden scenarios before 
 
 ### Gate
 
-- [ ] Valid weekly schedules and date overrides are represented without loss of meaning.
-- [ ] Invalid windows, timezone settings and contradictory exceptions fail predictably.
-- [ ] DST gaps/overlaps and overnight shifts have deterministic unit tests.
+- [x] Valid weekly schedules, date overrides, and archived snapshots are represented.
+- [x] Invalid windows, timezone settings and contradictory exceptions fail predictably.
+- [x] DST gaps/overlaps and overnight shifts have deterministic unit tests.
 
 ## Stage 3 — Availability Engine
 
@@ -97,10 +110,13 @@ and recurrence-specific DST policy still require agreed golden scenarios before 
 
 ### Gate
 
-- [ ] Two differently scheduled resources return accurate merged availability.
-- [ ] Busy periods, buffers, split shifts, closures and policies change availability correctly.
-- [ ] Boundary tests cover shift start/end buffers and overnight/DST transitions.
-- [ ] Repeated calculations with identical snapshots and a fixed clock are deterministic.
+- [x] Two differently scheduled resources return resource-specific availability.
+- [x] Busy periods, buffers, closures and policy limits affect availability correctly.
+- [x] Boundary tests cover buffers, overnight shifts and DST transitions.
+- [x] Repeated calculations with identical snapshots and a fixed clock are deterministic.
+
+The calculation is still advisory. Broader performance benchmarking, a consumer example,
+and final confirmation of the slot-grid policy remain release gates.
 
 ## Stage 4 — Calendar Management use cases
 

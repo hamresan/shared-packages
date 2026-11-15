@@ -2,9 +2,10 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: Stage 1 foundation implemented.** The distribution installs and the initial UTC/IANA
-> time primitives are tested. Calendar management and the availability engine are **not yet
-> implemented**. Follow the independently reviewed stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stages 1–3 pure core implemented.** The distribution installs, calendar snapshots
+> are validated, and the advisory availability engine has deterministic tests. Calendar
+> management CRUD, persistence, and HTTP integration remain **unimplemented**. See
+> [ROADMAP.md](ROADMAP.md) for the staged delivery and outstanding integration gates.
 
 ## Current installation and development
 
@@ -22,7 +23,10 @@ The first stable, tested primitives are available from `scheduling.domain.time`:
 - `UtcInterval`: a nonempty, half-open `[start, end)` interval of UTC instants with overlap
   and complete-containment checks.
 
-These are foundation primitives, **not** a public API for finding or booking appointments.
+The implemented calendar configuration objects are exported from
+`scheduling.domain.calendar`. `AvailabilityRequest`, `BusyInterval`, `AvailableSlot`, and
+`calculate_availability` are exported from `scheduling.engine`. The engine is purely
+computational: it does **not** reserve inventory or fetch authoritative bookings.
 
 ## Purpose
 
@@ -42,7 +46,7 @@ The package is framework-independent at its core. Persistent calendar management
 - An application supplies external busy intervals that must be excluded from availability.
 - The same API supports one resource or a pool of independently scheduled resources without assuming a shared shift pattern.
 
-## Domain concepts (proposed)
+## Domain concepts
 
 | Concept | Responsibility |
 | --- | --- |
@@ -56,11 +60,42 @@ The package is framework-independent at its core. Persistent calendar management
 
 Organization, location, and resource identifiers are **external references**, not imported entities. The host maps its own organization, branch, staff, or other records into these references. A resource does not have to be a registered user.
 
-For a hierarchical calendar query, the engine combines applicable organization closures, location operating windows, and the resource's own shifts. The exact precedence and intersection rules will be specified and tested before implementation; the engine must not guess how conflicting rules should be applied.
+For a hierarchical calendar query, the engine intersects the organization operating
+windows, location operating windows, and **each eligible resource's own** windows in
+absolute UTC. An organization or location closure is a hard veto; a resource's hours or
+date override cannot reopen its parent scope.
+
+## Implemented calculation semantics
+
+- All three explicit calendar scopes are required; no missing-calendar fallback is guessed.
+  The host chooses eligible resources and passes trusted, matching tenant scope. The pure
+  engine checks scope and tenant consistency but cannot authenticate the host's actor.
+- At a given scope, annual holidays and explicit closed dates take priority over date
+  overrides. A non-closure date override replaces that calendar's entire weekly schedule
+  for its **start date**. An overnight shift belongs to the date it starts; hard closures
+  on the following local day still remove the portion crossing into that closed day.
+- Archived calendars expose no availability. Blocked periods and externally supplied busy
+  periods remove occupied intervals; the host remains their authoritative source.
+- An available candidate's full interval including before/after buffers must fit within
+  the intersection of all applicable operating windows and avoid all relevant busy periods.
+- Calendar weekdays and local hours use IANA zones; expanded instants and returned slots
+  are UTC. Nonexistent/ambiguous local **window endpoints** fail explicitly. UTC stepping
+  through a DST transition can correctly produce both distinct occurrences of a repeated
+  wall-clock hour or skip a nonexistent one.
+- Steps currently begin at the first permissible start of each intersected working
+  interval (after the before-buffer), in UTC. This grid-anchoring policy can be revisited
+  with consumer feedback; it is not an assumption about fixed wall-clock slot labels.
+- The requested search is bounded to 31 days and at most 100 eligible resources; duration
+  and step are at least one minute. The full appointment must finish within the requested
+  range and maximum horizon, and its start must satisfy minimum notice.
+
+This first engine supports one independently occupied unit per resource. Shared capacity,
+resource qualification, inferred calendar inheritance, availability reason codes and
+authoritative booking writes are **not** implemented.
 
 ## Calendar rules
 
-The initial engine should support:
+The current pure engine supports:
 
 - Weekly working windows, including split and overnight shifts.
 - Fixed and one-off closures, recurring annual holidays, and date overrides.
@@ -69,7 +104,8 @@ The initial engine should support:
 - Minimum notice, maximum booking horizon, slot step/interval, activity duration, and optional before/after buffers.
 - Per-resource schedules and efficient availability queries over bounded date ranges.
 - External busy periods; the calendar package **does not** own the authoritative reservation records.
-- Deterministic, machine-readable reasons for unavailable candidate slots where useful.
+- Deterministic, machine-readable reasons for unavailable candidate slots are still optional
+  future work; current output includes only available candidates.
 
 **Invariant:** A candidate's complete occupied interval, including required buffers, must satisfy applicable working windows and closures. Availability is advisory and can change between search and final reservation.
 
@@ -96,11 +132,11 @@ The package may accept already-booked periods or capacity information from a hos
 
 ## Calculation engine implementation decision
 
-The availability engine will be an independent, focused implementation owned by this
+The availability engine is an independent, focused implementation owned by this
 package. **Slotify is not a dependency or implementation backend.** Established Python
 `datetime` and `zoneinfo` primitives handle date/time representation and timezone rules;
 the package owns only its calendar-specific interval composition and slot calculation.
-The future engine must pass independently specified golden scenarios, rather than merely
+The engine must pass independently specified golden scenarios, rather than merely
 agreeing with another scheduler's output.
 
 ## Architecture principles
@@ -121,6 +157,6 @@ agreeing with another scheduler's output.
 3. The availability engine calculates resource-specific candidate slots and returns typed results.
 4. The host performs any final reservation through its own authoritative transactional system.
 
-Only the time primitives described under **Current installation and development** are
-implemented. No calendar-management operations, slot-query API, or HTTP endpoints are
-claimed until their roadmap stages are implemented and tested.
+The pure slot-query API is implemented as described above. Calendar-management CRUD,
+provider persistence, and HTTP endpoints are deferred until their roadmap stages are
+implemented and tested.
