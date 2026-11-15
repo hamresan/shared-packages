@@ -2,33 +2,448 @@
 
 Reusable calendar management and time-based availability calculation for Python applications.
 
-> **Status: Stages 1–6 implemented.** Calendar management, advisory availability,
+> **Status: Stages 1–7 implemented; release verification is ongoing.** Calendar management, advisory availability,
 > optional SQLAlchemy persistence, optional FastAPI endpoints, and a consumer example
 > have automated tests. PostgreSQL integration was reported passing by the consumer;
 > the host-owned Alembic lifecycle also passed in the consumer's PostgreSQL tests.
 > Remote CI verification remains a release gate.
 > Stage 7 regression and benchmark evidence is documented. See [ROADMAP.md](ROADMAP.md).
 
-## Current installation and development
+## Start here
 
-From this directory, run `uv sync --frozen --group dev` and `make check`. The core currently
-requires no third-party runtime dependencies on Unix-like systems (and installs `tzdata`
-on Windows where the IANA database may be absent). Use `uv build` to produce an sdist and
-a wheel.
+This guide describes the **implemented** package API. It covers installing the library,
+calculating slots without infrastructure, managing calendars with the optional SQLAlchemy
+adapter, mounting HTTP endpoints, composing Alembic migrations, and verifying integrations.
+Python **3.12+** is required. The published distribution name is `hamresan-scheduling`;
+the Python import package is `scheduling`. A public PyPI release is **not** assumed.
 
-The first stable, tested primitives are available from `scheduling.domain.time`:
+| If you need to… | Go to… |
+| --- | --- |
+| Calculate availability from existing calendars | [Pure Python quickstart](#1-calculate-slots-without-a-database) |
+| Create and update calendars in a database | [Calendar management](#2-manage-calendars-with-sqlalchemy) |
+| Serve the REST API | [FastAPI example](#3-run-the-fastapi-host-example) |
+| Add tables to an existing database | [Host-owned Alembic migrations](#4-integrate-host-owned-alembic-migrations) |
+| Integrate with a real application | [Production integration checklist](#5-production-integration-checklist) |
+| Run tests and diagnose failures | [Verification](#6-verify-the-package) and [Troubleshooting](#troubleshooting) |
 
-- `IanaTimeZone`: validates and preserves an IANA time zone name.
+### Installation
+
+From the **`shared-packages/` repository root**, install this package into the active
+environment of a consuming application:
+
+```bash
+# Availability calculator only: no SQLAlchemy or FastAPI dependency.
+python -m pip install ./scheduling
+
+# Optional integrations (choose only what your host needs).
+python -m pip install './scheduling[persistence]'
+python -m pip install './scheduling[api,persistence,migrations]'
+```
+
+For installation from a pinned Git commit instead of a local checkout, use the standard
+PEP 508 subdirectory notation and replace `<commit-sha>` with a reviewed commit:
+
+```bash
+python -m pip install \
+  'hamresan-scheduling[api,persistence,migrations] @ git+https://github.com/hamresan/shared-packages.git@<commit-sha>#subdirectory=scheduling'
+```
+
+| Extra | Adds | Host must still supply |
+| --- | --- | --- |
+| Core (none) | Pure domain models and availability engine | Calendars and external booking data |
+| `persistence` | Async SQLAlchemy calendar repository and Unit of Work | DB URL, engine, session factory, and a driver such as `aiosqlite` or `asyncpg` |
+| `migrations` | Alembic dependency and composable scheduling metadata | Host Alembic project and reviewed revision lifecycle |
+| `api` | FastAPI schemas, router, and error handlers | App lifecycle, authenticated actor, authorization, clock, and busy reader |
+
+The minimal runtime has no third-party dependencies on Unix-like systems. On Windows,
+`tzdata` provides IANA timezone data if the operating system does not.
+
+For development and all runnable examples in this repository:
+
+```bash
+cd scheduling
+uv sync --frozen --group dev
+```
+
+### 1. Calculate slots without a database
+
+This mode is useful when a host already owns calendar records and only needs deterministic
+slot calculation. Execute the [working example](examples/pure_availability.py) from the
+`scheduling/` directory:
+
+```bash
+uv run --frozen python -m examples.pure_availability
+```
+
+It builds three calendar levels in the `Asia/Muscat` timezone: an organization open
+09:00–17:00 on Monday, a location open at the same hours, and two separately scheduled
+resources (`staff-a` 09:00–11:00; `staff-b` 13:00–15:00). An external busy interval
+excludes `staff-a` from 09:30–10:00 local. The query requests 30-minute appointments
+on Monday, 2026-11-16, with a 30-minute step.
+
+Expected **UTC** output:
+
+```text
+staff-a 2026-11-16T05:00:00+00:00 2026-11-16T05:30:00+00:00
+staff-a 2026-11-16T06:00:00+00:00 2026-11-16T06:30:00+00:00
+staff-a 2026-11-16T06:30:00+00:00 2026-11-16T07:00:00+00:00
+staff-b 2026-11-16T09:00:00+00:00 2026-11-16T09:30:00+00:00
+staff-b 2026-11-16T09:30:00+00:00 2026-11-16T10:00:00+00:00
+staff-b 2026-11-16T10:00:00+00:00 2026-11-16T10:30:00+00:00
+staff-b 2026-11-16T10:30:00+00:00 2026-11-16T11:00:00+00:00
+```
+
+The minimal core call looks like this (the example builds these input objects in full):
+
+```python
+from datetime import timedelta
+
+from scheduling.domain.time import UtcInterval
+from scheduling.engine import AvailabilityRequest, calculate_availability
+
+# organization, location, resources, query_start, query_end and current_utc
+# are trusted, correctly typed values supplied by your host.
+request = AvailabilityRequest(
+    organization=organization,
+    location=location,
+    resources=tuple(resources),
+    query_window=UtcInterval(query_start, query_end),
+    duration=timedelta(minutes=30),
+    step=timedelta(minutes=15),
+    now=current_utc,
+)
+slots = calculate_availability(request)
+```
+
+`Calendar` values are immutable snapshots. A calendar includes `calendar_id`, `tenant_id`,
+`scope` (`organization`, `location`, or `resource`), `scope_id`, `timezone=IanaTimeZone(...)`,
+and `weekly_schedule=WeeklySchedule(...)`. `DaySchedule.weekday` is `0` for Monday through
+`6` for Sunday; `WorkingWindow` times are **naive local wall times**, not UTC. Use
+`datetime` values with explicit UTC timezone information in `UtcInterval`. A slot's
+`resource_id` is the **external** resource reference, and its interval uses UTC instants.
+
+The host can pass `busy_intervals=(BusyInterval(resource_id, UtcInterval(...)), ...)`,
+`buffer_before`, `buffer_after`, `minimum_notice`, and `maximum_horizon`. No network
+requests, database reads, or booking writes occur inside `calculate_availability`.
+
+### 2. Manage calendars with SQLAlchemy
+
+Install the `persistence` extra and an async database driver. For SQLite development:
+
+```bash
+python -m pip install './scheduling[persistence]' aiosqlite
+```
+
+For PostgreSQL, use the `asyncpg` driver and a host-controlled DSN such as
+`postgresql+asyncpg://user:password@localhost:5492/database_name`. The `5492` port is
+the **host** port if Docker was started with `-p 5492:5432`; `5432` is the container port.
+
+Run the tested [management example](examples/sqlalchemy_management.py) from `scheduling/`:
+
+```bash
+uv run --frozen python -m examples.sqlalchemy_management
+```
+
+The example uses a disposable in-memory SQLite database. Its actual integration path:
+
+1. The host creates its async engine and `async_sessionmaker`.
+2. The host injects a `SqlAlchemyCalendarUnitOfWorkFactory` built with
+   `SqlAlchemyCalendarRepositoryFactory(CalendarPersistenceMapper())`.
+3. The host derives `TrustedActor(tenant_id, actor_id)` from verified identity, and
+   supplies a `CalendarAuthorizer` that checks real scope ownership.
+4. `CreateCalendar` creates a calendar at version `1`.
+5. `UpdateWeeklySchedule` uses `CalendarMutationGuard` and `expected_version=1` to
+   produce version `2` atomically; `GetCalendar` reads the persisted result.
+
+The central composition (taken from the runnable example) is:
+
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from scheduling.infrastructure.persistence.sqlalchemy import (
+    CalendarPersistenceMapper,
+    SqlAlchemyCalendarRepositoryFactory,
+    SqlAlchemyCalendarUnitOfWorkFactory,
+)
+
+engine = create_async_engine(database_url)
+sessions = async_sessionmaker(engine, expire_on_commit=False)
+unit_factory = SqlAlchemyCalendarUnitOfWorkFactory(
+    sessions,
+    SqlAlchemyCalendarRepositoryFactory(CalendarPersistenceMapper()),
+)
+# Inject unit_factory and your CalendarAuthorizer into application use cases.
+# Dispose the engine during the host application's shutdown.
+```
+
+Replace the demonstration authorizer with a host implementation of `CalendarAuthorizer`
+(`ensure_can_read` and `ensure_can_manage`). Its checks must authenticate the current
+tenant and authorize each organization/location/resource reference. The repository's
+tenant filtering and optimistic version checks do **not** replace authorization.
+
+For a managed production database, apply Alembic revisions **before** using the
+repository. `scheduling_metadata().create_all` is used only by disposable demos/tests.
+
+### 3. Run the FastAPI host example
+
+The tested [consumer application](examples/fastapi_host/README.md) demonstrates a
+host-owned API, actor authentication, SQLite persistence, and dependency injection.
+From `scheduling/`:
+
+```bash
+uv sync --frozen --group dev
+export SCHEDULING_DEMO_API_KEY='local-development-secret'
+uv run --with uvicorn --frozen \
+  uvicorn examples.fastapi_host.app:create_app --factory
+```
+
+Open `http://127.0.0.1:8000/docs` for the generated OpenAPI interface. The sample
+accepts `X-API-Key: local-development-secret` and only authorizes `org-1`,
+`location-1`, `location-2`, `resource-1`, and `resource-2`. In another terminal, set
+the same key and create the **three required calendar scopes**:
+
+```bash
+export SCHEDULING_DEMO_API_KEY='local-development-secret'
+
+create_demo_calendar() {
+  local scope="$1" owner="$2"
+  curl --fail-with-body -sS -X POST 'http://127.0.0.1:8000/scheduling/calendars' \
+    -H "X-API-Key: ${SCHEDULING_DEMO_API_KEY}" \
+    -H 'Content-Type: application/json' \
+    --data @- <<JSON
+{
+  "calendar_id": "calendar-${owner}",
+  "scope": "${scope}",
+  "scope_id": "${owner}",
+  "timezone": "Asia/Muscat",
+  "weekly_schedule": {
+    "days": [{"weekday": 0, "windows": [{"start": "09:00", "end": "17:00"}]}]
+  }
+}
+JSON
+}
+
+create_demo_calendar organization org-1
+create_demo_calendar location location-1
+create_demo_calendar resource resource-1
+```
+
+Next request a **future Monday** (computed at runtime, so the example does not expire)
+within the default 31-day search horizon:
+
+```bash
+NEXT_MONDAY=$(python -c 'from datetime import UTC, datetime, timedelta; today=datetime.now(UTC).date(); print((today + timedelta(days=((7-today.weekday()) % 7 or 7))).isoformat())')
+
+curl --fail-with-body -sS -X POST 'http://127.0.0.1:8000/scheduling/availability' \
+  -H "X-API-Key: ${SCHEDULING_DEMO_API_KEY}" \
+  -H 'Content-Type: application/json' \
+  --data @- <<JSON
+{
+  "organization_id": "org-1",
+  "location_id": "location-1",
+  "resource_ids": ["resource-1"],
+  "start": "${NEXT_MONDAY}T00:00:00Z",
+  "end": "${NEXT_MONDAY}T23:59:59Z",
+  "duration_minutes": 30,
+  "step_minutes": 30
+}
+JSON
+```
+
+The JSON response is an array of `{ "resource_id": ..., "start": ..., "end": ... }`
+objects in UTC. With the demo schedule, the first Monday slot begins at 09:00 Muscat
+time (`05:00Z`). If you rerun the calendar creation commands against the **same** demo
+database, a duplicate-scope/ID error (`409`) is expected; use existing records or
+reset only the disposable demo database. The sample busy reader returns no bookings.
+
+For example, update the resource's Monday shift after the availability query. The
+`expected_version` must equal the latest version returned by a read or mutation:
+
+```bash
+curl --fail-with-body -sS -X PUT \
+  'http://127.0.0.1:8000/scheduling/calendars/calendar-resource-1/weekly-schedule' \
+  -H "X-API-Key: ${SCHEDULING_DEMO_API_KEY}" \
+  -H 'Content-Type: application/json' \
+  --data '{"expected_version":1,"weekly_schedule":{"days":[{"weekday":0,"windows":[{"start":"10:00","end":"16:00"}]}]}}'
+```
+
+On the first successful edit the response includes `"version": 2`. Run this
+example only once without changing `expected_version`: retrying version `1` after
+the first edit correctly returns `409`.
+
+The FastAPI router provides these routes (all relative to `/scheduling`):
+
+| Method | Path | Request / behavior |
+| --- | --- | --- |
+| `POST` | `/calendars` | Create `calendar_id`, `scope`, `scope_id`, `timezone`, `weekly_schedule`; optional `exceptions`, `annual_closures`, `blocked_periods`. Returns `201`. |
+| `GET` | `/calendars/{calendar_id}` | Read one calendar in the authenticated tenant. |
+| `GET` | `/calendars?scope=resource&scope_id=resource-1` | List authorized calendars for one scope/owner pair. |
+| `PUT` | `/calendars/{calendar_id}/weekly-schedule` | `{"expected_version":1,"weekly_schedule":{"days":[...]}}`. |
+| `PUT` | `/calendars/{calendar_id}/exceptions` | `{"expected_version":1,"exception":{"day":"2026-11-16","closed":true}}`; can instead supply `override_windows` for an open override. |
+| `DELETE` | `/calendars/{calendar_id}/exceptions/{YYYY-MM-DD}?expected_version=1` | Remove one local-day exception. |
+| `POST` | `/calendars/{calendar_id}/blocked-periods` | `{"expected_version":1,"block":{"start":"2026-11-16T05:00:00Z","end":"2026-11-16T06:00:00Z","reason":"leave"}}`. |
+| `DELETE` | `/calendars/{calendar_id}/blocked-periods` | The same versioned `block` body identifies the period to remove. |
+| `POST` | `/calendars/{calendar_id}/archive` | `{"expected_version":1}`; archived calendars have no availability and cannot be edited. |
+| `POST` | `/availability` | Trusted scope references and UTC `start`/`end`, `duration_minutes`, `step_minutes`; optional buffers, notice, and horizon. |
+
+Error handling: `401` is the demo host's missing/invalid API-key response; `403`
+means denied scope access, `404` means missing calendar, `409` means duplicate
+calendar/scope or version conflict, and `422` means invalid or unknown request fields
+or invalid scheduling values. Production authentication errors are host-defined.
+
+For a real FastAPI host, construct `CalendarHttpDependencies` with your own actor
+provider, `Clock`, authorizer-backed use cases, `BusyIntervalReader`, and the exported
+`CalendarHttpMapper` and `AvailabilityHttpMapper`; then register:
+
+```python
+from scheduling.infrastructure.api.fastapi import (
+    create_calendar_router,
+    install_calendar_error_handlers,
+)
+
+# app: FastAPI; dependencies: CalendarHttpDependencies built by your host.
+install_calendar_error_handlers(app)
+app.include_router(create_calendar_router(dependencies))
+```
+
+The transport uses strict request models. **Never accept `tenant_id` or actor identity
+from request JSON**; the host supplies them through verified authentication.
+
+### 4. Integrate host-owned Alembic migrations
+
+Install the `migrations` extra. The scheduling package exposes its table metadata but
+does **not** create Alembic versions, run migrations, or own the host's database.
+In the host's Alembic `env.py`, compose **both** metadata collections and retain the
+package's JSONB rendering hook:
+
+```python
+from scheduling.infrastructure.persistence.sqlalchemy import (
+    render_scheduling_type,
+    scheduling_metadata,
+)
+
+# host_metadata is your existing SQLAlchemy metadata.
+target_metadata = [host_metadata, scheduling_metadata()]
+
+# In the host's normal Alembic connection/configure block:
+context.configure(
+    connection=connection,
+    target_metadata=target_metadata,
+    render_item=render_scheduling_type,
+)
+```
+
+If your Alembic `env.py` already has a `render_item` callback, **compose** the callbacks
+rather than overwriting host logic: call `render_scheduling_type(kind, value, context)`
+first and delegate only when it returns `False`. Preserve any host `include_name` and
+`include_object` filters; ensure they do not accidentally exclude `scheduling_*` tables.
+The optional `is_scheduling_table(name, kind)` predicate can help compose table filters.
+
+Run the **host's** standard migration workflow, for example:
+
+```bash
+alembic revision --autogenerate -m 'add scheduling calendars'
+# Review the revision, especially JSON/JSONB types, indexes, and unrelated host tables.
+alembic upgrade head
+```
+
+The integration suite exercises revision generation, upgrade, and downgrade against
+disposable databases. Never use `create_all` as an alternative to reviewed migrations
+in production.
+
+### 5. Production integration checklist
+
+- Authenticate each request in the host; derive `TrustedActor` from verified
+  authentication and tenant context.
+- Authorize each calendar scope and external reference through `CalendarAuthorizer`;
+  do not infer access from a matching string ID.
+- Map your organization, location, and resource records to the package's scopes. Supply
+  an active calendar for **every** queried scope and resource.
+- Supply actual occupied intervals via the `BusyIntervalReader` contract (or directly
+  to `AvailabilityRequest` for pure use). The provided demo reader is intentionally empty.
+- Pass a real UTC clock and store each calendar's original **IANA** timezone name, not
+  only a fixed GMT/UTC offset; return UTC instants to clients and localize for display.
+- Use `expected_version` from the latest calendar revision on every mutation; handle
+  version conflicts by refreshing rather than overwriting another editor's change.
+- Recheck availability in your **authoritative booking transaction** before a reservation;
+  enforce conflict checks and booking idempotency there. Returned slots are advisory.
+- Own engine/session lifecycle, secrets, connection pooling, Alembic revisions, and
+  external booking integrations in the host application.
+
+### 6. Verify the package
+
+From `scheduling/`:
+
+```bash
+uv sync --frozen --group dev
+make check
+
+# Run only the README's executable acceptance examples.
+uv run --frozen pytest tests/examples/test_pure_availability.py \
+  tests/examples/test_sqlalchemy_management.py --no-cov
+
+# Exercise the FastAPI consumer integration.
+uv run --frozen pytest tests/examples/fastapi_host --no-cov
+
+# Build installable wheel and source distribution.
+uv build
+
+# Repeatable engine performance scenario.
+make benchmark
+```
+
+`make check` runs Ruff, format verification, strict Pyright, branch-coverage tests
+(threshold **85%**), and build. For an individual test file, append `--no-cov`;
+otherwise the full-project coverage threshold is applied to just that subset and can
+produce a misleading failure despite passing assertions.
+
+For real PostgreSQL adapter and migration integration tests, use a **disposable** test
+database and provide `SCHEDULING_TEST_POSTGRES_URL`:
+
+```bash
+docker run -d --name scheduling-test-db \
+  -e POSTGRES_USER=scheduling_test \
+  -e POSTGRES_PASSWORD=scheduling_test \
+  -e POSTGRES_DB=scheduling_test \
+  -p 5492:5432 postgres:16
+
+export SCHEDULING_TEST_POSTGRES_URL='postgresql+asyncpg://scheduling_test:scheduling_test@localhost:5492/scheduling_test'
+uv run --frozen pytest
+```
+
+The fixture can recreate `scheduling_*` test tables: **never point it at a production
+or shared database**. With no PostgreSQL URL, those integration cases are skipped.
+
+### Troubleshooting
+
+| Symptom | Likely cause / action |
+| --- | --- |
+| `ModuleNotFoundError: scheduling` | Install from `./scheduling`, or use `uv run` inside `scheduling/`. The import name is `scheduling`. |
+| `ModuleNotFoundError: aiosqlite` or `asyncpg` | Install the async driver in the **host**; SQLAlchemy extras do not choose a database driver. |
+| PostgreSQL connection refused on `5432` | With `-p 5492:5432`, connect to `localhost:5492` from the host; use `5432` only inside the Docker network/container. |
+| Unknown IANA timezone | Use a valid name such as `Asia/Muscat` or `Europe/London`, and ensure OS zoneinfo/tzdata is installed. |
+| Ambiguous/nonexistent local time | DST wall times may map to two or zero instants; resolve ambiguities explicitly or change calendar endpoints. Never silently assume a fixed UTC offset. |
+| Availability response is `[]` | Check all three calendars, resource IDs, local weekday/window, UTC query timestamps, active status, notice/horizon, and external occupancy. |
+| `403` on demo API | Set the matching `X-API-Key` and use only authorized demo owner IDs; real hosts must check scope ownership. |
+| `404` or `409` | Calendar missing in the trusted tenant; or duplicate calendar/scope or stale `expected_version`. Use the current revision and correct identity. |
+| `422` validation error | Inspect strict request fields, IANA timezone, UTC datetime format, and valid windows; unknown fields (including `tenant_id`) are rejected. |
+| SQLAlchemy reports missing scheduling table | Apply the host's reviewed Alembic migration; `create_all` is only used in disposable examples. |
+| Alembic revision contains unresolved `Text()` with JSONB | Include `render_scheduling_type` in `context.configure(render_item=...)`, then regenerate/review the migration. |
+| Focused tests pass but coverage fails | Add `--no-cov` to focused runs, then execute the full suite with `make check` to verify coverage. |
+
+## Core concepts and API reference
+
+The stable time primitives are available from `scheduling.domain.time`:
+
+- `IanaTimeZone`: validates and preserves an IANA timezone name.
 - `resolve_local_datetime`: converts a calendar-local date and wall time to a zone-aware
   instant; nonexistent DST times fail and ambiguous times require an explicit earlier/later
   choice (the default is rejection).
 - `UtcInterval`: a nonempty, half-open `[start, end)` interval of UTC instants with overlap
   and complete-containment checks.
 
-The implemented calendar configuration objects are exported from
-`scheduling.domain.calendar`. `AvailabilityRequest`, `BusyInterval`, `AvailableSlot`, and
-`calculate_availability` are exported from `scheduling.engine`. The engine is purely
-computational: it does **not** reserve inventory or fetch authoritative bookings.
+Calendar configuration objects are exported from `scheduling.domain.calendar`.
+`AvailabilityRequest`, `BusyInterval`, `AvailableSlot`, and `calculate_availability`
+are exported from `scheduling.engine`.
 
 ## Implemented calendar management API
 
