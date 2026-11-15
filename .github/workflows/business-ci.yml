@@ -53,6 +53,10 @@ jobs:
           python -m venv "$RUNNER_TEMP/business-wheel-check"
           "$RUNNER_TEMP/business-wheel-check/bin/python" -m pip install dist/*.whl
           "$RUNNER_TEMP/business-wheel-check/bin/python" -c "from business import BranchAddress; assert BranchAddress(city='Muscat').city == 'Muscat'"
+          "$RUNNER_TEMP/business-wheel-check/bin/python" -c "from business.bootstrap import BusinessApplicationFactory; from business.application import BusinessUseCases; assert BusinessApplicationFactory and BusinessUseCases"
+          wheel_paths=(dist/hamresan_business-*.whl)
+          uv pip install --python "$RUNNER_TEMP/business-wheel-check/bin/python" "${wheel_paths[0]}[fastapi,sqlalchemy]"
+          "$RUNNER_TEMP/business-wheel-check/bin/python" -c "from business.bootstrap import BusinessApplicationFactory; from business.presentation import build_fastapi_business_adapter; from business.migrations import business_metadata; assert len(business_metadata().tables) == 5"
       - name: Install composed Identity/Notification/Business example
         working-directory: examples/identity_business_consumer
         run: uv sync --extra test --locked
