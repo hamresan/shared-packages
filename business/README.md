@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 1 foundation implemented.** The source is locally installable, but no distribution has been published. Business/branch/membership use cases, persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stage 2 business application core implemented.** The source is locally installable, but no distribution has been published. Branch management, general membership operations, SQLAlchemy persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
 
 ## Purpose
 
@@ -81,12 +81,30 @@ The existing [`hamresan-store`](../store) remains a separate package. Do not sil
 - Test directories mirror the source structure. Independent test doubles and builders live in separate support modules.
 - Ruff, strict Pyright, pytest unit/integration tests and reproducible CI gates; use `uv` for dependency locking and development.
 
-## Stage 1 development
+## Implemented application core (Stages 1–2)
 
-The package currently exposes framework-independent primitives: `AuthenticatedActor`,
-`BranchAddress` (including optional `city` and `country_code`), lifecycle and membership
-enums, and core field validators. It does **not** yet provide business or branch CRUD,
-membership enforcement, database models, or HTTP routes.
+The package exposes framework-independent primitives and use cases:
+
+- `AuthenticatedActor` is a trusted, host-resolved user identity; commands never accept
+  an owner ID or role as proof of authorization.
+- `CreateBusinessService` creates a business and its active owner membership within
+  one injected unit of work. The persistence adapter must commit both atomically.
+- `GetBusinessService` and `ListBusinessesService` return only businesses visible to
+  the actor through active membership.
+- `UpdateBusinessService` and `ArchiveBusinessService` require an active owner role.
+  An archived business can still be read, but cannot be edited or archived twice.
+- `BranchAddress` includes optional `city` and `country_code`. Branch CRUD and
+  branch-scoped permissions are not part of Stage 2.
+
+The public business profile update is a **full profile replacement** (`name` and
+`business_type`); passing `business_type=None` explicitly clears it. Country,
+language, and currency settings are retained by profile updates.
+
+The application services require injected `BusinessUnitOfWorkFactory`, factories,
+validators, policies, and clocks. Stage 2 tests exercise those use cases against an
+explicit in-memory implementation of the repository/unit-of-work contracts.
+Database-backed transaction guarantees will be implemented and PostgreSQL-tested
+in Stage 5; no SQLAlchemy adapter or HTTP route is claimed to exist yet.
 
 From this directory, install the locked development environment and run quality checks:
 
@@ -99,9 +117,10 @@ The `check` target runs Ruff lint/format checks, strict Pyright, branch-aware py
 coverage (minimum 85%), and wheel/sdist builds. A dedicated GitHub Actions workflow
 also checks the distribution in a clean virtual environment.
 
-A business with zero branches remains a first-class use case for Stages 2 and 3;
-no branch is created implicitly. `BranchAddress` may contain only a city, and physical
-address information is optional even when a branch exists.
+A business with zero branches is a first-class use case. Creating a business does not
+implicitly create a branch; Stage 3 will introduce independent branch management.
+`BranchAddress` may contain only a city, and physical address information will remain
+optional even when a branch exists.
 
 ## Illustrative host flow
 
@@ -114,4 +133,4 @@ The same identity may repeat this flow for another business without registering 
 
 ## Implementation
 
-The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. No business-management endpoint, business-creation API, persistence adapter, or distribution release is claimed to exist yet.
+The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business creation and management use cases are available through the Python application API; HTTP endpoints, persistence adapters, and distribution publication are not yet available.

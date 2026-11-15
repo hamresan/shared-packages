@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 1 source and local quality checks implemented; later stages pending.
+> **Status:** Stage 2 application core and local quality checks implemented; Stage 3 onward pending.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -63,9 +63,9 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] The same actor creates two businesses and can read both independently.
-- [ ] A different actor cannot read or modify either business without an authorized membership.
-- [ ] Invalid fields and unsafe archival transitions fail deterministically.
+- [x] The same actor creates two businesses and can read both independently.
+- [x] A different actor cannot read or modify either business without an authorized membership.
+- [x] Invalid fields and unsafe archival transitions fail deterministically.
 
 ## Stage 3 — Branch management
 

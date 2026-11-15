@@ -2,8 +2,10 @@ import pytest
 
 from business.domain import (
     BusinessNameValidator,
+    BusinessTypeValidator,
     CountryCodeValidator,
     CurrencyCodeValidator,
+    LanguageCodeValidator,
     TimeZoneValidator,
 )
 
@@ -50,3 +52,29 @@ def test_timezone_validator_accepts_iana_timezone() -> None:
 def test_timezone_validator_rejects_invalid_timezones(timezone: str) -> None:
     with pytest.raises(ValueError, match="Timezone"):
         TimeZoneValidator().validate(timezone)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [(" EN ", "en"), ("en-US", "en-us"), ("zh-Hant", "zh-hant")],
+)
+def test_language_code_validator_accepts_common_language_tags(raw: str, expected: str) -> None:
+    assert LanguageCodeValidator().validate(raw) == expected
+
+
+@pytest.mark.parametrize("language", ["", " ", "123", "english", "e", "en_OM"])
+def test_language_code_validator_rejects_invalid_tags(language: str) -> None:
+    with pytest.raises(ValueError, match="Language"):
+        LanguageCodeValidator().validate(language)
+
+
+def test_business_type_validator_normalizes_optional_type() -> None:
+    validator = BusinessTypeValidator()
+    assert validator.validate("  BAKERY  ") == "bakery"
+    assert validator.validate(None) is None
+    assert validator.validate("  ") is None
+
+
+def test_business_type_validator_rejects_excessive_length() -> None:
+    with pytest.raises(ValueError, match="Business type"):
+        BusinessTypeValidator().validate("x" * 81)

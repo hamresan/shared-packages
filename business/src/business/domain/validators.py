@@ -28,6 +28,26 @@ class CurrencyCodeValidator:
         return code
 
 
+class LanguageCodeValidator:
+    def validate(self, value: str) -> str:
+        code = value.strip()
+        if re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", code) is None:
+            raise ValueError("Language must be a valid basic language tag")
+        return code.lower()
+
+
+class BusinessTypeValidator:
+    def validate(self, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if not normalized:
+            return None
+        if len(normalized) > 80:
+            raise ValueError("Business type must be at most 80 characters")
+        return normalized
+
+
 class TimeZoneValidator:
     def validate(self, value: str) -> str:
         timezone = value.strip()

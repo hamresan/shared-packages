@@ -31,7 +31,7 @@ This repository demonstrates how I design backend capabilities as focused, indep
 | [Notification](./notification) | `hamresan-notification` | Application-agnostic notification infrastructure with queue-first orchestration, templates, and replaceable SMS, email, and console providers. |
 | [Instagram Auth](./instagram_auth) | `hamresan-instagram-auth` | Instagram Professional account OAuth, authorization, permission handling, connection lifecycle, token management, and account identity resolution. |
 | [Instagram API](./instagram_api) | `hamresan-instagram-api` | Application-facing Instagram integration for profiles, media, conversations, messages, comments, replies, webhooks, and normalized provider errors. |
-| [Business](./business) | `hamresan-business` *(foundation)* | General-purpose business, branch and membership management. Stage 1 package primitives and quality gates implemented; management use cases pending. |
+| [Business](./business) | `hamresan-business` *(in development)* | Business creation, scoped reading, owner authorization, profile updates and archival implemented; branch management, general memberships and persistence pending. |
 | [Store](./store) | `hamresan-store` | Reusable store domain/application package with ownership rules, validation, async SQLAlchemy persistence, FastAPI integration, and host-owned Alembic composition. |
 | [Subscription](./subscription) | `hamresan-subscription` | Plans, subscriptions, entitlements, trials, and usage-management capabilities for generic host-owned subjects. |
 | [Persona Engine](./persona_engine) | `hamresan-persona-engine` | Provider-neutral persona/style initialization from account-authored text using measurable writing characteristics. |
