@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 7 hardening in progress.** Stages 1–6 are implemented and merged. The source is locally installable; no distribution has been published. PostgreSQL concurrency verification is configured for CI and remains unverified without a live PostgreSQL server.
+> **Status: Stage 7 hardening in progress.** Stages 1–6 are implemented and merged. The source is locally installable; no distribution has been published. The corrected PostgreSQL ownership-transfer concurrency test passed on a developer's live database; GitHub CI verification remains pending.
 
 ## Purpose
 

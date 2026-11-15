@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stages 1–6 are merged. Stage 7 hardening is underway on a separate branch. PostgreSQL concurrency verification remains outstanding until a real PostgreSQL run completes.
+> **Status:** Stages 1–6 are merged. Stage 7 hardening is underway on a separate branch. A developer reported that the PostgreSQL concurrent ownership-transfer test passed against a live database (1 passed in 0.33s); GitHub CI remains unverified.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -113,7 +113,7 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] PostgreSQL concurrent ownership-transfer test passes in CI (test and service configured; local PostgreSQL unavailable).
+- [ ] PostgreSQL concurrent ownership-transfer test passes in CI (the corrected test passed on a developer's live PostgreSQL instance; CI verification remains pending).
 - [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; host migration upgrade across multiple packages remains to be exercised at Stage 7.
 - [x] Tenant-scoped repositories and composite foreign keys reject cross-business membership-to-branch references.
 
@@ -155,7 +155,8 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 - [x] Identity and Business metadata compose into one host schema; an initial Alembic DDL upgrade produces the expected tables and no autogenerate drift.
 - [x] HTTP tests cover restricted members, attempted mutations and archived-business safety.
 - [x] CI includes an isolated wheel installation and optional FastAPI/SQLAlchemy import smoke test.
-- [ ] Execute PostgreSQL ownership-transfer concurrency test against a live server; GitHub Actions runs have not yet been observed for this repository.
+- [x] Execute PostgreSQL ownership-transfer concurrency test against a live server (developer-reported result: 1 passed in 0.33s after updating the expected permission-denial error).
+- [ ] Observe the same PostgreSQL test passing in GitHub Actions; no run has yet been verified.
 - [ ] Verify the full release gate in CI before tagging or publishing a distribution.
 
 ## Deliberately deferred
