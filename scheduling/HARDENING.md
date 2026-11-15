@@ -39,9 +39,10 @@ release approval. All commands should be run against the branch in
 2. The user reported **147 passing tests with 98.78% combined coverage**, including
    PostgreSQL integration. The local execution environment has no PostgreSQL service;
    its local focused suite correctly skips those server-only tests.
-3. The new consumer-owned Alembic migration lifecycle must pass on actual PostgreSQL
-   before the database release gate can be closed. A passing SQLite upgrade and the
-   earlier PostgreSQL concurrency/metadata tests are insufficient to claim that result.
+3. The consumer has now reported **2 passing Alembic lifecycle tests**, covering
+   SQLite and PostgreSQL after the new migration code was published. This closes
+   the consumer verification gate, but does not substitute for GitHub CI evidence.
+   The GitHub API currently reports zero workflow/check runs on the feature branch.
 4. The demo host uses an environment-supplied test API key and an empty occupied-period
    reader. Real authentication, permission relationships, booking conflict enforcement,
    deployment secrets, rate limiting and observability are owned by the consuming host.
@@ -50,6 +51,7 @@ release approval. All commands should be run against the branch in
 
 ## Release recommendation
 
-Keep the PR in draft pending actual GitHub CI verification and the consumer-owned
-Alembic migration acceptance test. No package release or version bump should imply
-those gates are complete. See [ROADMAP.md](ROADMAP.md) and [BENCHMARKS.md](BENCHMARKS.md).
+Keep the PR in draft pending actual GitHub CI verification. The consumer confirmed
+the Alembic migration acceptance tests, but no package release or version bump should
+imply remote CI has passed without a real workflow run. See [ROADMAP.md](ROADMAP.md)
+and [BENCHMARKS.md](BENCHMARKS.md).

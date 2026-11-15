@@ -5,7 +5,8 @@ Reusable calendar management and time-based availability calculation for Python 
 > **Status: Stages 1–6 implemented.** Calendar management, advisory availability,
 > optional SQLAlchemy persistence, optional FastAPI endpoints, and a consumer example
 > have automated tests. PostgreSQL integration was reported passing by the consumer;
-> remote CI and host-owned Alembic upgrade verification remain release gates.
+> the host-owned Alembic lifecycle also passed in the consumer's PostgreSQL tests.
+> Remote CI verification remains a release gate.
 > Stage 7 regression and benchmark evidence is documented. See [ROADMAP.md](ROADMAP.md).
 
 ## Current installation and development
