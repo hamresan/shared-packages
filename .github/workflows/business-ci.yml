@@ -14,6 +14,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: business_test
+          POSTGRES_PASSWORD: business_test
+          POSTGRES_DB: business_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U business_test -d business_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BUSINESS_TEST_POSTGRES_DSN: postgresql+asyncpg://business_test:business_test@127.0.0.1:5432/business_test
     defaults:
       run:
         working-directory: business

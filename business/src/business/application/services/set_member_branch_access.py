@@ -36,6 +36,7 @@ class SetMemberBranchAccessService:
         async with self._uow_factory() as uow:
             await self._access.require_owner(uow, command.business_id, actor)
             await uow.lock_business_membership(command.business_id)
+            await self._access.require_owner(uow, command.business_id, actor)
             membership = await uow.memberships.get_for_business(
                 command.business_id, command.membership_id
             )

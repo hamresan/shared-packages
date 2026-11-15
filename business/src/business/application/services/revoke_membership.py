@@ -28,6 +28,7 @@ class RevokeMembershipService:
         async with self._uow_factory() as uow:
             await self._access.require_owner(uow, business_id, actor)
             await uow.lock_business_membership(business_id)
+            await self._access.require_owner(uow, business_id, actor)
             membership = await uow.memberships.get_for_business(business_id, membership_id)
             if membership is None:
                 raise MembershipNotFoundError("Membership was not found")

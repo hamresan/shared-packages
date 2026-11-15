@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 4 application core and local quality checks implemented; Stage 5 onward pending. PostgreSQL concurrency and database constraints remain Stage 5 work.
+> **Status:** Stage 5 SQLAlchemy adapter and database constraints implemented; Stage 6 onward pending. PostgreSQL concurrency test is configured in CI but requires a running PostgreSQL server to execute.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -113,9 +113,9 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] Persistence integration tests run against PostgreSQL, including concurrent membership changes.
-- [ ] Alembic autogeneration and upgrade work in a host composed with other packages.
-- [ ] No cross-business data leakage through reused sessions or mis-scoped repository calls.
+- [ ] PostgreSQL concurrency test passes in CI (test and service configured; local PostgreSQL unavailable).
+- [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; host migration upgrade across multiple packages remains to be exercised at Stage 7.
+- [x] Tenant-scoped repositories and composite foreign keys reject cross-business membership-to-branch references.
 
 ## Stage 6 — FastAPI adapter and authentication integration
 

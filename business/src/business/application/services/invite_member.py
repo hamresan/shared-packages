@@ -34,6 +34,7 @@ class InviteMemberService:
         async with self._uow_factory() as uow:
             await self._access.require_owner(uow, command.business_id, actor)
             await uow.lock_business_membership(command.business_id)
+            await self._access.require_owner(uow, command.business_id, actor)
             existing = await uow.memberships.get_by_business_and_user(
                 command.business_id, command.user_id
             )

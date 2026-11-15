@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 4 business, branch and membership application core implemented.** The source is locally installable, but no distribution has been published. SQLAlchemy persistence and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stage 5 async SQLAlchemy persistence implemented.** The source is locally installable, but no distribution has been published. HTTP integration remains planned for [Stage 6](ROADMAP.md). PostgreSQL concurrency verification runs in CI; local tests skip it unless a PostgreSQL DSN is provided.
 
 ## Purpose
 
@@ -128,10 +128,18 @@ inherit a default timezone implicitly.
 The application services require injected `BusinessUnitOfWorkFactory`, factories,
 validators, policies, and clocks. Stages 2–4 tests exercise those use cases against an
 explicit in-memory implementation of the repository/unit-of-work contracts.
-Database-backed transaction guarantees, active-membership uniqueness and
-**transaction-scoped owner locking** must be implemented and PostgreSQL-tested
-in Stage 5. In-memory tests simulate atomic commit but do not establish
-concurrency guarantees; no SQLAlchemy adapter or HTTP route is claimed to exist yet.
+Async SQLAlchemy repositories and a database-backed Unit of Work are available
+as the optional `sqlalchemy` extra. The SQL adapter uses an injected async
+session factory; `commit()` persists the entire unit of work, and leaving
+without commit rolls it back. A partial unique index rejects duplicate current
+(`active`/`invited`) memberships while preserving revoked membership history.
+
+The membership-change lock uses PostgreSQL `SELECT ... FOR UPDATE` on the
+business row, and owner authorization is rechecked after taking the lock to
+avoid a stale-permission race. SQLite supports functional/integrity tests but
+does **not** provide equivalent row-lock semantics. PostgreSQL concurrency
+tests require `BUSINESS_TEST_POSTGRES_DSN`; GitHub Actions provisions a
+PostgreSQL service for them.
 
 ### Stage 4 membership semantics
 
@@ -140,10 +148,28 @@ concurrency guarantees; no SQLAlchemy adapter or HTTP route is claimed to exist 
 - Invitees start with `Member`, `Invited`, and `Selected` with **no** branch IDs.
   An owner must explicitly grant access before a newly accepted invitee can
   view branch records. Revoked identities have no current membership access.
-- Membership changes serialize within the provided unit of work through
-  `lock_business_membership(business_id)`. A SQL adapter must implement this as a
-  database lock for last-owner safety. Re-invitation must preserve history and
-  enforce only one current active/invited membership per user and business.
+- Membership changes serialize within the PostgreSQL unit of work through
+  `lock_business_membership(business_id)`. Re-invitation preserves history and
+  enforces only one current active/invited membership per user and business.
+
+### Persistence composition (Stage 5)
+
+Install `pip install hamresan-business[sqlalchemy]` for the SQL adapter, or
+`hamresan-business[postgres]` for the asyncpg PostgreSQL driver as well.
+The host supplies its own `async_sessionmaker[AsyncSession]`; construct a
+`SqlAlchemyBusinessUnitOfWorkFactory` with the injected session factory and
+`BusinessMapper`, `BranchMapper`, `MembershipMapper` and
+`MembershipAuditMapper`. No global engine is created by the package.
+
+The host owns Alembic migrations. Use `business.migrations.business_metadata()`
+and `include_business_name` when composing metadata and reflection with other
+packages. All five package tables use the `business_` prefix. Preserve
+foreign-key constraints (including composite business-scoped membership/branch
+associations) and the partial unique membership index during migrations.
+
+SQLite integration tests run by default; set `BUSINESS_TEST_POSTGRES_DSN` to a
+dedicated test database URL to exercise the PostgreSQL concurrency scenario.
+Each PostgreSQL test uses and drops its own uniquely named schema.
 - Branch-scoped membership visibility applies to `GetBranchService` and
   `ListBranchesService`; other branch mutations remain owner-only.
 
@@ -174,4 +200,4 @@ The same identity may repeat this flow for another business without registering 
 
 ## Implementation
 
-The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business and branch management use cases are available through the Python application API; HTTP endpoints, persistence adapters, and distribution publication are not yet available.
+The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business, branch, membership and SQL persistence APIs are available; HTTP endpoints and distribution publication are not yet available.
