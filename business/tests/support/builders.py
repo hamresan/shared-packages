@@ -4,7 +4,7 @@ from uuid import UUID
 from business.application.dto import CreateBranchCommand, CreateBusinessCommand
 from business.domain import Business, BusinessMembership, BusinessStatus, MembershipRole
 from business.domain.branch import Branch
-from business.domain.enums import BranchStatus, MembershipStatus
+from business.domain.enums import BranchAccessScope, BranchStatus, MembershipStatus
 from business.domain.value_objects import BranchAddress, BranchContact
 
 TEST_TIME = datetime(2026, 1, 1, tzinfo=UTC)
@@ -87,6 +87,7 @@ def build_membership(
     user_id: UUID = TEST_USER_ID,
     role: MembershipRole = MembershipRole.OWNER,
     status: MembershipStatus = MembershipStatus.ACTIVE,
+    branch_access_scope: BranchAccessScope = BranchAccessScope.ALL,
 ) -> BusinessMembership:
     return BusinessMembership(
         id=membership_id,
@@ -96,4 +97,5 @@ def build_membership(
         status=status,
         created_at=TEST_TIME,
         updated_at=TEST_TIME,
+        branch_access_scope=branch_access_scope,
     )

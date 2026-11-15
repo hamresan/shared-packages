@@ -4,6 +4,7 @@ from business.domain.enums import (
     BranchAccessScope,
     BranchStatus,
     BusinessStatus,
+    MembershipAuditAction,
     MembershipRole,
     MembershipStatus,
 )
@@ -14,8 +15,14 @@ from business.domain.errors import (
     BusinessArchivedError,
     BusinessNotFoundError,
     BusinessPermissionDeniedError,
+    LastActiveOwnerError,
+    MembershipAlreadyExistsError,
+    MembershipInvalidStateError,
+    MembershipNotFoundError,
 )
 from business.domain.membership import BusinessMembership
+from business.domain.membership_access import MembershipBranchAccess
+from business.domain.membership_audit import MembershipAuditRecord
 from business.domain.validators import (
     BranchNameValidator,
     BusinessNameValidator,
@@ -51,6 +58,13 @@ __all__ = [
     "LanguageCodeValidator",
     "OptionalTextValidator",
     "MembershipRole",
+    "MembershipAuditAction",
+    "MembershipAuditRecord",
+    "MembershipBranchAccess",
+    "MembershipAlreadyExistsError",
+    "MembershipInvalidStateError",
+    "MembershipNotFoundError",
+    "LastActiveOwnerError",
     "MembershipStatus",
     "TimeZoneValidator",
 ]

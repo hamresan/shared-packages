@@ -25,3 +25,11 @@ class MembershipStatus(StrEnum):
 class BranchAccessScope(StrEnum):
     ALL = "all"
     SELECTED = "selected"
+
+
+class MembershipAuditAction(StrEnum):
+    INVITED = "invited"
+    ACCEPTED = "accepted"
+    ROLE_CHANGED = "role_changed"
+    REVOKED = "revoked"
+    BRANCH_ACCESS_CHANGED = "branch_access_changed"

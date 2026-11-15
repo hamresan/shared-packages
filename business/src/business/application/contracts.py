@@ -6,6 +6,7 @@ from uuid import UUID
 from business.domain.branch import Branch
 from business.domain.business import Business
 from business.domain.membership import BusinessMembership
+from business.domain.membership_audit import MembershipAuditRecord
 
 
 class BusinessRepository(Protocol):
@@ -27,6 +28,26 @@ class BusinessMembershipRepository(Protocol):
 
     async def list_by_user_id(self, user_id: UUID) -> tuple[BusinessMembership, ...]: ...
 
+    async def get_for_business(
+        self, business_id: UUID, membership_id: UUID
+    ) -> BusinessMembership | None: ...
+
+    async def list_for_business(self, business_id: UUID) -> tuple[BusinessMembership, ...]: ...
+
+    async def count_active_owners(self, business_id: UUID) -> int: ...
+
+    async def save(self, membership: BusinessMembership) -> None: ...
+
+
+class MembershipBranchAccessRepository(Protocol):
+    async def list_branch_ids(self, membership_id: UUID) -> tuple[UUID, ...]: ...
+
+    async def replace(self, membership_id: UUID, branch_ids: tuple[UUID, ...]) -> None: ...
+
+
+class MembershipAuditRepository(Protocol):
+    async def add(self, record: MembershipAuditRecord) -> None: ...
+
 
 class BranchRepository(Protocol):
     async def add(self, branch: Branch) -> None: ...
@@ -34,7 +55,12 @@ class BranchRepository(Protocol):
     async def get_for_business(self, business_id: UUID, branch_id: UUID) -> Branch | None: ...
 
     async def list_for_business(
-        self, business_id: UUID, *, city: str | None, country_code: str | None
+        self,
+        business_id: UUID,
+        *,
+        city: str | None,
+        country_code: str | None,
+        allowed_branch_ids: tuple[UUID, ...] | None = None,
     ) -> tuple[Branch, ...]: ...
 
     async def save(self, branch: Branch) -> None: ...
@@ -49,6 +75,14 @@ class BusinessUnitOfWork(Protocol):
 
     @property
     def branches(self) -> BranchRepository: ...
+
+    @property
+    def membership_branch_access(self) -> MembershipBranchAccessRepository: ...
+
+    @property
+    def membership_audit(self) -> MembershipAuditRepository: ...
+
+    async def lock_business_membership(self, business_id: UUID) -> None: ...
 
     async def commit(self) -> None: ...
 

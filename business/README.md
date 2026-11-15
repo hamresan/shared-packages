@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 3 business and branch application core implemented.** The source is locally installable, but no distribution has been published. General membership and branch-scoped access operations, SQLAlchemy persistence, and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
+> **Status: Stage 4 business, branch and membership application core implemented.** The source is locally installable, but no distribution has been published. SQLAlchemy persistence and HTTP integration remain planned for later stages in [ROADMAP.md](ROADMAP.md).
 
 ## Purpose
 
@@ -22,7 +22,7 @@ The package manages business organization and access relationships; it does not 
 
 The business-to-branch relationship is one-to-many. The user-to-business relationship is many-to-many through memberships. Ownership is **a membership role**, not an exclusive `owner_user_id` column or a unique constraint on `user_id`.
 
-## Core models and planned access extensions
+## Core models and access extensions
 
 ### Business
 
@@ -38,7 +38,7 @@ Links an external identity `user_id` to a business, with a role and membership s
 
 ### Branch access (narrow extension)
 
-Some applications need to restrict a member to selected branches. This will be supported by an optional membership-to-branch access association, with explicit business-scope validation. Branch scoping complements, rather than replaces, business-level authorization. Avoid implementing a generic policy language or universal RBAC engine.
+Some applications need to restrict a member to selected branches. `BranchAccessScope.ALL` gives an active member access to the business's branches; `BranchAccessScope.SELECTED` uses an explicit membership-to-branch association. **An empty selected list means zero accessible branches**, not unrestricted access. Owners always have full branch visibility. Every selected branch ID is validated against the membership's business before the change is committed.
 
 ## Employee management boundary
 
@@ -81,7 +81,7 @@ The existing [`hamresan-store`](../store) remains a separate package. Do not sil
 - Test directories mirror the source structure. Independent test doubles and builders live in separate support modules.
 - Ruff, strict Pyright, pytest unit/integration tests and reproducible CI gates; use `uv` for dependency locking and development.
 
-## Implemented application core (Stages 1–3)
+## Implemented application core (Stages 1–4)
 
 The package exposes framework-independent primitives and use cases:
 
@@ -100,12 +100,21 @@ The package exposes framework-independent primitives and use cases:
   supports optional phone/email. A physical address is not required to create a branch.
 - Branch creation, updates, archival, and reactivation require an active business
   owner and a non-archived parent business. Active business members can read its
-  branches; fine-grained member-to-branch restrictions are **not yet implemented**
-  (planned for Stage 4).
+  branches within the member's configured branch access scope.
 - A branch's `business_id` is never mutable through the public use cases.
   Cross-business branch lookup and write operations are rejected, and archived
   branches remain readable with stable IDs.
 - Branch listing supports optional case-insensitive city and country-code filters.
+- `InviteMemberService` creates an invitation for a known external user ID (without
+  issuing credentials or sending messages); `AcceptMembershipService` accepts it
+  only for that trusted actor. Invited users cannot read business resources.
+- `ListMembershipsService`, `ChangeMemberRoleService`, `RevokeMembershipService`
+  and `SetMemberBranchAccessService` are owner-only operations. The final active
+  owner cannot be demoted or revoked. Promoting a member to owner grants all
+  branches; demotion resets branch visibility to an empty selected list.
+- Membership changes and branch assignments are committed together with
+  structured `MembershipAuditRecord` entries. A revoked user can be re-invited
+  as a new membership while historical revoked memberships remain recorded.
 
 The public business profile update is a **full profile replacement** (`name` and
 `business_type`); passing `business_type=None` explicitly clears it. Country,
@@ -117,10 +126,26 @@ clear an address or contact. Branches require a valid IANA timezone and do not
 inherit a default timezone implicitly.
 
 The application services require injected `BusinessUnitOfWorkFactory`, factories,
-validators, policies, and clocks. Stages 2–3 tests exercise those use cases against an
+validators, policies, and clocks. Stages 2–4 tests exercise those use cases against an
 explicit in-memory implementation of the repository/unit-of-work contracts.
-Database-backed transaction guarantees will be implemented and PostgreSQL-tested
-in Stage 5; no SQLAlchemy adapter or HTTP route is claimed to exist yet.
+Database-backed transaction guarantees, active-membership uniqueness and
+**transaction-scoped owner locking** must be implemented and PostgreSQL-tested
+in Stage 5. In-memory tests simulate atomic commit but do not establish
+concurrency guarantees; no SQLAlchemy adapter or HTTP route is claimed to exist yet.
+
+### Stage 4 membership semantics
+
+- The host authenticates actors and validates that invitation targets are
+  legitimate Identity users; the Business package does not perform identity lookup.
+- Invitees start with `Member`, `Invited`, and `Selected` with **no** branch IDs.
+  An owner must explicitly grant access before a newly accepted invitee can
+  view branch records. Revoked identities have no current membership access.
+- Membership changes serialize within the provided unit of work through
+  `lock_business_membership(business_id)`. A SQL adapter must implement this as a
+  database lock for last-owner safety. Re-invitation must preserve history and
+  enforce only one current active/invited membership per user and business.
+- Branch-scoped membership visibility applies to `GetBranchService` and
+  `ListBranchesService`; other branch mutations remain owner-only.
 
 From this directory, install the locked development environment and run quality checks:
 

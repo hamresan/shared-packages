@@ -9,6 +9,11 @@ from business.application.branch_validators import (
 )
 from business.application.contracts import BusinessUnitOfWorkFactory, Clock, IdentifierGenerator
 from business.application.factories import BranchFactory, BusinessFactory, OwnerMembershipFactory
+from business.application.membership_access import (
+    MembershipBranchVisibility,
+    MembershipManagementAccess,
+)
+from business.application.membership_auditor import MembershipAuditor
 from business.application.policies import BusinessAccessPolicy
 from business.application.services import (
     ArchiveBranchService,
@@ -23,6 +28,12 @@ from business.application.services import (
     UpdateBranchService,
     UpdateBusinessService,
 )
+from business.application.services.accept_membership import AcceptMembershipService
+from business.application.services.change_member_role import ChangeMemberRoleService
+from business.application.services.invite_member import InviteMemberService
+from business.application.services.list_memberships import ListMembershipsService
+from business.application.services.revoke_membership import RevokeMembershipService
+from business.application.services.set_member_branch_access import SetMemberBranchAccessService
 from business.application.validators import (
     BusinessProfileValidator,
     CreateBusinessCommandValidator,
@@ -120,7 +131,12 @@ def build_create_branch_service(
 
 
 def build_get_branch_service(unit_of_work_factory: BusinessUnitOfWorkFactory) -> GetBranchService:
-    return GetBranchService(unit_of_work_factory, build_branch_access(), BranchScopePolicy())
+    return GetBranchService(
+        unit_of_work_factory,
+        build_branch_access(),
+        BranchScopePolicy(),
+        MembershipBranchVisibility(),
+    )
 
 
 def build_list_branch_service(
@@ -130,7 +146,54 @@ def build_list_branch_service(
         unit_of_work_factory,
         build_branch_access(),
         ListBranchesQueryValidator(CountryCodeValidator(), OptionalTextValidator()),
+        MembershipBranchVisibility(),
     )
+
+
+def build_membership_access() -> MembershipManagementAccess:
+    return MembershipManagementAccess(BusinessAccessPolicy())
+
+
+def build_invite_member_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> InviteMemberService:
+    return InviteMemberService(
+        uow, build_membership_access(), clock, ids, MembershipAuditor(clock, ids)
+    )
+
+
+def build_accept_membership_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> AcceptMembershipService:
+    return AcceptMembershipService(uow, clock, MembershipAuditor(clock, ids))
+
+
+def build_change_member_role_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> ChangeMemberRoleService:
+    return ChangeMemberRoleService(
+        uow, build_membership_access(), clock, MembershipAuditor(clock, ids)
+    )
+
+
+def build_revoke_membership_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> RevokeMembershipService:
+    return RevokeMembershipService(
+        uow, build_membership_access(), clock, MembershipAuditor(clock, ids)
+    )
+
+
+def build_set_member_branch_access_service(
+    uow: BusinessUnitOfWorkFactory, clock: Clock, ids: IdentifierGenerator
+) -> SetMemberBranchAccessService:
+    return SetMemberBranchAccessService(
+        uow, build_membership_access(), clock, MembershipAuditor(clock, ids)
+    )
+
+
+def build_list_memberships_service(uow: BusinessUnitOfWorkFactory) -> ListMembershipsService:
+    return ListMembershipsService(uow, build_membership_access())
 
 
 def build_update_branch_service(

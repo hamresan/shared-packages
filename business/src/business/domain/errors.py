@@ -24,3 +24,19 @@ class BranchArchivedError(BusinessError):
 
 class BranchAlreadyActiveError(BusinessError):
     """An active branch cannot be reactivated again."""
+
+
+class MembershipNotFoundError(BusinessError):
+    """A membership is not present in the given business."""
+
+
+class MembershipAlreadyExistsError(BusinessError):
+    """An active or pending membership already exists."""
+
+
+class MembershipInvalidStateError(BusinessError):
+    """A membership transition is invalid for its current state."""
+
+
+class LastActiveOwnerError(BusinessError):
+    """An active business must retain at least one active owner."""

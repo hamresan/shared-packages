@@ -30,11 +30,18 @@ class InMemoryBranchRepository(BranchRepository):
         return deepcopy(branch)
 
     async def list_for_business(
-        self, business_id: UUID, *, city: str | None, country_code: str | None
+        self,
+        business_id: UUID,
+        *,
+        city: str | None,
+        country_code: str | None,
+        allowed_branch_ids: tuple[UUID, ...] | None = None,
     ) -> tuple[Branch, ...]:
         result: list[Branch] = []
         for branch in self._all_branches().values():
             if branch.business_id != business_id:
+                continue
+            if allowed_branch_ids is not None and branch.id not in allowed_branch_ids:
                 continue
             if city is not None and (
                 branch.address is None

@@ -16,6 +16,8 @@ from business.application.contracts import (
     BusinessUnitOfWorkFactory,
     Clock,
     IdentifierGenerator,
+    MembershipAuditRepository,
+    MembershipBranchAccessRepository,
 )
 from business.application.dto import (
     CreateBranchCommand,
@@ -24,18 +26,34 @@ from business.application.dto import (
     UpdateBranchCommand,
     UpdateBusinessCommand,
 )
+from business.application.dto_membership import (
+    ChangeMemberRoleCommand,
+    InviteMemberCommand,
+    SetMemberBranchAccessCommand,
+)
 from business.application.factories import BranchFactory, BusinessFactory, OwnerMembershipFactory
+from business.application.membership_access import (
+    MembershipBranchVisibility,
+    MembershipManagementAccess,
+)
+from business.application.membership_auditor import MembershipAuditor
 from business.application.policies import BusinessAccessPolicy
 from business.application.services import (
+    AcceptMembershipService,
     ArchiveBranchService,
     ArchiveBusinessService,
+    ChangeMemberRoleService,
     CreateBranchService,
     CreateBusinessService,
     GetBranchService,
     GetBusinessService,
+    InviteMemberService,
     ListBranchesService,
     ListBusinessesService,
+    ListMembershipsService,
     ReactivateBranchService,
+    RevokeMembershipService,
+    SetMemberBranchAccessService,
     UpdateBranchService,
     UpdateBusinessService,
 )
@@ -46,6 +64,9 @@ from business.application.validators import (
 )
 
 __all__ = [
+    "AcceptMembershipService",
+    "ChangeMemberRoleCommand",
+    "ChangeMemberRoleService",
     "ArchiveBusinessService",
     "ArchiveBranchService",
     "AuthenticatedActor",
@@ -73,12 +94,23 @@ __all__ = [
     "GetBusinessService",
     "GetBranchService",
     "IdentifierGenerator",
+    "InviteMemberCommand",
+    "InviteMemberService",
     "ListBusinessesService",
     "ListBranchesQuery",
     "ListBranchesQueryValidator",
     "ListBranchesService",
+    "ListMembershipsService",
+    "MembershipAuditRepository",
+    "MembershipAuditor",
+    "MembershipBranchAccessRepository",
+    "MembershipBranchVisibility",
+    "MembershipManagementAccess",
     "OwnerMembershipFactory",
     "ReactivateBranchService",
+    "RevokeMembershipService",
+    "SetMemberBranchAccessCommand",
+    "SetMemberBranchAccessService",
     "UpdateBranchCommand",
     "UpdateBranchCommandValidator",
     "UpdateBranchService",

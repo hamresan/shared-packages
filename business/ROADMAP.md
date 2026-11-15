@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 3 application core and local quality checks implemented; Stage 4 onward pending.
+> **Status:** Stage 4 application core and local quality checks implemented; Stage 5 onward pending. PostgreSQL concurrency and database constraints remain Stage 5 work.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -96,10 +96,10 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] One user owns multiple businesses and holds a non-owner role in another.
-- [ ] Business and branch membership changes are authorization-checked and auditable.
-- [ ] The final active owner cannot be removed by ordinary membership operations.
-- [ ] Members cannot gain access to a branch in another business by submitting its ID.
+- [x] One user owns multiple businesses and can hold a non-owner role in another (existing multi-business tests plus membership scenarios).
+- [x] Business and branch membership changes are authorization-checked and auditable under the injected unit of work.
+- [x] The final active owner cannot be removed by ordinary membership operations (PostgreSQL concurrency verification deferred to Stage 5).
+- [x] Members cannot gain access to a branch in another business by submitting its ID.
 
 ## Stage 5 — Async SQLAlchemy persistence and host-owned Alembic
 
