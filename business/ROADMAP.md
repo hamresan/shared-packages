@@ -114,7 +114,7 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 ### Gate
 
 - [ ] PostgreSQL concurrent ownership-transfer test passes in CI (the corrected test passed on a developer's live PostgreSQL instance; CI verification remains pending).
-- [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; host migration upgrade across multiple packages remains to be exercised at Stage 7.
+- [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; the Stage 7 host example also exercises Identity/Business combined-schema DDL through Alembic operations.
 - [x] Tenant-scoped repositories and composite foreign keys reject cross-business membership-to-branch references.
 
 ## Stage 6 — FastAPI adapter and authentication integration
@@ -147,13 +147,14 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 - [x] Public use cases support branchless, single-branch, multi-branch and multi-business-per-owner examples; HTTP tests exercise selected branch visibility and archival safeguards.
 - [ ] CI passes lint, format, strict typing, tests, migration checks and package build.
-- [ ] No application-specific terms, dependencies, or staff-management functionality slipped into the package.
-- [ ] README examples match the implemented API; no documentation-only API is presented as released.
+- [x] Source review found no application-specific dependencies or staff-management functionality; Identity/Notification remain host-owned integrations.
+- [x] README examples and optional FastAPI/SQLAlchemy APIs were checked against the implemented package; the release remains unpublished.
 
 ### Stage 7 verification progress
 
 - [x] Identity and Business metadata compose into one host schema; an initial Alembic DDL upgrade produces the expected tables and no autogenerate drift.
 - [x] HTTP tests cover restricted members, attempted mutations and archived-business safety.
+- [x] Pure application composition no longer imports the optional FastAPI presentation layer; clean wheel installation checks the dependency-free API before installing extras.
 - [x] CI includes an isolated wheel installation and optional FastAPI/SQLAlchemy import smoke test.
 - [x] Execute PostgreSQL ownership-transfer concurrency test against a live server (developer-reported result: 1 passed in 0.33s after updating the expected permission-denial error).
 - [ ] Observe the same PostgreSQL test passing in GitHub Actions; no run has yet been verified.

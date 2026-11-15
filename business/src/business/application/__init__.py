@@ -59,6 +59,11 @@ from business.application.services import (
     UpdateBranchService,
     UpdateBusinessService,
 )
+from business.application.use_case_groups import (
+    BranchUseCases,
+    BusinessUseCases,
+    MembershipUseCases,
+)
 from business.application.validators import (
     BusinessProfileValidator,
     CreateBusinessCommandValidator,
@@ -79,11 +84,13 @@ __all__ = [
     "BranchFactory",
     "BranchRepository",
     "BranchScopePolicy",
+    "BranchUseCases",
     "BusinessAccessPolicy",
     "BusinessFactory",
     "BusinessMembershipRepository",
     "BusinessProfileValidator",
     "BusinessRepository",
+    "BusinessUseCases",
     "BusinessUnitOfWork",
     "BusinessUnitOfWorkFactory",
     "Clock",
@@ -108,6 +115,7 @@ __all__ = [
     "MembershipBranchAccessRepository",
     "MembershipBranchVisibility",
     "MembershipManagementAccess",
+    "MembershipUseCases",
     "OwnerMembershipFactory",
     "ReactivateBranchService",
     "RevokeMembershipService",

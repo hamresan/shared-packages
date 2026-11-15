@@ -1,3 +1,4 @@
+from business.application import BranchUseCases, BusinessUseCases, MembershipUseCases
 from business.application.branch_access import BranchBusinessAccess, BranchScopePolicy
 from business.application.branch_validators import (
     BranchAddressValidator,
@@ -50,7 +51,6 @@ from business.domain.validators import (
     OptionalTextValidator,
     TimeZoneValidator,
 )
-from business.presentation.dependencies import BranchUseCases, BusinessUseCases, MembershipUseCases
 
 
 class BusinessApplicationFactory:

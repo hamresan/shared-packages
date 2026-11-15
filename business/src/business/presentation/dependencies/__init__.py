@@ -1,9 +1,9 @@
-from business.presentation.dependencies.authentication import AuthenticatedActorDependency
-from business.presentation.dependencies.services import (
+from business.application import (
     BranchUseCases,
     BusinessUseCases,
     MembershipUseCases,
 )
+from business.presentation.dependencies.authentication import AuthenticatedActorDependency
 
 __all__ = [
     "AuthenticatedActorDependency",

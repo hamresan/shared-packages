@@ -59,7 +59,7 @@ An employee may not have a login, and a business member may not be an employee. 
 - Business use cases enforce membership and resource authorization. Raw `user_id`, role, or ownership supplied by a request body is never authoritative.
 - Future invitation notifications may be dispatched through an injected notification contract or a host-owned integration; this package must not create its own notification worker or OTP flow.
 
-The domain/application core must remain independent of concrete Identity and Notification implementations. An optional integration example will demonstrate their composition with this package, including a real JWT/session implementation rather than an example-only token stub.
+The domain/application core remains independent of concrete Identity and Notification implementations. The [consumer example](../examples/identity_business_consumer) demonstrates their composition with a real JWT/session implementation rather than an example-only token stub.
 
 ## Package boundaries
 
@@ -226,4 +226,4 @@ The same identity may repeat this flow for another business without registering 
 
 ## Implementation
 
-The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business, branch, membership and SQL persistence APIs are available; HTTP endpoints and distribution publication are not yet available.
+The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business, branch, membership, SQL persistence and optional FastAPI APIs are implemented. The package has not yet been published as a distribution.
