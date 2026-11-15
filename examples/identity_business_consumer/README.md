@@ -20,3 +20,9 @@ uv run pytest
 The test covers OTP request, Notification enqueue, OTP verification, real signed
 JWT authentication, creation and reading of a Business, and rejection of
 missing/forged access tokens.
+
+A second integration test composes Identity and Business metadata into a single
+host-owned schema, applies initial table/index DDL through Alembic operations,
+and verifies that Alembic autogeneration reports no schema drift. Production
+hosts should maintain explicit, versioned Alembic revisions; the test harness
+does not publish or substitute for their migration history.

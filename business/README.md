@@ -2,7 +2,7 @@
 
 Reusable business, branch, and organization-membership management for Python applications.
 
-> **Status: Stage 6 FastAPI adapter and Identity/Notification host composition implemented.** The source is locally installable, but no distribution has been published. Stage 7 hardening remains. PostgreSQL concurrency verification is configured for CI; local tests skip it unless a PostgreSQL DSN is provided.
+> **Status: Stage 7 hardening in progress.** Stages 1–6 are implemented and merged. The source is locally installable; no distribution has been published. PostgreSQL concurrency verification is configured for CI and remains unverified without a live PostgreSQL server.
 
 ## Purpose
 

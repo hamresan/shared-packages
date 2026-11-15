@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stage 6 FastAPI adapter and Identity/Notification JWT host integration implemented; Stage 7 hardening pending. PostgreSQL concurrency test is configured in CI and requires a running PostgreSQL server.
+> **Status:** Stages 1–6 are merged. Stage 7 hardening is underway on a separate branch. PostgreSQL concurrency verification remains outstanding until a real PostgreSQL run completes.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -145,10 +145,18 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] Public use cases support single-branch, multi-branch and multi-business-per-owner examples.
+- [x] Public use cases support branchless, single-branch, multi-branch and multi-business-per-owner examples; HTTP tests exercise selected branch visibility and archival safeguards.
 - [ ] CI passes lint, format, strict typing, tests, migration checks and package build.
 - [ ] No application-specific terms, dependencies, or staff-management functionality slipped into the package.
 - [ ] README examples match the implemented API; no documentation-only API is presented as released.
+
+### Stage 7 verification progress
+
+- [x] Identity and Business metadata compose into one host schema; an initial Alembic DDL upgrade produces the expected tables and no autogenerate drift.
+- [x] HTTP tests cover restricted members, attempted mutations and archived-business safety.
+- [x] CI includes an isolated wheel installation and optional FastAPI/SQLAlchemy import smoke test.
+- [ ] Execute PostgreSQL ownership-transfer concurrency test against a live server; GitHub Actions runs have not yet been observed for this repository.
+- [ ] Verify the full release gate in CI before tagging or publishing a distribution.
 
 ## Deliberately deferred
 

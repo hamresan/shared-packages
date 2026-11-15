@@ -211,3 +211,90 @@ async def test_revoked_member_and_cross_business_requests_are_hidden(
     ).status_code == 200
     assert (await client.get(f"/businesses/{first}", headers=MEMBER)).status_code == 404
     assert (await client.get("/businesses", headers=MEMBER)).json() == []
+
+
+@pytest.mark.asyncio
+async def test_selected_branch_access_is_enforced_at_http_boundary(
+    business_http_environment: HttpEnvironment,
+) -> None:
+    client = business_http_environment.client
+    created = await client.post(
+        "/businesses",
+        headers=OWNER,
+        json={
+            "name": "Clinics",
+            "country_code": "OM",
+            "default_language": "en",
+            "default_currency_code": "OMR",
+        },
+    )
+    business_id = created.json()["id"]
+    branches: list[str] = []
+    for name in ("Muscat", "Salalah"):
+        response = await client.post(
+            f"/businesses/{business_id}/branches",
+            headers=OWNER,
+            json={"name": name, "timezone": "Asia/Muscat"},
+        )
+        assert response.status_code == 201
+        branches.append(response.json()["id"])
+
+    invitation = await client.post(
+        f"/businesses/{business_id}/memberships",
+        headers=OWNER,
+        json={"user_id": str(business_http_environment.other_id)},
+    )
+    membership_id = invitation.json()["id"]
+    assert (
+        await client.post(f"/businesses/{business_id}/memberships/accept", headers=MEMBER)
+    ).status_code == 200
+    assert (await client.get(f"/businesses/{business_id}/branches", headers=MEMBER)).json() == []
+
+    granted = await client.put(
+        f"/businesses/{business_id}/memberships/{membership_id}/access",
+        headers=OWNER,
+        json={"scope": "selected", "branch_ids": [branches[0]]},
+    )
+    assert granted.status_code == 200, granted.text
+    visible = await client.get(f"/businesses/{business_id}/branches", headers=MEMBER)
+    assert [item["id"] for item in visible.json()] == [branches[0]]
+    assert (
+        await client.get(f"/businesses/{business_id}/branches/{branches[1]}", headers=MEMBER)
+    ).status_code == 404
+    assert (
+        await client.put(
+            f"/businesses/{business_id}/branches/{branches[0]}",
+            headers=MEMBER,
+            json={"name": "Changed", "timezone": "Asia/Muscat"},
+        )
+    ).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_archived_business_rejects_mutations_but_retains_read_access(
+    business_http_environment: HttpEnvironment,
+) -> None:
+    client = business_http_environment.client
+    created = await client.post(
+        "/businesses",
+        headers=OWNER,
+        json={
+            "name": "Archived Clinic",
+            "country_code": "OM",
+            "default_language": "en",
+            "default_currency_code": "OMR",
+        },
+    )
+    business_id = created.json()["id"]
+    archived = await client.delete(f"/businesses/{business_id}", headers=OWNER)
+    assert archived.status_code == 200
+    assert archived.json()["status"] == "archived"
+    assert (await client.get(f"/businesses/{business_id}", headers=OWNER)).status_code == 200
+    assert (
+        await client.post(
+            f"/businesses/{business_id}/branches",
+            headers=OWNER,
+            json={"name": "Forbidden", "timezone": "Asia/Muscat"},
+        )
+    ).status_code == 409
+    assert (await client.delete(f"/businesses/{business_id}", headers=OWNER)).status_code == 409
