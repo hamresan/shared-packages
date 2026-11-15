@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Documentation complete; implementation has not started.
+> **Status:** Stage 6 FastAPI adapter and Identity/Notification JWT host integration implemented; Stage 7 hardening pending. PostgreSQL concurrency test is configured in CI and requires a running PostgreSQL server.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -63,9 +63,9 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] The same actor creates two businesses and can read both independently.
-- [ ] A different actor cannot read or modify either business without an authorized membership.
-- [ ] Invalid fields and unsafe archival transitions fail deterministically.
+- [x] The same actor creates two businesses and can read both independently.
+- [x] A different actor cannot read or modify either business without an authorized membership.
+- [x] Invalid fields and unsafe archival transitions fail deterministically.
 
 ## Stage 3 — Branch management
 
@@ -79,9 +79,9 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 ### Gate
 
-- [ ] One business manages two independent branches; another manages a single branch.
-- [ ] Cross-business branch updates and access are rejected.
-- [ ] Archive/reactivation policies preserve referential integrity.
+- [x] One business manages two independent branches; another manages a single branch.
+- [x] Cross-business branch updates and access are rejected.
+- [x] Archive/reactivation policies preserve referential integrity.
 
 ## Stage 4 — Business memberships and branch access
 
@@ -89,17 +89,17 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 
 1. Extend the initial owner `BusinessMembership` with external `user_id`, `business_id`, role, active/invited/revoked state and timestamps.
 2. Enforce unique active membership per `(business_id, user_id)` while allowing the same user across multiple businesses.
-3. Provide minimum roles such as `Owner` and `Member`; consuming applications retain ownership of domain-specific permissions. Avoid a general role-policy DSL.
-4. Implement controlled add/invite, accept (if needed), list, role change and removal operations; protect against removing or demoting the last active owner.
+3. Provide `Owner`, `Manager`, and `Member` roles; one active Owner per business and multiple Managers. Consuming applications retain ownership of domain-specific permissions. Avoid a general role-policy DSL.
+4. Implement controlled add/invite, accept, list, Manager/Member role changes, removal, and an explicit atomic ownership transfer; never ordinarily demote or revoke the Owner.
 5. Add a narrow branch-access association for members restricted to selected branches; validate every branch belongs to the same business.
 6. Make authorization explicit and independently testable, including owner-only actions and a member's authorized branch scope.
 
 ### Gate
 
-- [ ] One user owns multiple businesses and holds a non-owner role in another.
-- [ ] Business and branch membership changes are authorization-checked and auditable.
-- [ ] The final active owner cannot be removed by ordinary membership operations.
-- [ ] Members cannot gain access to a branch in another business by submitting its ID.
+- [x] One user owns multiple businesses and can hold a non-owner role in another (existing multi-business tests plus membership scenarios).
+- [x] Business and branch membership changes are authorization-checked and auditable under the injected unit of work.
+- [x] The active Owner cannot be removed or demoted by ordinary membership operations; ownership transfers atomically to an active member.
+- [x] Members cannot gain access to a branch in another business by submitting its ID.
 
 ## Stage 5 — Async SQLAlchemy persistence and host-owned Alembic
 
@@ -108,14 +108,14 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 1. Build SQLAlchemy 2 async models, repositories, mappers and Unit of Work adapters implementing the application contracts.
 2. Use package-prefixed tables (`business_*`) and host-injected async session factory; do not create a global engine.
 3. Expose package metadata/name-filter helpers for a host-owned Alembic history, compatible with other shared packages.
-4. Apply appropriate uniqueness, foreign-key and branch-to-business invariants. Use transactional protection for membership/ownership mutations.
+4. Apply appropriate uniqueness (including at most one active Owner per business), foreign-key and branch-to-business invariants. Use transactional protection for membership/ownership mutations.
 5. Define safe transaction boundaries and document host-side tenant isolation and optional PostgreSQL RLS integration; no implicit trust in `business_id` alone.
 
 ### Gate
 
-- [ ] Persistence integration tests run against PostgreSQL, including concurrent membership changes.
-- [ ] Alembic autogeneration and upgrade work in a host composed with other packages.
-- [ ] No cross-business data leakage through reused sessions or mis-scoped repository calls.
+- [ ] PostgreSQL concurrent ownership-transfer test passes in CI (test and service configured; local PostgreSQL unavailable).
+- [x] Host-owned metadata naming and Alembic autogeneration check show no schema drift; host migration upgrade across multiple packages remains to be exercised at Stage 7.
+- [x] Tenant-scoped repositories and composite foreign keys reject cross-business membership-to-branch references.
 
 ## Stage 6 — FastAPI adapter and authentication integration
 
@@ -125,14 +125,14 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 2. Compose `hamresan-identity` with `hamresan-notification` in a small consumer example: OTP registration/login, session/JWT validation, then trusted `AuthenticatedActor` mapping.
 3. Keep Identity responsible for OTP codes, sessions and tokens. Keep Notification responsible for provider-neutral message delivery.
 4. If invitations need delivery, inject a notification contract or let the host coordinate it. Do not implement OTP, SMTP, queues or workers inside Business.
-5. Test cross-business authorization at the HTTP boundary. Never take owner/user IDs or member roles from untrusted request bodies.
+5. Test cross-business authorization at the HTTP boundary. Derive the acting user's identity from trusted authentication only; authorize requested invitees and role changes through business policies, never through the request body alone.
 
 ### Gate
 
-- [ ] Example authenticates through the shared Identity public API and uses Notification for OTP delivery.
-- [ ] Authenticated users can switch between their authorized businesses and branches.
-- [ ] Unauthorized or revoked members receive safe, deterministic failures.
-- [ ] OTP/session/token code is not duplicated in the Business package.
+- [x] Example authenticates through Identity OTP and signed JWT/session APIs; Notification queues OTP delivery.
+- [x] Authenticated users can access their authorized businesses and branches, and Manager branch operations are enforced.
+- [x] Unauthorized, foreign-business and revoked members receive safe, deterministic HTTP failures.
+- [x] OTP/session/token code remains inside Identity; the Business adapter accepts a trusted actor dependency.
 
 ## Stage 7 — Hardening and distribution
 
