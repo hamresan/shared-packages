@@ -1,0 +1,1 @@
+"""Mirrored API adapter tests."""

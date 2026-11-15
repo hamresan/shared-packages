@@ -1,6 +1,15 @@
 # hamresan-scheduling — staged implementation roadmap
 
-> **Status:** Architecture outline and implementation stages documented; no executable package has been created yet.
+> **Status:** Stages 1–4 are implemented and tested. Stage 5 optional async SQLAlchemy
+> persistence and its real PostgreSQL tests were confirmed passing by the consumer.
+> Stage 6 optional FastAPI adapter and independent consumer example are implemented
+> with HTTP integration tests. The consumer confirmed both real Alembic lifecycle
+> tests passed against SQLite and PostgreSQL.
+> Stage 7 has repeatable benchmarks, golden regression data and a documented security/
+> dependency audit. A consumer-owned Alembic revision/upgrade/downgrade now passes
+> against SQLite and was also reported passing on PostgreSQL by the consumer.
+> GitHub Actions has no runs for the feature branch as of the latest inspection;
+> remote CI verification remains the final release gate.
 >
 > **Direction:** Calendar Management + Availability Engine, with optional persistence and host-owned infrastructure. Remain reusable across Python applications and independent of their operational domains.
 
@@ -26,15 +35,40 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 1. Define a generic external-scope model for organization/location/resource calendars, without importing consuming applications' entities.
 2. Define intersection and precedence rules: organization closures, location hours, resource shifts, breaks, date overrides, and blocked periods. Specify what happens when a scope has no calendar.
 3. Specify UTC/IANA time handling, overnight windows, DST ambiguity, slot steps, and whether buffers must fit entirely within operating windows.
-4. Evaluate existing scheduling libraries, including `slotify-scheduling`, using a repeatable benchmark against real scheduling cases. Prefer reuse when it passes correctness, maintenance and performance criteria.
+4. Implement the calculation engine independently, with no `slotify-scheduling` dependency.
+   Reuse standard Python `datetime` and `zoneinfo` for time handling and validate the new
+   engine against independently specified golden scheduling scenarios.
 5. Define the boundary between managed calendar data and externally supplied busy/reservation intervals. Avoid building booking storage or a second reservation lifecycle.
 6. Agree on the minimum public inputs/outputs, error codes and tenant-scope requirements; do not create a generic expression language, plugin registry or policy DSL.
 
 ### Gate
 
 - [ ] Golden test scenarios and precedence rules are documented and approved.
-- [ ] Reuse vs focused implementation is supported by a measured proof of concept.
+- [x] Independent calculation engine selected; Slotify excluded as a dependency.
 - [ ] Contract and persistence boundaries are agreed before coding.
+
+### Decisions already confirmed
+
+- Preserve the calendar's IANA timezone (for example, `Asia/Muscat` or `Europe/London`).
+- Store and compare absolute instants in UTC; define recurring working hours in local time.
+- Reject ambiguous or nonexistent local wall times by default at the conversion boundary.
+  An explicit earlier/later ambiguity choice is supported for individual instants.
+- Use half-open UTC intervals (`[start, end)`) to make adjacent appointments nonconflicting.
+
+The current implementation also records these additional conservative policies:
+
+- Organization closures and location closures veto all resource schedules and overrides.
+- Day-specific replacements apply to shifts starting on that local date; hard closed days
+  also remove any prior day's overnight shift portion crossing into the closed day.
+- Organization, location, and resource calendar snapshots are all explicitly required;
+  a missing scope is not treated as open or inherited.
+- Ambiguous or nonexistent **recurring window endpoints** raise errors; UTC-stepped slots
+  may validly span timezone transitions with two repeated local-hour occurrences.
+- Slot-step anchoring at the start of each intersection window is provisional and must
+  remain documented until confirmed against real consumers.
+
+The golden tests exercise these policies, but Stage 0's full API and persistence contracts
+still need review before management/persistence work.
 
 ## Stage 1 — Package foundation
 
@@ -42,12 +76,17 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 1. Create `pyproject.toml`, `src/scheduling/`, controlled package exports, typing marker, `uv` lock and reproducible development setup.
 2. Establish domain, application/contracts, pure engine, infrastructure/adapters and composition folders only as features need them.
-3. Configure Ruff, strict Pyright, pytest, build/install checks and CI. Mirror production folders under tests and keep test fakes/factories in separate modules.
+3. Configure Ruff, strict Pyright, pytest with branch coverage, build/install checks and CI.
+   Mirror production folders under tests and keep independent test fakes/factories in
+   separate modules.
 4. Keep the core free from SQLAlchemy, FastAPI and external scheduling providers.
 
 ### Gate
 
-- [ ] Clean-environment installation, wheel/sdist and `uv` checks pass.
+- [x] Wheel/sdist build, locked dependency installation, Ruff, strict Pyright, and
+      the initial mirrored unit tests pass locally.
+- [x] Fresh-environment wheel installation passes locally.
+- [ ] Repository CI is verified on GitHub.
 - [ ] Dependencies and source/test structure comply with declared boundaries.
 
 ## Stage 2 — Calendar rules and domain model
@@ -61,9 +100,9 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 ### Gate
 
-- [ ] Valid weekly schedules and date overrides are represented without loss of meaning.
-- [ ] Invalid windows, timezone settings and contradictory exceptions fail predictably.
-- [ ] DST gaps/overlaps and overnight shifts have deterministic unit tests.
+- [x] Valid weekly schedules, date overrides, and archived snapshots are represented.
+- [x] Invalid windows, timezone settings and contradictory exceptions fail predictably.
+- [x] DST gaps/overlaps and overnight shifts have deterministic unit tests.
 
 ## Stage 3 — Availability Engine
 
@@ -78,10 +117,13 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 ### Gate
 
-- [ ] Two differently scheduled resources return accurate merged availability.
-- [ ] Busy periods, buffers, split shifts, closures and policies change availability correctly.
-- [ ] Boundary tests cover shift start/end buffers and overnight/DST transitions.
-- [ ] Repeated calculations with identical snapshots and a fixed clock are deterministic.
+- [x] Two differently scheduled resources return resource-specific availability.
+- [x] Busy periods, buffers, closures and policy limits affect availability correctly.
+- [x] Boundary tests cover buffers, overnight shifts and DST transitions.
+- [x] Repeated calculations with identical snapshots and a fixed clock are deterministic.
+
+The calculation is still advisory. Broader performance benchmarking, a consumer example,
+and final confirmation of the slot-grid policy remain release gates.
 
 ## Stage 4 — Calendar Management use cases
 
@@ -94,9 +136,17 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 ### Gate
 
-- [ ] Calendar changes are validated, scoped and independently testable with fake repositories.
-- [ ] Cross-tenant or cross-resource mutation attempts fail safely.
-- [ ] Conflicting edits cannot silently overwrite newer calendars.
+- [x] Calendar mutations are validated, tenant-scoped, and tested through injected
+      transactional repository/Unit of Work fakes.
+- [x] Cross-tenant reads/creates and unauthorized scope mutations fail safely.
+- [x] Conflicting edits and duplicate creates are rejected atomically by the test
+      contract implementation; optimistic versions cannot silently overwrite updates.
+
+The real SQLAlchemy adapter must enforce the **same atomic CAS and scope/uniqueness
+invariants at the database level** in Stage 5. Current fake-backed tests are not a
+substitute for PostgreSQL concurrency tests. Public application contracts now include
+`CalendarRepository`, `CalendarUnitOfWorkFactory`, and a host-injected
+`CalendarAuthorizer`, with verified host actor context.
 
 ## Stage 5 — Optional persistence
 
@@ -110,9 +160,28 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 ### Gate
 
-- [ ] Managed calendars survive process restarts and round-trip without losing timezone or exception information.
-- [ ] Host-composed Alembic autogeneration and migrations work alongside unrelated package metadata.
-- [ ] Core engine can be used without installing SQLAlchemy.
+- [x] Calendar snapshots round-trip through a real SQL-backed repository across sessions,
+      including IANA timezone, exceptions, closures, blocked periods, version and archive state.
+- [x] SQL-backed tenant isolation, rollback, duplicate identity rejection and atomic
+      compare-and-swap are covered by local integration tests.
+- [x] Host-supplied async session factory; SQLAlchemy remains an optional extra and is
+      absent from core domain/application imports.
+- [x] Real PostgreSQL concurrency and Alembic mixed-metadata integration tests are
+      configured as a required separate CI job.
+- [x] A real consumer-owned Alembic autogenerate/revision/upgrade/downgrade is
+      verified on SQLite with unrelated host tables and persisted calendar records.
+- [x] The same complete migration lifecycle is included in the PostgreSQL CI job,
+      with a dedicated JSONB render hook for executable autogenerated revisions.
+- [ ] Verify that the PostgreSQL CI job executes successfully on the pull-request branch.
+- [x] Full host-owned revision/upgrade/downgrade lifecycle passed on PostgreSQL with
+      unrelated host tables (consumer-reported `2 passed` for the SQLite/PostgreSQL suite).
+
+The new SQLAlchemy adapter stores only calendar configuration in
+`scheduling_calendars`. PostgreSQL uses JSONB for typed snapshot data, a composite
+tenant/calendar primary key, a tenant/scope uniqueness constraint, and a version-guarded
+SQL update. No package-owned engine, credentials, migration revision history, or booking
+storage were introduced. Local SQLite exercises real SQL transactions; its tests are
+not presented as PostgreSQL concurrency proof.
 
 ## Stage 6 — Optional FastAPI adapter and consumer example
 
@@ -125,9 +194,23 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 
 ### Gate
 
-- [ ] Example host can manage two locations and independently scheduled resources.
-- [ ] API authorization rejects cross-tenant access and untrusted scope changes.
-- [ ] Availability remains advisory and no endpoint pretends to reserve inventory atomically.
+- [x] A separate example host configures its own SQLAlchemy session factory, API-key
+      authentication, authorization, two locations, resources, and database lifecycle.
+- [x] All calendar operations are available through optional FastAPI endpoints with
+      explicit request/response DTOs, transport mappers, and application use cases.
+- [x] Authentication, forbidden scope access, rejected user-supplied tenant fields,
+      version conflicts, and invalid schedules are exercised through HTTP requests.
+- [x] Independently scheduled resources and externally supplied busy intervals are
+      tested through HTTP against both in-memory and real SQL-backed repositories.
+- [x] Availability remains advisory; no API endpoint creates or reserves appointments.
+- [x] Consumer-confirmed Alembic autogenerate/revision/upgrade/downgrade on both
+      PostgreSQL and SQLite (`2 passed` reported after the latest migration commit).
+
+The FastAPI integration requires the optional `api` extra. `FindAvailability` performs
+host-authorized calendar reads and requests authoritative external busy periods through
+an injected `BusyIntervalReader`; the endpoint does not trust caller-supplied bookings,
+current time, actor, or tenant identity. The example explicitly labels demo API keys
+and create-all as unsuitable for production authentication or migration practices.
 
 ## Stage 7 — Hardening and release readiness
 
@@ -141,8 +224,18 @@ Finish, test, and review each stage before starting the next. Prioritize useful 
 ### Gate
 
 - [ ] Ruff, format, strict Pyright, pytest, integration tests and package build pass in CI.
-- [ ] Two independent host scenarios use the same package without application-specific imports.
-- [ ] Boundary and performance benchmarks are recorded with repeatable inputs.
+- [x] Two independent host scenarios (clinical staff and meeting rooms) use the same
+      package without application-specific imports.
+- [x] Golden boundaries and resource/day performance benchmarks are recorded with
+      repeatable inputs and no flaky runtime threshold; see [BENCHMARKS.md](BENCHMARKS.md).
+- [x] Clean-wheel optional-extras install smoke passes locally; CI includes matching
+      smoke checks and a PostgreSQL-only job with focused-test coverage settings.
+- [x] Static typing, test coverage, and authenticated HTTP/scope boundaries reviewed;
+      see [HARDENING.md](HARDENING.md) for checks and limitations.
+- [x] Consumer-owned Alembic revision/upgrade on PostgreSQL passed according to the
+      consuming host's test report; the CI equivalent is configured but not triggered.
+- [ ] Remote GitHub CI is confirmed green and a production-like performance baseline
+      is reviewed before declaring the public API release-ready.
 
 ## Deliberately out of scope
 

@@ -19,6 +19,7 @@ example*
 *.log
 *.diff
 uv.lock
+!scheduling/uv.lock
 !business/uv.lock
 *.docx
 docs/
