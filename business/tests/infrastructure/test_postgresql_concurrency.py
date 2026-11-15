@@ -6,7 +6,7 @@ import pytest
 from business.application.actor import AuthenticatedActor
 from business.application.dto_membership import TransferOwnershipCommand
 from business.domain.enums import MembershipRole, MembershipStatus
-from business.domain.errors import BusinessNotFoundError
+from business.domain.errors import BusinessPermissionDeniedError
 from tests.support.builders import TEST_BUSINESS_ID, TEST_USER_ID, build_business, build_membership
 from tests.support.factories import build_transfer_ownership_service
 from tests.support.membership_scenarios import clock, ids
@@ -46,8 +46,8 @@ async def test_concurrent_transfers_preserve_single_owner(
         ),
         return_exceptions=True,
     )
-    assert sum(not isinstance(value, BaseException) for value in results) == 1
-    assert sum(isinstance(value, BusinessNotFoundError) for value in results) == 1
+    assert sum(not isinstance(value, BaseException) for value in results) == 1, results
+    assert sum(isinstance(value, BusinessPermissionDeniedError) for value in results) == 1, results
     async with postgresql_environment.uow() as uow:
         assert await uow.memberships.count_active_owners(TEST_BUSINESS_ID) == 1
         memberships = await uow.memberships.list_for_business(TEST_BUSINESS_ID)
