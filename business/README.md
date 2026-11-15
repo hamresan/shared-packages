@@ -227,3 +227,283 @@ The same identity may repeat this flow for another business without registering 
 ## Implementation
 
 The first implementation targets a lean, reusable core. See [ROADMAP.md](ROADMAP.md) for stage order, test gates, deliberate exclusions and release criteria. Business, branch, membership, SQL persistence and optional FastAPI APIs are implemented. The package has not yet been published as a distribution.
+
+## Usage guide
+
+### Installation
+
+Use Python 3.12 or newer. Until the package is published, install it from the
+`business` directory of this repository:
+
+```bash
+pip install ./business
+pip install './business[sqlalchemy]'
+pip install './business[fastapi,postgres]'
+```
+
+Choose **one** of these alternatives based on the required capabilities. The
+base installation needs no FastAPI or SQLAlchemy. `sqlalchemy` adds the async
+persistence adapter, `postgres` additionally installs `asyncpg`, and `fastapi`
+adds the optional HTTP router. For development inside `business/`, use
+`uv sync --extra test --locked` instead. The distribution name is
+`hamresan-business`; the Python import name is `business`.
+
+### Compose the application services
+
+The host owns its database engine, connection pool, session lifecycle,
+authentication and database migrations. A reusable composition function can
+accept an existing SQLAlchemy session maker:
+
+```python
+from business.bootstrap import BusinessApplicationFactory
+from business.infrastructure.clock import SystemClock
+from business.infrastructure.identifiers import UuidIdentifierGenerator
+from business.infrastructure.persistence.sqlalchemy import (
+    BranchMapper,
+    BusinessMapper,
+    MembershipAuditMapper,
+    MembershipMapper,
+    SqlAlchemyBusinessUnitOfWorkFactory,
+)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+
+def build_business_services(
+    session_maker: async_sessionmaker[AsyncSession],
+) -> BusinessApplicationFactory:
+    unit_of_work = SqlAlchemyBusinessUnitOfWorkFactory(
+        session_maker,
+        BusinessMapper(),
+        BranchMapper(),
+        MembershipMapper(),
+        MembershipAuditMapper(),
+    )
+    return BusinessApplicationFactory(
+        unit_of_work,
+        SystemClock(),
+        UuidIdentifierGenerator(),
+    )
+```
+
+Create the `async_sessionmaker` in your application's composition root, for
+example from an engine created with `create_async_engine(...)`. Configure
+PostgreSQL with a `postgresql+asyncpg://...` URL. Do not create an engine in a
+request handler, and do not call `metadata.create_all()` on a production
+database; use host-owned Alembic revisions instead.
+
+### Use the framework-independent Python API
+
+All commands receive the **authenticated actor separately**. The actor ID
+must originate from a trusted login/session boundary; it is not an arbitrary
+value supplied by the customer. After building `services` above:
+
+```python
+from business import AuthenticatedActor, CreateBusinessCommand, CreateBranchCommand
+
+
+async def create_organization(services, trusted_user_id):
+    actor = AuthenticatedActor(user_id=trusted_user_id)
+    business = await services.businesses().create.execute(
+        CreateBusinessCommand(
+            name="Muscat Clinic",
+            country_code="OM",
+            default_language="en",
+            default_currency_code="OMR",
+        ),
+        actor=actor,
+    )
+
+    # A business may stay branchless; create a branch only when needed.
+    branch = await services.branches().create.execute(
+        CreateBranchCommand(
+            business_id=business.id,
+            name="Main Branch",
+            timezone="Asia/Muscat",
+        ),
+        actor=actor,
+    )
+    return business, branch
+```
+
+The same actor may create multiple unrelated businesses. Each business starts
+with that actor as its only active Owner. A branch can have an optional
+`BranchAddress(city="Muscat", country_code="OM")` and `BranchContact`; it
+does not require a street address. The `timezone` must be a valid IANA name.
+
+Use the corresponding command objects for updates, invitations, role changes,
+branch-access changes and ownership transfer. For example:
+
+```python
+from business.application import (
+    InviteMemberCommand,
+    SetMemberBranchAccessCommand,
+    TransferOwnershipCommand,
+)
+from business import BranchAccessScope
+
+
+async def manage_members(services, actor, business_id, invited_user_id, branch_id):
+    invitation = await services.memberships().invite.execute(
+        InviteMemberCommand(business_id=business_id, user_id=invited_user_id),
+        actor=actor,
+    )
+    # The invitee must separately accept with their own authenticated actor.
+    # An Owner can then grant access to a selected branch.
+    await services.memberships().set_access.execute(
+        SetMemberBranchAccessCommand(
+            business_id=business_id,
+            membership_id=invitation.id,
+            scope=BranchAccessScope.SELECTED,
+            branch_ids=(branch_id,),
+        ),
+        actor=actor,
+    )
+    # Ownership transfer requires a DIFFERENT, already active member.
+    # It is never performed automatically when inviting someone.
+```
+
+For an ownership transfer, call
+`services.memberships().transfer.execute(TransferOwnershipCommand(business_id,
+recipient_membership_id), actor=current_owner)` only after the recipient has
+accepted their invitation. The prior Owner becomes a Manager, and a database
+constraint prevents two simultaneously active Owners. Ordinary role changes
+cannot create or demote an Owner.
+
+### Add the FastAPI routes
+
+The optional adapter mounts the REST routes onto an existing host application.
+It does **not** authenticate users. The host must inject an async callable that
+verifies credentials and returns a trusted `AuthenticatedActor` or raises an
+HTTP authentication error:
+
+```python
+from business.presentation import build_fastapi_business_adapter
+from fastapi import FastAPI
+
+
+def install_business_api(app: FastAPI, services, authenticated_actor_dependency):
+    adapter = build_fastapi_business_adapter(
+        authenticated_actor_dependency=authenticated_actor_dependency,
+        businesses=services.businesses(),
+        branches=services.branches(),
+        memberships=services.memberships(),
+    )
+    adapter.install(app)
+```
+
+For a **working authentication integration** (Identity OTP, Notification queue,
+real signed JWT, token verification and conversion to an `AuthenticatedActor`),
+see [the host example](../examples/identity_business_consumer/README.md) and
+its executable integration test. Do not accept a `user_id` from HTTP request
+headers or JSON as proof of authentication.
+
+### HTTP endpoint reference
+
+All endpoints require the host's authentication dependency. Path parameters
+`business_id`, `branch_id` and `membership_id` are UUIDs. `POST /businesses`
+and `POST /businesses/{business_id}/branches` return `201`; most other
+successful operations return `200` with the updated resource.
+
+| Method | Path | Required access | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/businesses` | Authenticated user | Create a business and become its Owner |
+| `GET` | `/businesses` | Authenticated user | List businesses with active membership |
+| `GET` | `/businesses/{business_id}` | Active member | Read a business |
+| `PUT` | `/businesses/{business_id}` | Owner | Replace editable business profile |
+| `DELETE` | `/businesses/{business_id}` | Owner | Archive without deleting history |
+| `POST` | `/businesses/{business_id}/branches` | Owner or Manager | Create branch |
+| `GET` | `/businesses/{business_id}/branches` | Active member | List visible branches; `city` and `country_code` filters |
+| `GET` | `/businesses/{business_id}/branches/{branch_id}` | Authorized branch member | Read a branch |
+| `PUT` | `/businesses/{business_id}/branches/{branch_id}` | Owner or Manager | Replace branch details |
+| `DELETE` | `/businesses/{business_id}/branches/{branch_id}` | Owner or Manager | Archive branch |
+| `POST` | `/businesses/{business_id}/branches/{branch_id}/reactivate` | Owner or Manager | Reactivate branch |
+| `POST` | `/businesses/{business_id}/memberships` | Owner | Invite an existing external user ID |
+| `POST` | `/businesses/{business_id}/memberships/accept` | Invited user | Accept one's own invitation |
+| `GET` | `/businesses/{business_id}/memberships` | Owner | List memberships |
+| `PUT` | `/businesses/{business_id}/memberships/{membership_id}/role` | Owner | Switch Manager/Member role |
+| `PUT` | `/businesses/{business_id}/memberships/{membership_id}/access` | Owner | Set selected/all branch access |
+| `DELETE` | `/businesses/{business_id}/memberships/{membership_id}` | Owner | Revoke membership |
+| `POST` | `/businesses/{business_id}/ownership/transfer` | Current Owner | Transfer to another active member |
+
+Request bodies use strict Pydantic schemas (`extra="forbid"`). Example JSON:
+
+```json
+{
+  "name": "Muscat Clinic",
+  "country_code": "OM",
+  "default_language": "en",
+  "default_currency_code": "OMR",
+  "business_type": "clinic"
+}
+```
+
+Branch creation accepts `name`, `timezone`, optional `address` and optional
+`contact`. An address may contain `country_code`, `state_or_province`, `city`,
+`area`, `street`, `building`, `postal_code`, and `additional_details`; contact
+may contain `phone` and `email`. The branch-list filters are case-insensitive.
+
+Membership request bodies:
+
+| Operation | Example JSON |
+| --- | --- |
+| Invite | `{"user_id": "<user-uuid>"}` |
+| Change role | `{"role": "manager"}` or `{"role": "member"}` |
+| Restrict branches | `{"scope": "selected", "branch_ids": ["<branch-uuid>"]}` |
+| Unrestricted access | `{"scope": "all", "branch_ids": []}` |
+| Transfer ownership | `{"recipient_membership_id": "<membership-uuid>"}` |
+
+Invitations initially grant **no branch access**. They only become active
+after the invited identity accepts them. Owners and Managers can access all
+branches; a Member with selected scope sees only explicitly granted branches.
+An empty selected list means no branches. `all` must not include branch IDs.
+
+HTTP errors include `401` from the host authentication dependency, `403` for
+insufficient permissions, `404` for missing or hidden resources, `409` for
+invalid state transitions or conflicts, and `422` for invalid input. Archive
+operations preserve IDs and historical references rather than deleting rows.
+
+### Alembic migrations and production responsibilities
+
+Import `business.migrations.business_metadata()` into the host's Alembic
+configuration. Compose it with other packages' metadata (for example
+`identity.migrations.identity_metadata()`) through the host's migration
+process. `include_business_name(...)` can filter table/index reflection to
+Business-owned tables. The package owns five `business_` tables and their
+constraints, but **does not ship a host-specific migration history**.
+
+The host must:
+
+1. Maintain and apply versioned Alembic revisions before serving requests.
+2. Configure its async session factory and use a separate PostgreSQL test database.
+3. Authenticate Identity users, validate invite targets and authorize host-level operations.
+4. Store credentials securely, avoid logging sensitive contact or authentication data, and configure per-tenant access policies where needed.
+5. Run its Notification queue/worker if it wants to deliver invitations or OTPs.
+
+### Run the quality and integration tests
+
+From `business/`:
+
+```bash
+uv sync --extra test --locked
+make check
+```
+
+The PostgreSQL concurrency test is skipped unless
+`BUSINESS_TEST_POSTGRES_DSN` names a dedicated test database:
+
+```bash
+export BUSINESS_TEST_POSTGRES_DSN='postgresql+asyncpg://business_test:password@127.0.0.1:5433/business_test'
+uv run pytest tests/infrastructure/test_postgresql_concurrency.py -v
+```
+
+For the cross-package Identity/Notification/Business integration tests:
+
+```bash
+cd ../examples/identity_business_consumer
+uv sync --extra test --locked
+uv run pytest -v
+```
+
+Ruff, strict Pyright, coverage and wheel/sdist construction are part of
+`make check`. CI additionally verifies clean installation of the built wheel
+with and without optional FastAPI/SQLAlchemy dependencies.
