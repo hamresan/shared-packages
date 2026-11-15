@@ -1,0 +1,37 @@
+name: Business CI
+
+on:
+  pull_request:
+    paths:
+      - "business/**"
+      - ".github/workflows/business-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "business/**"
+      - ".github/workflows/business-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: business
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: business/uv.lock
+      - name: Install locked test environment
+        run: uv sync --extra test --locked
+      - name: Verify lint, formatting, typing, coverage and distribution
+        run: make check
+      - name: Verify clean wheel installation
+        run: |
+          python -m venv "$RUNNER_TEMP/business-wheel-check"
+          "$RUNNER_TEMP/business-wheel-check/bin/python" -m pip install dist/*.whl
+          "$RUNNER_TEMP/business-wheel-check/bin/python" -c "from business import BranchAddress; assert BranchAddress(city='Muscat').city == 'Muscat'"

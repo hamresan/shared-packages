@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Documentation complete; implementation has not started.
+> **Status:** Stage 1 source and local quality checks implemented; later stages pending.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
