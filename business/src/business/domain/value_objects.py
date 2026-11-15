@@ -13,3 +13,9 @@ class BranchAddress:
     building: str | None = None
     postal_code: str | None = None
     additional_details: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BranchContact:
+    phone: str | None = None
+    email: str | None = None
