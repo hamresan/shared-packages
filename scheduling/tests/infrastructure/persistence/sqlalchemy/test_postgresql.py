@@ -129,3 +129,5 @@ async def test_postgres_jsonb_and_host_metadata_autogeneration(
 
     calendar_table = scheduling_metadata().tables["scheduling_calendars"]
     assert calendar_table.c.weekly_schedule.type.compile(dialect=postgres_engine.dialect) == "JSONB"
+    async with postgres_engine.begin() as connection:
+        await connection.run_sync(host.drop_all)

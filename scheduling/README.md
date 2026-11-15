@@ -209,7 +209,13 @@ authorization; persistence is **not** a substitute for it.
 The host adds `scheduling_metadata()` to its Alembic `target_metadata` sequence and
 generates/reviews its own revision files. `is_scheduling_table` is an optional table-name
 predicate for the host's migration filters; it must be composed with any existing host
-filters. The package provides **no** auto-running migrations. The table
+filters. When autogenerating the JSONB columns, the host must also supply the exported
+`render_scheduling_type` to Alembic's `context.configure(render_item=...)`. This
+keeps JSONB variant expressions import-safe in generated revisions, rather than
+emitting an unqualified `Text()` reference. A real disposable-host regression test
+generates, upgrades and downgrades a revision alongside unrelated host tables on
+SQLite; the same acceptance test is configured to run against PostgreSQL in CI.
+The package provides **no** auto-running migrations. The table
 `scheduling_calendars` has tenant-scoped identifiers and a unique tenant/scope key,
 optimistic version checks, JSONB configuration snapshots on PostgreSQL, and an archive
 flag. There are no booking, slot-cache, or reservation tables.

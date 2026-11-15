@@ -72,4 +72,7 @@ jobs:
       - name: Install locked development dependencies
         run: uv sync --frozen --group dev
       - name: Run PostgreSQL integration gates
-        run: uv run --frozen pytest -q --no-cov tests/infrastructure/persistence/sqlalchemy/test_postgresql.py
+        run: >-
+          uv run --frozen pytest -q --no-cov
+          tests/infrastructure/persistence/sqlalchemy/test_postgresql.py
+          tests/infrastructure/persistence/sqlalchemy/test_host_alembic.py
