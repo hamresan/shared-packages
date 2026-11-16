@@ -46,6 +46,8 @@ async def test_external_identity_login_is_idempotent_and_creates_sessions() -> N
         assert first.session_id != second.session_id
         assert first.access_token != second.access_token
         assert first.refresh_token != second.refresh_token
+        assert first.purpose is None
+        assert second.purpose is None
     finally:
         await database.close()
 

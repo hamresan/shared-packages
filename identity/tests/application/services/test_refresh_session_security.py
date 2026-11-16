@@ -42,6 +42,8 @@ async def test_refresh_token_reuse_revokes_active_family() -> None:
         rotated = await module.session_refresher.execute(
             RefreshSessionCommand(refresh_token=authenticated.refresh_token)
         )
+        assert authenticated.purpose is OtpPurpose.REGISTRATION
+        assert rotated.purpose is None
 
         with pytest.raises(RefreshTokenReuseError):
             await module.session_refresher.execute(
@@ -98,5 +100,6 @@ async def test_refresh_token_remains_valid_during_hmac_key_rotation() -> None:
         assert refreshed.user_id == authenticated.user_id
         assert refreshed.session_id != authenticated.session_id
         assert refreshed.refresh_token != authenticated.refresh_token
+        assert refreshed.purpose is None
     finally:
         await database.close()

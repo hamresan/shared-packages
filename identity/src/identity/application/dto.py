@@ -38,7 +38,7 @@ class AuthSessionResult:
     access_token_expires_at: datetime
     refresh_token: str
     refresh_token_expires_at: datetime
-    purpose: OtpPurpose
+    purpose: OtpPurpose | None = None
 
 
 @dataclass(frozen=True, slots=True)
