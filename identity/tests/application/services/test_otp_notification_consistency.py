@@ -16,7 +16,7 @@ async def test_notification_failure_does_not_leave_active_otp_challenge() -> Non
     command = RequestOtpCommand(
         identity_type=IdentityType.MOBILE,
         destination="+96890000000",
-        purpose=OtpPurpose.LOGIN,
+        purpose=OtpPurpose.REGISTRATION,
     )
 
     try:
