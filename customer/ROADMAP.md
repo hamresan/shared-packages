@@ -152,8 +152,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 6 — Transactional audit and privacy erasure
 
-**Progress:** Implemented and verified by PostgreSQL-backed CI in PR #165. Final review/merge
-is pending. The library comparison and privacy constraints are recorded in
+**Progress:** Complete and merged via PR #165 after PostgreSQL-backed CI. The library comparison and privacy constraints are recorded in
 [Audit and erasure](docs/AUDIT_AND_ERASURE.md).
 
 ### Work
@@ -181,7 +180,7 @@ non-disclosure, idempotent retries, stale versions and client-supplied actor
 rejection and verified minimal identity resolution. Local Ruff, scoped Pyright,
 64 pytest tests (7 PostgreSQL tests skipped locally) and PostgreSQL-backed GitHub
 Actions Customer CI passed.
-PR #166 awaits final review/merge. Integration details are documented in
+Merged via PR #166. Integration details are documented in
 [HTTP integration](docs/HTTP_INTEGRATION.md).
 
 ### Work
@@ -201,6 +200,17 @@ PR #166 awaits final review/merge. Integration details are documented in
 
 ## Stage 8 — PostgreSQL acceptance and concurrency hardening
 
+**Progress:** PostgreSQL acceptance hardening implemented in PR #167.
+Real database tests cover concurrent guest creation, recovery after a lost response,
+divergent idempotency fingerprints, business scope and receipt retention,
+rollback/retry, optimistic profile updates and audit atomicity, competing provider
+links and default addresses, RLS policy coverage on every table, pooled-connection
+tenant isolation, and host-composed Alembic-context upgrades on clean and existing
+schemas. Tests use the non-owner/non-BYPASSRLS PostgreSQL runtime role.
+Local Ruff and scoped Pyright passed; PostgreSQL-backed GitHub Actions Customer
+CI run #44178401479 passed all lint, type, migration, acceptance, coverage,
+build and isolated wheel installation checks. PR #167 awaits review/merge.
+
 ### Work
 
 1. Run real PostgreSQL tests under the actual non-bypass application role with RLS enforced, including all child tables and transaction-local tenant context across pooled connections.
@@ -212,10 +222,10 @@ PR #166 awaits final review/merge. Integration details are documented in
 
 ### Gate
 
-- [ ] Cross-tenant leakage tests fail if any essential RLS policy or query scope is removed.
-- [ ] Duplicate-provider races never result in multiple active mappings.
-- [ ] Failed audit writes prevent committed sensitive changes.
-- [ ] CI PostgreSQL acceptance, migrations, Ruff, Pyright and coverage gates pass.
+- [x] Cross-tenant leakage tests fail if any essential RLS policy or query scope is removed.
+- [x] Duplicate-provider races never result in multiple active mappings.
+- [x] Failed audit writes prevent committed sensitive changes.
+- [x] CI PostgreSQL acceptance, migrations, Ruff, Pyright and coverage gates pass.
 
 ## Stage 9 — Packaging and release readiness
 
