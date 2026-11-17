@@ -178,8 +178,9 @@ is pending. The library comparison and privacy constraints are recorded in
 dependency, strict transport DTOs, stable masked errors and POST-based exact
 identity lookup. Mirrored ASGI integration tests cover authentication, tenant
 non-disclosure, idempotent retries, stale versions and client-supplied actor
-rejection. Local Ruff, scoped Pyright, 63 pytest tests (7 PostgreSQL tests skipped
-locally, 90.05% coverage) and GitHub Actions Customer CI run #44160411438 passed.
+rejection and verified minimal identity resolution. Local Ruff, scoped Pyright,
+64 pytest tests (7 PostgreSQL tests skipped locally) and PostgreSQL-backed GitHub
+Actions Customer CI passed.
 PR #166 awaits final review/merge. Integration details are documented in
 [HTTP integration](docs/HTTP_INTEGRATION.md).
 
