@@ -1,0 +1,188 @@
+# hamresan-customer
+
+Reusable, business-scoped customer profiles and external-identity links for Python applications.
+
+> **Status: design approved; implementation not started.** The interfaces and examples below describe the **planned public API**, not APIs available to import yet. See [ROADMAP.md](ROADMAP.md) for implementation stages and acceptance gates.
+
+## Purpose and boundaries
+
+`hamresan-customer` provides customer records owned by a single business, without imposing a particular product, workflow, channel, authentication provider, or web framework. The same natural person may have a separate customer record in several businesses; customer data is never shared across them merely because an identity matches.
+
+**Owns:** customer lifecycle; contacts and addresses; structured preferences; internal notes; optional links to a trusted internal identity; external identities (including messaging identifiers); tenant-scoped search and duplicate suggestions; guarded mutation and privacy erasure; typed application contracts; optional persistence and HTTP adapters.
+
+**Does not own:** business registration or roles; authentication, OTPs or proof-of-ownership challenges; messaging connections, webhooks or conversations; appointment/order management; LLM prompts or tool routing; payment processing; cross-business customer profiles; a general-purpose CRM or event bus.
+
+The package is designed to compose with other independently installed packages through **host-supplied adapters**. It must not import implementation classes from [`hamresan-business`](../business) or [`hamresan-identity`](../identity). A host can use those packages to implement the customer-owned authorization and identity-check contracts.
+
+## Distribution and installation (planned)
+
+- Distribution: `hamresan-customer`; import package: `customer`.
+- Python 3.12+; standards-based `pyproject.toml` and `src/customer` layout; Hatchling build, `py.typed`, wheel and sdist.
+- Lean framework-independent core. Optional extras for async SQLAlchemy, PostgreSQL (`asyncpg`), FastAPI, migration tooling and development/testing.
+- Host owns the SQLAlchemy engine, connection pool, async session factory, credentials and the Alembic deployment sequence.
+- No published distribution or executable `customer` module exists yet.
+
+Once Stage 1 is complete, source installation from this monorepo is intended to look like:
+
+```bash
+python -m pip install './customer[postgres,fastapi]'
+```
+
+The actual extra names and install command are an acceptance item for Stage 1, not a claim that this command works today.
+
+## Domain model
+
+| Model | Responsibility and invariants |
+| --- | --- |
+| `Customer` | Stable UUID, immutable `business_id`, profile, status `ACTIVE / ARCHIVED / ERASED`, timestamps, optimistic `version`. A business owns many customers; a customer belongs to exactly one business. |
+| `CustomerContact` | Multiple normalized `phone`/`email` values; verification provenance, optional primary per contact type. An unverified value is not proof of identity. |
+| `CustomerAddress` | Multiple simple postal addresses, optional label and at most one default address. Historical snapshots in consuming applications are separate. |
+| `CustomerPreference` | Simple structured key/value records, unique key per customer. Not an arbitrary secrets store or dynamic rules engine. |
+| `CustomerNote` | Internal text with author and timestamp; independently authorized and hidden from ordinary customer/agent projections. |
+| `CustomerIdentityLink` | Optional link to a trusted internal identity user. At most one active internal user link per customer, and at most one active customer link per `(business_id, identity_user_id)`. |
+| `CustomerExternalIdentity` | Provider identity scoped by business and provider-specific account/identifier namespace; `ACTIVE / REVOKED`, verification provenance, link/revoke timestamps. Only active links resolve customers. |
+
+All tenant-owned tables carry `business_id`. Composite foreign keys enforce matching business ownership for parent/child records; database uniqueness constraints enforce active-link and primary/default invariants under concurrency. Exact indexes, retention periods and attribute types are finalized within their implementation stages.
+
+### Identity and channel safety
+
+`CustomerIdentityLink` references a trusted internal user identity; `CustomerExternalIdentity` represents a provider-scoped external identifier. They are not interchangeable. The package stores **references and verified-link metadata**, not passwords, OTP codes, provider access tokens or incoming messages.
+
+An external identity is identified by a canonical, provider-defined key including business scope and the relevant channel/account namespace. Do not assume a username, display name, claimed phone number or an unverified contact is unique or proves ownership. The host validates provider-originated assertions and performs any cross-channel challenge or verification before invoking a privileged link operation. A verified provider assertion must actually attest the needed ownership; merely presenting a phone number is insufficient.
+
+An exact active external identity may resolve a customer. A new identity must not automatically merge with an existing customer found through name/phone similarity. Linking and relinking require authorization and trusted verification evidence. A revoked link no longer resolves customers, and erasure clears personally identifying link data according to retention policy.
+
+## Authorization, privacy and isolation
+
+- Every call uses a **trusted business scope** and a typed `CustomerActor` (`USER` or `SERVICE`) resolved by the host; never trust client-supplied actor, business, role or verification flags.
+- `CustomerAuthorizer` is an injected contract for action-specific permissions. Human membership/branch policies remain owned by the host's business system. Service actors receive minimum permissions and do not impersonate owners.
+- Sensitive operations (internal notes, identity linking, erasure) have explicit permissions; denials and cross-tenant lookups must not reveal another business's records.
+- Repositories always filter by `business_id`, and PostgreSQL **row-level security (RLS)** independently constrains all customer-owned tables. The host establishes transaction-local, fail-closed tenant context on the very connection used by the unit of work. No bypass-RLS application role.
+- Read projections expose only needed fields; internal notes and sensitive identifiers never appear in general-purpose or AI-facing projections by default. The host decides which authorized data to forward to third-party systems.
+- Search returns business-scoped, paginated and minimally disclosed results. Exact normalized email/phone lookup, partial-name search, exact ID lookup and external-identity lookup precede any future fuzzy search. Duplicate suggestions are advisory, never an automatic merge or uniqueness rejection for unverified data.
+- `ARCHIVED` may be reactivated with permission; `ERASED` is terminal. Erasure atomically sanitizes/removes customer-owned personal data and retains only a minimal non-identifying tombstone. A host coordinates retention and erasure across other data owners; it does not mutate historical snapshots owned elsewhere.
+
+### Consistency and audit
+
+The host supplies the database session factory; Customer owns its SQLAlchemy repositories, mappers and unit of work. Each Customer operation commits/rolls back its own transaction. A multi-package workflow is coordinated by the host; customer creation need not be rolled back if a separate downstream operation fails.
+
+Sensitive mutations and their minimal audit records are written **in the same Customer transaction**, through a narrow `AuditRepository` contract implemented by the persistence adapter (potentially using a vetted third-party audit library). An audit failure prevents the mutation from committing. Audit must not retain erased personal values; actor type/id, business, subject reference, action and timestamp are typical safe metadata, subject to retention review.
+
+`Customer.version` enables optimistic concurrency: updates include `expected_version` and fail with a typed version-conflict error on stale writes. Link uniqueness and get-or-create races additionally rely on atomic database constraints and bounded, operation-specific conflict handling.
+
+No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
+
+## Planned public Python API
+
+A stable `CustomerModule` facade exposes small capability groups with typed command/query DTOs and typed errors. The public import surface is controlled through package `__init__.py` exports; consumers should not depend on internal repository or SQLAlchemy model layouts.
+
+Illustrative capability groups (final names may be adjusted before the Stage 1 public-contract gate):
+
+| Group | Representative operations |
+| --- | --- |
+| `customers` | `create`, `get`, `update`, `search`, `archive`, `reactivate`, `erase` |
+| `contacts` | `add`, `update`, `remove`, `set_primary` |
+| `addresses` | `add`, `update`, `remove`, `set_default` |
+| `preferences` | `set`, `list`, `remove` |
+| `notes` | `add`, `list`, `remove` (separate permissions) |
+| `identities` | `link`, `unlink`, `resolve` (trusted internal identities) |
+| `external_identities` | `find`, `get_or_create`, `link`, `revoke`, `relink` |
+
+### Example 1: Compose the module (illustrative; not executable yet)
+
+```python
+from customer import CustomerModule, CustomerModuleConfig
+from customer.infrastructure.persistence.sqlalchemy import SqlAlchemyCustomerUnitOfWorkFactory
+
+# The host already owns session_factory, authenticated actors, authorization,
+# trusted identity verification and tenant-scoped database configuration.
+uow_factory = SqlAlchemyCustomerUnitOfWorkFactory(session_factory=session_factory)
+customers = CustomerModule(
+    CustomerModuleConfig(
+        unit_of_work_factory=uow_factory,
+        authorizer=customer_authorizer,     # host adapter; implements CustomerAuthorizer
+        identity_verifier=identity_verifier, # host adapter; implements IdentityVerifier
+    )
+)
+```
+
+The composition root wires contracts explicitly. The module must not create an engine, discover dependencies through a global registry, or generate trusted actors from raw request values. The audit repository participates in the injected unit of work.
+
+### Example 2: Create and read a guest customer (illustrative)
+
+```python
+from customer import CreateCustomerCommand, GetCustomerQuery
+
+created = await customers.customers.create(
+    CreateCustomerCommand(
+        business_id=trusted_business_id,
+        actor=trusted_actor,
+        display_name="Alex Rivera",
+    )
+)
+
+profile = await customers.customers.get(
+    GetCustomerQuery(
+        business_id=trusted_business_id,
+        actor=trusted_actor,
+        customer_id=created.id,
+    )
+)
+```
+
+A guest does **not** need an internal identity account. Contact information can be added separately with its own provenance and authorization rules.
+
+### Example 3: Resolve an external identity without implicit creation (illustrative)
+
+```python
+from customer import FindCustomerByExternalIdentityQuery
+
+found = await customers.external_identities.find(
+    FindCustomerByExternalIdentityQuery(
+        business_id=trusted_business_id,
+        actor=trusted_service_actor,
+        provider="telegram",
+        channel_account_id=trusted_channel_account_id,
+        external_user_id=trusted_provider_user_id,
+    )
+)
+
+# A missing match returns None; no customer is created.
+# An explicitly authorized get_or_create operation is a separate call.
+```
+
+Provider authentication and any proof-of-control challenge occur **before** the host calls link/relink. A newly observed identifier does not prove that it belongs to an existing customer. A lookup is also not sufficient authorization to disclose private history.
+
+### Example 4: Handle a stale update (illustrative)
+
+```python
+from customer import CustomerVersionConflictError, UpdateCustomerCommand
+
+try:
+    await customers.customers.update(
+        UpdateCustomerCommand(
+            business_id=trusted_business_id,
+            actor=trusted_actor,
+            customer_id=profile.id,
+            expected_version=profile.version,
+            display_name="Alex R.",
+        )
+    )
+except CustomerVersionConflictError:
+    # Refresh the profile and ask the caller to review conflicting edits.
+    pass
+```
+
+These sketches document expected use, **not a frozen constructor signature**. Stage 1 will fix import names, DTO fields, stable error codes and public API versioning, then replace examples with tested executable code.
+
+## Persistence, migrations and test expectations
+
+- PostgreSQL is the production acceptance database; SQLAlchemy 2 async is an optional adapter. The framework-independent core has no SQLAlchemy/FastAPI imports.
+- Package-owned `customer_*` tables, metadata exposure and Alembic integration helpers compose with other package metadata. The **host** runs reviewed migrations during deployment, never automatically during application startup.
+- Migration work includes RLS policies and `WITH CHECK` coverage, transaction-local tenant context, composite tenant foreign keys, active-link uniqueness, indexes and a non-bypass database role. SQLAlchemy metadata alone cannot express all required RLS DDL.
+- Tests mirror source responsibilities. Unit tests use explicit fakes; integration tests exercise SQLAlchemy and real PostgreSQL; CI proves isolation, concurrency, rollback-on-audit-failure, migration upgrade and wheel installation.
+- Use Ruff, strict Pyright, pytest/pytest-asyncio, coverage and a reproducible development lockfile.
+
+## Development status
+
+This directory initially contains only design documentation. Implementation proceeds through independently reviewable stages in [ROADMAP.md](ROADMAP.md). No APIs shown here should be treated as production-ready until the relevant stage passes its gate.
