@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stage 0 design artifacts prepared for review; Stage 0 gate pending approval.** Runtime implementation has not started. This plan is public and product-agnostic. Each stage has a review gate; do not advance before its implementation, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stage 0 approved. Stage 1 foundation implemented locally and awaiting GitHub CI/review.** No Stage 2 domain behavior has been implemented. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -21,7 +21,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 0 — Freeze contracts and threat model
 
-**Progress:** Design drafts prepared. Review these artifacts before completing the gate:
+**Progress:** Approved. Design reference artifacts:
 
 - [Architecture and ownership matrix](docs/ARCHITECTURE.md)
 - [Public API and contract draft](docs/PUBLIC_CONTRACTS.md)
@@ -41,13 +41,15 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Entity/relationship and ownership matrix signed off, including constraints and retention decisions.
-- [ ] Public API v1 draft, typed error map and permission matrix reviewed.
-- [ ] Resolution projection, freshness policy boundary and create-idempotency contract reviewed.
-- [ ] RLS, audit atomicity, verification provenance and migration approach documented with test cases.
-- [ ] No unowned cross-package dependency or unnecessary abstraction.
+- [x] Entity/relationship and ownership matrix signed off, including constraints and retention decisions.
+- [x] Public API v1 draft, typed error map and permission matrix reviewed.
+- [x] Resolution projection, freshness policy boundary and create-idempotency contract reviewed.
+- [x] RLS, audit atomicity, verification provenance and migration approach documented with test cases.
+- [x] No unowned cross-package dependency or unnecessary abstraction.
 
 ## Stage 1 — Installable package foundation
+
+**Progress:** Foundation coded and verified locally with Python 3.12 (Ruff, format, strict Pyright, six pytest tests at 100% measured coverage, wheel/sdist build and clean core-only wheel install). GitHub Actions result and stage review are pending. Domain use cases and persistence remain future work.
 
 ### Work
 
@@ -59,9 +61,9 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Wheel/sdist install and import successfully in a fresh environment.
-- [ ] Ruff, format, strict Pyright, unit test and build jobs pass.
-- [ ] Optional dependencies are not loaded by core-only import.
+- [x] Wheel/sdist build; wheel installs and imports in a fresh local environment.
+- [ ] Ruff, format, strict Pyright, unit test and build **GitHub CI** jobs pass (local checks passed).
+- [x] Optional dependencies are not loaded by core-only import.
 
 ## Stage 2 — Customer aggregate, lifecycle and search
 
