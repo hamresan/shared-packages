@@ -45,7 +45,7 @@ class RecordExternalVerificationService:
         key = self.validator.normalize(command.key)
         evidence = await self.verifier.require_verified(key, command.evidence_reference)
         self.policy.require_matching(key, evidence)
-        async with self.uow() as transaction:
+        async with self.uow(command.key.business_id) as transaction:
             active = await transaction.external_identities.get_active_for_customer(
                 key, command.customer_id
             )

@@ -2,6 +2,7 @@
 
 from contextlib import AbstractAsyncContextManager
 from typing import Protocol
+from uuid import UUID
 
 from customer.application.contracts.address_repository import CustomerAddressRepository
 from customer.application.contracts.contact_repository import CustomerContactRepository
@@ -46,4 +47,4 @@ class CustomerUnitOfWork(Protocol):
 
 
 class CustomerUnitOfWorkFactory(Protocol):
-    def __call__(self) -> AbstractAsyncContextManager[CustomerUnitOfWork]: ...
+    def __call__(self, business_id: UUID) -> AbstractAsyncContextManager[CustomerUnitOfWork]: ...

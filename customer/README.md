@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Customer, profile-detail and identity-link use cases implemented through Stage 4; PostgreSQL persistence and HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Customer, profile-detail and identity-link use cases implemented through Stage 4. Async SQLAlchemy/PostgreSQL persistence is in Stage 5 review; PostgreSQL CI acceptance is required before release.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 
@@ -82,6 +82,28 @@ External identity metadata records the **method and time** of a trusted verifica
 No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
 
 ## Public Python API
+
+### Optional SQLAlchemy/PostgreSQL adapter (Stage 5 review)
+
+Install the optional database drivers with `pip install 'hamresan-customer[postgres,migrations]'` once a release containing the adapter is available. The host owns the engine, database roles, migrations and session lifetime:
+
+```python
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from customer.infrastructure.persistence.sqlalchemy.unit_of_work import (
+    SqlAlchemyCustomerUnitOfWorkFactory,
+)
+from customer.migrations import customer_metadata, install_customer_rls
+
+engine = create_async_engine(database_url)  # host-managed; never global in the package
+sessions = async_sessionmaker(engine, expire_on_commit=False)
+customer_uow_factory = SqlAlchemyCustomerUnitOfWorkFactory(sessions)
+
+# In a host-managed Alembic migration, compose customer_metadata() with the
+# host's other metadata, then run install_customer_rls(connection) after CREATE TABLE.
+```
+
+The runtime PostgreSQL role must not own the tables, be a superuser, or have `BYPASSRLS`. Each Unit of Work sets `app.customer_business_id` using `set_config(..., true)` within its own transaction; no tenant setting is stored on a pooled connection. The SQLAlchemy adapter is optional and is not imported by `import customer`.
 
 A stable `CustomerModule` facade exposes small capability groups with typed command/query DTOs and typed errors. The public import surface is controlled through package `__init__.py` exports; consumers should not depend on internal repository or SQLAlchemy model layouts.
 

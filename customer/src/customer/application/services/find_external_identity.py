@@ -29,7 +29,7 @@ class FindExternalIdentityService:
             query.actor, CustomerPermission.EXTERNAL_IDENTITY_LOOKUP
         )
         key = self.validator.normalize(query.key)
-        async with self.uow() as transaction:
+        async with self.uow(query.key.business_id) as transaction:
             identity = await transaction.external_identities.find_active(key)
             if identity is None:
                 return None

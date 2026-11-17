@@ -27,7 +27,7 @@ class AddNoteService:
 
     async def execute(self, command: AddNoteCommand) -> NoteResult:
         body = self.validator.normalize(command.body)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             await self.access.require(
                 transaction.customers,
                 command.business_id,

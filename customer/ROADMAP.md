@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–3 complete. Stage 4 implemented and verified locally and in GitHub CI, pending PR #163 review/merge.** Stage 5 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–4 complete and merged. Stage 5 implementation is under review; PostgreSQL acceptance must pass in CI before sign-off.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -129,6 +129,8 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 - [x] Resolution does not grant downstream authorization; freshness decisions stay with the host.
 
 ## Stage 5 — Async persistence, tenant constraints and RLS
+
+**Progress:** Implemented in the Stage 5 review branch; local Ruff, Pyright and core tests pass. PostgreSQL acceptance is enforced by a dedicated CI service and remains pending until that workflow passes. No Stage 5 gate is considered complete before that result.
 
 ### Work
 

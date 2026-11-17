@@ -30,7 +30,7 @@ class UpdateCustomerService:
             command.actor, CustomerPermission.UPDATE, command.customer_id
         )
         name = self.validator.normalize(command.display_name)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             customer = await transaction.customers.get(command.business_id, command.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer was not found")

@@ -25,7 +25,7 @@ class ListContactsService:
         await self.authorizer.require_permission(
             query.actor, CustomerPermission.READ, query.customer_id
         )
-        async with self.uow() as transaction:
+        async with self.uow(query.business_id) as transaction:
             customer = await transaction.customers.get(query.business_id, query.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer was not found")

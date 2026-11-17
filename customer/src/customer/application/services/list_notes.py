@@ -18,7 +18,7 @@ class ListNotesService:
         self.mapper = mapper
 
     async def execute(self, query: CustomerDetailsQuery) -> tuple[NoteResult, ...]:
-        async with self.uow() as transaction:
+        async with self.uow(query.business_id) as transaction:
             await self.access.require(
                 transaction.customers,
                 query.business_id,

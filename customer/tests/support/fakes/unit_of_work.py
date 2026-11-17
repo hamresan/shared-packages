@@ -1,5 +1,6 @@
 from contextlib import AbstractAsyncContextManager
 from types import TracebackType
+from uuid import UUID
 
 from customer.application.contracts import (
     CustomerIdempotencyRepository,
@@ -111,7 +112,7 @@ class FakeCustomerUnitOfWorkFactory(CustomerUnitOfWorkFactory):
         self.internal_identities = InMemoryIdentityLinkRepository()
         self.external_identities = InMemoryExternalIdentityRepository()
 
-    def __call__(self) -> AbstractAsyncContextManager[CustomerUnitOfWork]:
+    def __call__(self, business_id: UUID) -> AbstractAsyncContextManager[CustomerUnitOfWork]:
         return FakeCustomerUnitOfWorkContext(
             FakeCustomerUnitOfWork(
                 self.customers,

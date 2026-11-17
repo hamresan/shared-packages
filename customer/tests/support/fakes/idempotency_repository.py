@@ -4,6 +4,9 @@ from customer.application.contracts import CustomerCreationReceipt, CustomerIdem
 
 
 class InMemoryCustomerIdempotencyRepository(CustomerIdempotencyRepository):
+    async def lock_key(self, business_id: UUID, key: str) -> None:
+        return None
+
     def __init__(self) -> None:
         self.records: dict[tuple[UUID, str], CustomerCreationReceipt] = {}
 

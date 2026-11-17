@@ -1,11 +1,19 @@
+import subprocess
 import sys
 
 import customer
 
 
 def test_core_import_has_no_optional_framework_dependencies() -> None:
-    assert "fastapi" not in sys.modules
-    assert "sqlalchemy" not in sys.modules
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import customer,sys; "
+            "assert 'fastapi' not in sys.modules; assert 'sqlalchemy' not in sys.modules",
+        ],
+        check=True,
+    )
     assert customer.CustomerModule
 
 

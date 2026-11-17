@@ -53,7 +53,7 @@ class LinkExternalIdentityService:
         key = self.validator.normalize(command.key)
         evidence = await self.verifier.require_verified(key, command.evidence_reference)
         self.evidence_policy.require_matching(key, evidence)
-        async with self.uow() as transaction:
+        async with self.uow(command.key.business_id) as transaction:
             customer = await transaction.customers.get(key.business_id, command.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer not found")

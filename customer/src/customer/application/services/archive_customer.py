@@ -26,7 +26,7 @@ class ArchiveCustomerService:
         await self.authorizer.require_permission(
             command.actor, CustomerPermission.ARCHIVE, command.customer_id
         )
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             customer = await transaction.customers.get(command.business_id, command.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer was not found")
