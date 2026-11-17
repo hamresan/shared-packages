@@ -42,5 +42,6 @@ async def postgres_sessions() -> AsyncIterator[async_sessionmaker[AsyncSession]]
         await runtime.dispose()
         async with admin.begin() as connection:
             await connection.run_sync(customer_metadata().drop_all)
+            await connection.execute(text(f'REVOKE USAGE ON SCHEMA public FROM "{runtime_role}"'))
             await connection.execute(text(f'DROP ROLE "{runtime_role}"'))
         await admin.dispose()
