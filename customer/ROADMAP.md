@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–4 complete and merged. Stage 5 implemented and verified by PostgreSQL-backed CI; PR #164 awaits review/merge.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–5 complete and merged. Stage 6 is next.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -130,7 +130,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 5 — Async persistence, tenant constraints and RLS
 
-**Progress:** Implemented in PR #164. Ruff, Pyright, core tests and PostgreSQL-backed CI pass. All gates are implemented; the final review/merge is pending. The host must supply a migration revision, a non-owner runtime database role and a scheduled idempotency-retention cutoff.
+**Progress:** Complete and merged via PR #164. Ruff, Pyright, core tests and PostgreSQL-backed CI passed. The host must supply a migration revision, a non-owner runtime database role and a scheduled idempotency-retention cutoff.
 
 ### Work
 
