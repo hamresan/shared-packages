@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: architecture approved; implementation not started.** This plan is public and product-agnostic. Each stage has a review gate; do not advance before its implementation, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stage 0 design artifacts prepared for review; Stage 0 gate pending approval.** Runtime implementation has not started. This plan is public and product-agnostic. Each stage has a review gate; do not advance before its implementation, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -20,6 +20,12 @@
 The stages describe delivery order, not forced one-file-per-concept scaffolding. Where end-to-end verification depends on persistence (for example atomic uniqueness, RLS or transactional audit), earlier stages use fakes and Stage 5 onward provide the real guarantees. Never claim a security invariant is proven solely by an in-memory test.
 
 ## Stage 0 — Freeze contracts and threat model
+
+**Progress:** Design drafts prepared. Review these artifacts before completing the gate:
+
+- [Architecture and ownership matrix](docs/ARCHITECTURE.md)
+- [Public API and contract draft](docs/PUBLIC_CONTRACTS.md)
+- [Security threat model and acceptance inventory](docs/SECURITY_AND_ACCEPTANCE.md)
 
 ### Work
 
