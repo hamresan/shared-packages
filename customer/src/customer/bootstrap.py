@@ -12,8 +12,14 @@ from customer.application.contracts import (
     IdentifierGenerator,
     IdentityVerifier,
 )
+from customer.application.contracts.external_identity_evidence import (
+    ExternalIdentityEvidenceVerifier,
+)
 from customer.application.customer_use_cases import CustomerUseCases
+from customer.application.external_identity_use_cases import ExternalIdentityUseCases
 from customer.application.factories import CustomerFactory
+from customer.application.factories.identity_use_cases import IdentityUseCasesFactory
+from customer.application.internal_identity_use_cases import InternalIdentityUseCases
 from customer.application.mapping import CustomerResultMapper
 from customer.application.mapping.address_result import AddressResultMapper
 from customer.application.mapping.contact_result import ContactResultMapper
@@ -64,6 +70,7 @@ class CustomerModuleConfig:
     clock: Clock
     identifiers: IdentifierGenerator
     creation_fingerprinter: CustomerCreationFingerprinter
+    external_evidence_verifier: ExternalIdentityEvidenceVerifier
 
 
 class CustomerModule:
@@ -71,6 +78,16 @@ class CustomerModule:
 
     def __init__(self, config: CustomerModuleConfig) -> None:
         self._config = config
+        identity_factory = IdentityUseCasesFactory(
+            config.unit_of_work_factory,
+            config.authorizer,
+            config.identity_verifier,
+            config.external_evidence_verifier,
+            config.identifiers,
+            config.clock,
+        )
+        self._identities = identity_factory.build_internal()
+        self._external_identities = identity_factory.build_external()
         scope = CustomerScopePolicy()
         mapper = CustomerResultMapper()
         names = CustomerNameValidator()
@@ -189,6 +206,14 @@ class CustomerModule:
     @property
     def contacts(self) -> ContactUseCases:
         return self._contacts
+
+    @property
+    def identities(self) -> InternalIdentityUseCases:
+        return self._identities
+
+    @property
+    def external_identities(self) -> ExternalIdentityUseCases:
+        return self._external_identities
 
     @property
     def addresses(self) -> AddressUseCases:
