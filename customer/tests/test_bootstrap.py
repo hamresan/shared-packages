@@ -1,6 +1,7 @@
 from customer import CustomerModule, CustomerModuleConfig
 from tests.support.fakes.authorization import AllowCustomerAuthorizer
 from tests.support.fakes.clock import FixedClock
+from tests.support.fakes.external_evidence import FakeExternalEvidenceVerifier
 from tests.support.fakes.fingerprinter import FakeCustomerCreationFingerprinter
 from tests.support.fakes.identifiers import RandomIdentifierGenerator
 from tests.support.fakes.identity_verification import AcceptIdentityVerifier
@@ -18,6 +19,7 @@ def test_module_uses_explicit_injected_dependencies() -> None:
         FixedClock(),
         RandomIdentifierGenerator(),
         FakeCustomerCreationFingerprinter(),
+        FakeExternalEvidenceVerifier(),
     )
 
     module = CustomerModule(config)
