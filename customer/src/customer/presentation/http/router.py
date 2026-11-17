@@ -6,15 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException
 
 from customer.application.actor import CustomerActor
-from customer.application.models import (
-    CreateCustomerCommand,
-    GetCustomerQuery,
-    UpdateCustomerCommand,
-)
-from customer.application.models.external_identity_commands import FindExternalIdentityQuery
 from customer.bootstrap import CustomerModule
 from customer.domain.errors import CustomerError
-from customer.domain.external_identity import ExternalIdentityKey
 from customer.presentation.http.dto import (
     CustomerCreateBody,
     CustomerResponse,
@@ -23,6 +16,7 @@ from customer.presentation.http.dto import (
     ExternalIdentityResponse,
 )
 from customer.presentation.http.error_mapping import customer_http_error
+from customer.presentation.http.mappers import CustomerHttpMapper, ExternalIdentityHttpMapper
 
 
 def create_customer_router(
@@ -36,6 +30,8 @@ def create_customer_router(
     """
     router = APIRouter(prefix="/businesses/{business_id}/customers", tags=["customers"])
     actor_dependency = Depends(trusted_actor)
+    customer_mapper = CustomerHttpMapper()
+    identity_mapper = ExternalIdentityHttpMapper()
 
     @router.post("", response_model=CustomerResponse, status_code=201)
     async def create(
@@ -46,9 +42,9 @@ def create_customer_router(
     ) -> CustomerResponse:
         try:
             result = await module.customers.create.execute(
-                CreateCustomerCommand(business_id, actor, body.display_name, idempotency_key)
+                customer_mapper.to_create_command(business_id, actor, body, idempotency_key)
             )
-            return CustomerResponse.model_validate(result, from_attributes=True)
+            return customer_mapper.to_response(result)
         except CustomerError as error:
             raise customer_http_error(error) from error
 
@@ -60,9 +56,9 @@ def create_customer_router(
     ) -> CustomerResponse:
         try:
             result = await module.customers.get.execute(
-                GetCustomerQuery(business_id, actor, customer_id)
+                customer_mapper.to_get_query(business_id, actor, customer_id)
             )
-            return CustomerResponse.model_validate(result, from_attributes=True)
+            return customer_mapper.to_response(result)
         except CustomerError as error:
             raise customer_http_error(error) from error
 
@@ -75,11 +71,9 @@ def create_customer_router(
     ) -> CustomerResponse:
         try:
             result = await module.customers.update.execute(
-                UpdateCustomerCommand(
-                    business_id, actor, customer_id, body.expected_version, body.display_name
-                )
+                customer_mapper.to_update_command(business_id, actor, customer_id, body)
             )
-            return CustomerResponse.model_validate(result, from_attributes=True)
+            return customer_mapper.to_response(result)
         except CustomerError as error:
             raise customer_http_error(error) from error
 
@@ -91,16 +85,11 @@ def create_customer_router(
     ) -> ExternalIdentityResponse:
         try:
             result = await module.external_identities.find.execute(
-                FindExternalIdentityQuery(
-                    actor,
-                    ExternalIdentityKey(
-                        business_id, body.provider, body.channel_account_id, body.external_user_id
-                    ),
-                )
+                identity_mapper.to_find_query(business_id, actor, body)
             )
             if result is None:
                 raise HTTPException(status_code=404, detail="customer_unavailable")
-            return ExternalIdentityResponse.model_validate(result, from_attributes=True)
+            return identity_mapper.to_response(result)
         except CustomerError as error:
             raise customer_http_error(error) from error
 

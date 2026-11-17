@@ -36,9 +36,7 @@ class UpdateContactService:
             if customer is None or contact is None:
                 raise CustomerNotFoundError("Contact was not found")
             customer.require_active()
-            contact.value = self.normalizer.normalize(contact.kind, command.value)
-            contact.verified_at = None
-            contact.verification_method = None
+            contact.change_value(self.normalizer.normalize(contact.kind, command.value))
             await transaction.contacts.save(contact)
             await transaction.commit_audited(command.actor, "contact.update", command.customer_id)
             return self.mapper.to_result(contact)

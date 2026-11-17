@@ -34,7 +34,7 @@ class SetDefaultAddressService:
             if address is None:
                 raise CustomerNotFoundError("Address was not found")
             await transaction.addresses.unset_default(command.business_id, command.customer_id)
-            address.is_default = True
+            address.make_default()
             await transaction.addresses.save(address)
             await transaction.commit_audited(
                 command.actor, "address.set_default", command.customer_id

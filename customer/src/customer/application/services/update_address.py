@@ -44,14 +44,7 @@ class UpdateAddressService:
             )
             if address is None:
                 raise CustomerNotFoundError("Address was not found")
-            (
-                address.label,
-                address.country_code,
-                address.line1,
-                address.city,
-                address.region,
-                address.postal_code,
-            ) = fields
+            address.change_details(*fields)
             await transaction.addresses.save(address)
             await transaction.commit_audited(command.actor, "address.update", command.customer_id)
             return self.mapper.to_result(address)
