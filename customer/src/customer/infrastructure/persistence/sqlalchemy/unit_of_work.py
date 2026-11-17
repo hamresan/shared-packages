@@ -132,6 +132,10 @@ class SqlAlchemyCustomerUnitOfWork(
     async def commit_audited(self, actor: CustomerActor, action: str, customer_id: UUID) -> None:
         if actor.business_id != self.business_id:
             raise ValueError("Audit actor business differs from transaction scope")
+        if self.session is None:
+            raise RuntimeError("Unit of Work has not entered a transaction")
+        # Flush pending parent rows before the audit FK is checked; still one transaction.
+        await self.session.flush()
         await self.audit.add(
             CustomerAuditEvent(
                 business_id=self.business_id,
