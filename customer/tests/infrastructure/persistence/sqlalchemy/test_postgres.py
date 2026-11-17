@@ -16,7 +16,7 @@ from customer.application.mapping import CustomerResultMapper
 from customer.application.models import CustomerMutationCommand
 from customer.application.policies import CustomerScopePolicy
 from customer.application.services.erase_customer import EraseCustomerService
-from customer.domain.customer import Customer, CustomerStatus
+from customer.domain.customer import CustomerStatus
 from customer.domain.errors import CustomerVersionConflictError
 from customer.infrastructure.persistence.sqlalchemy.models import (
     CustomerAddressModel,
@@ -32,22 +32,10 @@ from customer.infrastructure.persistence.sqlalchemy.models import (
 from customer.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyCustomerUnitOfWorkFactory,
 )
+from tests.support.factories.customer import new_customer
 from tests.support.fakes.authorization import AllowCustomerAuthorizer
 from tests.support.fakes.clock import FixedClock
 from tests.support.fakes.erasure_policy import AllowErasurePolicy
-
-
-def new_customer(business_id: UUID, customer_id: UUID | None = None) -> Customer:
-    now = datetime.now(UTC)
-    return Customer(
-        id=customer_id or uuid4(),
-        business_id=business_id,
-        display_name="Example",
-        status=CustomerStatus.ACTIVE,
-        version=1,
-        created_at=now,
-        updated_at=now,
-    )
 
 
 async def test_rls_fails_closed_and_rejects_cross_business_writes(
