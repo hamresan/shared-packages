@@ -17,7 +17,9 @@ from customer import (
     CustomerModuleConfig,
     CustomerVersionConflictError,
 )
+from customer.application.contracts import CustomerCreationReceipt
 from customer.infrastructure.persistence.sqlalchemy.models import (
+    CustomerAddressModel,
     CustomerAuditModel,
     CustomerExternalIdentityModel,
 )
@@ -102,6 +104,34 @@ async def test_guest_creation_retry_conflict_scope_and_expiry(
         CreateCustomerCommand(first.business_id, first, "Guest", key)
     )
     assert new_after_expiry.id != first_id
+
+
+async def test_rolled_back_creation_receipt_does_not_block_retry(
+    postgres_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    module = create_module(postgres_sessions)
+    actor = build_actor(uuid4())
+    factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
+    fingerprint = module.config.creation_fingerprinter.fingerprint("Guest")
+    pending_id = uuid4()
+
+    with pytest.raises(RuntimeError, match="simulated failure"):
+        async with factory(actor.business_id) as uow:
+            pending = new_customer(actor.business_id, pending_id)
+            await uow.customers.add(pending)
+            await uow.idempotency.add(
+                CustomerCreationReceipt(
+                    actor.business_id, "retry-after-rollback", fingerprint, pending.id
+                )
+            )
+            raise RuntimeError("simulated failure before commit")
+
+    created = await module.customers.create.execute(
+        CreateCustomerCommand(actor.business_id, actor, "Guest", "retry-after-rollback")
+    )
+    assert created.id != pending_id
+    async with factory(actor.business_id) as uow:
+        assert len(await uow.customers.search(actor.business_id, None, 0, 10)) == 1
 
 
 async def test_concurrent_profile_cas_has_one_winner_and_one_audit(
@@ -192,6 +222,45 @@ async def test_racing_external_links_cannot_duplicate_active_namespace(
         )
 
 
+async def test_concurrent_default_addresses_allow_only_one(
+    postgres_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
+    business = uuid4()
+    customer = new_customer(business)
+    async with factory(business) as uow:
+        await uow.customers.add(customer)
+        await uow.commit()
+
+    async def add_default(label: str) -> str:
+        async with postgres_sessions() as session, session.begin():
+            await session.execute(
+                text("SELECT set_config('app.customer_business_id', :scope, true)"),
+                {"scope": str(business)},
+            )
+            session.add(
+                CustomerAddressModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    label=label,
+                    country_code="OM",
+                    line1="Street",
+                    city="Muscat",
+                    region=None,
+                    postal_code=None,
+                    is_default=True,
+                )
+            )
+        return label
+
+    results = await asyncio.gather(
+        add_default("Home"), add_default("Office"), return_exceptions=True
+    )
+    assert sum(isinstance(result, str) for result in results) == 1
+    assert sum(isinstance(result, IntegrityError) for result in results) == 1
+
+
 async def test_rls_all_owned_tables_and_pool_context_isolation(
     postgres_sessions: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -209,6 +278,19 @@ async def test_rls_all_owned_tables_and_pool_context_isolation(
         ).all()
         assert {row[0] for row in rows} == set(customer_metadata().tables)
         assert all(row[1] and row[2] for row in rows)
+        policies = (
+            await session.execute(
+                text(
+                    "SELECT tablename, qual, with_check FROM pg_policies "
+                    "WHERE schemaname=current_schema() AND policyname='customer_tenant_scope'"
+                )
+            )
+        ).all()
+        assert {row[0] for row in policies} == set(customer_metadata().tables)
+        assert all(
+            "app.customer_business_id" in row[1] and "app.customer_business_id" in row[2]
+            for row in policies
+        )
 
     factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
     first_business, second_business = uuid4(), uuid4()
