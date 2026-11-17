@@ -51,5 +51,5 @@ class AddAddressService:
                 command.is_default,
             )
             await transaction.addresses.add(address)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "address.add", command.customer_id)
             return self.mapper.to_result(address)

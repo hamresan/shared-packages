@@ -35,4 +35,6 @@ class RevokeExternalIdentityService:
                 raise CustomerNotFoundError("External identity was not found")
             identity.revoke(self.clock.now())
             await transaction.external_identities.save(identity)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "external_identity.revoke", command.customer_id
+            )

@@ -7,6 +7,7 @@ from customer.application import (
     CustomerPermission,
     IdentityVerifier,
 )
+from customer.application.contracts.erasure_policy import CustomerErasurePolicy
 from customer.application.contracts.external_identity_evidence import (
     ExternalIdentityEvidenceVerifier,
     VerifiedExternalIdentityEvidence,
@@ -109,6 +110,7 @@ __all__ = [
     "CustomerAuthorizer",
     "CreateCustomerCommand",
     "CustomerErasedError",
+    "CustomerErasurePolicy",
     "CustomerError",
     "CustomerIdempotencyConflictError",
     "CustomerInvalidStateError",

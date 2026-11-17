@@ -34,5 +34,7 @@ class ReactivateCustomerService:
                 raise CustomerVersionConflictError("Customer version has changed")
             customer.reactivate(self.clock.now())
             await transaction.customers.save(customer, command.expected_version)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "customer.reactivate", command.customer_id
+            )
             return self.mapper.to_result(customer)

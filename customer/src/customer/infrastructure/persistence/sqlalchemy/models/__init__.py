@@ -1,4 +1,5 @@
 from customer.infrastructure.persistence.sqlalchemy.models.address import CustomerAddressModel
+from customer.infrastructure.persistence.sqlalchemy.models.audit import CustomerAuditModel
 from customer.infrastructure.persistence.sqlalchemy.models.contact import CustomerContactModel
 from customer.infrastructure.persistence.sqlalchemy.models.customer import CustomerModel
 from customer.infrastructure.persistence.sqlalchemy.models.external_identity import (
@@ -15,6 +16,7 @@ from customer.infrastructure.persistence.sqlalchemy.models.preference import Cus
 
 __all__ = [
     "CustomerAddressModel",
+    "CustomerAuditModel",
     "CustomerContactModel",
     "CustomerCreationReceiptModel",
     "CustomerExternalIdentityModel",

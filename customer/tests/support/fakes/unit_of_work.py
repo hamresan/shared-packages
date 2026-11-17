@@ -2,7 +2,9 @@ from contextlib import AbstractAsyncContextManager
 from types import TracebackType
 from uuid import UUID
 
+from customer.application.actor import CustomerActor
 from customer.application.contracts import (
+    CustomerAuditEvent,
     CustomerIdempotencyRepository,
     CustomerRepository,
     CustomerUnitOfWork,
@@ -19,8 +21,10 @@ from customer.application.contracts.internal_identity_repository import (
 from customer.application.contracts.note_repository import CustomerNoteRepository
 from customer.application.contracts.preference_repository import CustomerPreferenceRepository
 from tests.support.fakes.address_repository import InMemoryAddressRepository
+from tests.support.fakes.audit_repository import InMemoryAuditRepository
 from tests.support.fakes.contact_repository import InMemoryContactRepository
 from tests.support.fakes.customer_repository import InMemoryCustomerRepository
+from tests.support.fakes.erasure_repository import InMemoryErasureRepository
 from tests.support.fakes.external_identity_repository import InMemoryExternalIdentityRepository
 from tests.support.fakes.idempotency_repository import InMemoryCustomerIdempotencyRepository
 from tests.support.fakes.internal_identity_repository import InMemoryIdentityLinkRepository
@@ -39,6 +43,8 @@ class FakeCustomerUnitOfWork(CustomerUnitOfWork):
         notes: CustomerNoteRepository,
         internal_identities: CustomerIdentityLinkRepository,
         external_identities: CustomerExternalIdentityRepository,
+        audit: InMemoryAuditRepository,
+        erasure: InMemoryErasureRepository,
     ) -> None:
         self._customers = customers
         self._idempotency = idempotency
@@ -48,6 +54,16 @@ class FakeCustomerUnitOfWork(CustomerUnitOfWork):
         self._notes = notes
         self._internal_identities = internal_identities
         self._external_identities = external_identities
+        self._audit = audit
+        self._erasure = erasure
+
+    @property
+    def audit(self) -> InMemoryAuditRepository:
+        return self._audit
+
+    @property
+    def erasure(self) -> InMemoryErasureRepository:
+        return self._erasure
 
     @property
     def internal_identities(self) -> CustomerIdentityLinkRepository:
@@ -84,6 +100,18 @@ class FakeCustomerUnitOfWork(CustomerUnitOfWork):
     async def commit(self) -> None:
         return None
 
+    async def commit_audited(self, actor: CustomerActor, action: str, customer_id: UUID) -> None:
+        await self.audit.add(
+            CustomerAuditEvent(
+                business_id=actor.business_id,
+                customer_id=customer_id,
+                actor_id=actor.actor_id,
+                actor_type=actor.actor_type,
+                action=action,
+            )
+        )
+        await self.commit()
+
 
 class FakeCustomerUnitOfWorkContext(AbstractAsyncContextManager[CustomerUnitOfWork]):
     def __init__(self, uow: CustomerUnitOfWork) -> None:
@@ -111,6 +139,16 @@ class FakeCustomerUnitOfWorkFactory(CustomerUnitOfWorkFactory):
         self.notes = InMemoryNoteRepository()
         self.internal_identities = InMemoryIdentityLinkRepository()
         self.external_identities = InMemoryExternalIdentityRepository()
+        self.audit = InMemoryAuditRepository()
+        self.erasure = InMemoryErasureRepository(
+            self.contacts,
+            self.addresses,
+            self.preferences,
+            self.notes,
+            self.internal_identities,
+            self.external_identities,
+            self.idempotency,
+        )
 
     def __call__(self, business_id: UUID) -> AbstractAsyncContextManager[CustomerUnitOfWork]:
         return FakeCustomerUnitOfWorkContext(
@@ -123,5 +161,7 @@ class FakeCustomerUnitOfWorkFactory(CustomerUnitOfWorkFactory):
                 self.notes,
                 self.internal_identities,
                 self.external_identities,
+                self.audit,
+                self.erasure,
             )
         )

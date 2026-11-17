@@ -25,4 +25,4 @@ class RemoveNoteService:
             )
             if not removed:
                 raise CustomerNotFoundError("Note was not found")
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "note.remove", command.customer_id)

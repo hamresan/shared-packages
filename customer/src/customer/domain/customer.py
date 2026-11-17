@@ -49,6 +49,16 @@ class Customer:
         self.updated_at = changed_at
         self.version += 1
 
+    def erase(self, changed_at: datetime) -> None:
+        if self.status is CustomerStatus.ERASED:
+            raise CustomerErasedError("Customer was already erased")
+        self.display_name = None
+        self.status = CustomerStatus.ERASED
+        self.archived_at = None
+        self.erased_at = changed_at
+        self.updated_at = changed_at
+        self.version += 1
+
     def require_active(self) -> None:
         if self.status is CustomerStatus.ERASED:
             raise CustomerErasedError("An erased customer cannot be modified")

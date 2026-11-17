@@ -34,4 +34,6 @@ class RemovePreferenceService:
             if existing is None:
                 raise CustomerNotFoundError("Preference was not found")
             await transaction.preferences.remove(command.business_id, command.customer_id, key)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "preference.remove", command.customer_id
+            )

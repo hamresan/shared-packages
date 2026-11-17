@@ -53,5 +53,5 @@ class UpdateAddressService:
                 address.postal_code,
             ) = fields
             await transaction.addresses.save(address)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "address.update", command.customer_id)
             return self.mapper.to_result(address)

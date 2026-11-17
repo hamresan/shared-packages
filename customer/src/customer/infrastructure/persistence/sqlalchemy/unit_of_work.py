@@ -6,15 +6,23 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from customer.application.actor import CustomerActor
 from customer.application.contracts import CustomerUnitOfWork, CustomerUnitOfWorkFactory
+from customer.application.contracts.audit_repository import CustomerAuditEvent
 from customer.infrastructure.persistence.sqlalchemy.repositories.address import (
     SqlAlchemyAddressRepository,
+)
+from customer.infrastructure.persistence.sqlalchemy.repositories.audit import (
+    SqlAlchemyAuditRepository,
 )
 from customer.infrastructure.persistence.sqlalchemy.repositories.contact import (
     SqlAlchemyContactRepository,
 )
 from customer.infrastructure.persistence.sqlalchemy.repositories.customer import (
     SqlAlchemyCustomerRepository,
+)
+from customer.infrastructure.persistence.sqlalchemy.repositories.erasure import (
+    SqlAlchemyErasureRepository,
 )
 from customer.infrastructure.persistence.sqlalchemy.repositories.external_identity import (
     SqlAlchemyExternalIdentityRepository,
@@ -56,6 +64,16 @@ class SqlAlchemyCustomerUnitOfWork(
         self._internal_identities: SqlAlchemyInternalIdentityRepository
         self._external_identities: SqlAlchemyExternalIdentityRepository
         self._idempotency: SqlAlchemyIdempotencyRepository
+        self._audit: SqlAlchemyAuditRepository
+        self._erasure: SqlAlchemyErasureRepository
+
+    @property
+    def audit(self) -> SqlAlchemyAuditRepository:
+        return self._audit
+
+    @property
+    def erasure(self) -> SqlAlchemyErasureRepository:
+        return self._erasure
 
     @property
     def customers(self) -> SqlAlchemyCustomerRepository:
@@ -107,7 +125,23 @@ class SqlAlchemyCustomerUnitOfWork(
         self._internal_identities = SqlAlchemyInternalIdentityRepository(session)
         self._external_identities = SqlAlchemyExternalIdentityRepository(session)
         self._idempotency = SqlAlchemyIdempotencyRepository(session)
+        self._audit = SqlAlchemyAuditRepository(session)
+        self._erasure = SqlAlchemyErasureRepository(session)
         return self
+
+    async def commit_audited(self, actor: CustomerActor, action: str, customer_id: UUID) -> None:
+        if actor.business_id != self.business_id:
+            raise ValueError("Audit actor business differs from transaction scope")
+        await self.audit.add(
+            CustomerAuditEvent(
+                business_id=self.business_id,
+                customer_id=customer_id,
+                actor_id=actor.actor_id,
+                actor_type=actor.actor_type,
+                action=action,
+            )
+        )
+        await self.commit()
 
     async def commit(self) -> None:
         if self.session is None:

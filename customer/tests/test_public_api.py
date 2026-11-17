@@ -55,6 +55,7 @@ def test_public_exports_are_controlled() -> None:
         "CustomerAuthorizer",
         "CreateCustomerCommand",
         "CustomerErasedError",
+        "CustomerErasurePolicy",
         "CustomerError",
         "CustomerIdempotencyConflictError",
         "CustomerInvalidStateError",

@@ -8,6 +8,7 @@ from customer.application.contracts import (
     Clock,
     CustomerAuthorizer,
     CustomerCreationFingerprinter,
+    CustomerErasurePolicy,
     CustomerUnitOfWorkFactory,
     IdentifierGenerator,
     IdentityVerifier,
@@ -40,6 +41,7 @@ from customer.application.services import (
 from customer.application.services.add_address import AddAddressService
 from customer.application.services.add_contact import AddContactService
 from customer.application.services.add_note import AddNoteService
+from customer.application.services.erase_customer import EraseCustomerService
 from customer.application.services.list_addresses import ListAddressesService
 from customer.application.services.list_contacts import ListContactsService
 from customer.application.services.list_notes import ListNotesService
@@ -71,6 +73,7 @@ class CustomerModuleConfig:
     identifiers: IdentifierGenerator
     creation_fingerprinter: CustomerCreationFingerprinter
     external_evidence_verifier: ExternalIdentityEvidenceVerifier
+    erasure_policy: CustomerErasurePolicy | None = None
 
 
 class CustomerModule:
@@ -179,6 +182,14 @@ class CustomerModule:
                 config.clock,
                 mapper,
                 config.creation_fingerprinter,
+            ),
+            erase=EraseCustomerService(
+                config.unit_of_work_factory,
+                config.authorizer,
+                scope,
+                config.erasure_policy,
+                config.clock,
+                mapper,
             ),
             get=GetCustomerService(config.unit_of_work_factory, config.authorizer, scope, mapper),
             update=UpdateCustomerService(

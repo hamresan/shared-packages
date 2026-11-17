@@ -53,5 +53,7 @@ class RecordExternalVerificationService:
                 raise CustomerNotFoundError("External identity was not found")
             active.record_verification(evidence.method, evidence.verified_at)
             await transaction.external_identities.save(active)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "external_identity.verify", command.customer_id
+            )
             return self.mapper.to_external(active)

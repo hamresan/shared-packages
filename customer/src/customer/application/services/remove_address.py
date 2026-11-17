@@ -28,4 +28,4 @@ class RemoveAddressService:
             await transaction.addresses.remove(
                 command.business_id, command.customer_id, command.child_id
             )
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "address.remove", command.customer_id)

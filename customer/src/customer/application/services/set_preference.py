@@ -45,5 +45,5 @@ class SetPreferenceService:
                 command.value,
             )
             await transaction.preferences.upsert(preference)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "preference.set", command.customer_id)
             return self.mapper.to_result(preference)

@@ -36,5 +36,7 @@ class SetDefaultAddressService:
             await transaction.addresses.unset_default(command.business_id, command.customer_id)
             address.is_default = True
             await transaction.addresses.save(address)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "address.set_default", command.customer_id
+            )
             return self.mapper.to_result(address)

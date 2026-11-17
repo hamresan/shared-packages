@@ -58,5 +58,5 @@ class AddContactService:
                 created_at=self.clock.now(),
             )
             await transaction.contacts.add(contact)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "contact.add", command.customer_id)
             return self.mapper.to_result(contact)
