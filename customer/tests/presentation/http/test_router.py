@@ -36,6 +36,25 @@ async def test_http_create_retry_and_version_conflict() -> None:
     )
     assert (first_status, retry_status) == (201, 201)
     assert first == retry
+    assert set(first) == {
+        "id",
+        "business_id",
+        "display_name",
+        "status",
+        "version",
+        "created_at",
+        "updated_at",
+    }
+    assert len(uow.customers.records) == 1
+
+    forged_status, _ = await request_asgi(
+        app,
+        "POST",
+        base,
+        payload={"display_name": "Mallory", "actor_id": str(uuid4())},
+        headers=auth,
+    )
+    assert forged_status == 422
     assert len(uow.customers.records) == 1
 
     stale_status, stale = await request_asgi(

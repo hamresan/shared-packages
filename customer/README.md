@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–6 implemented and merged. Stage 7 optional FastAPI integration is under verification.** The examples use the public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–6 implemented and merged. Stage 7 optional FastAPI integration is CI-verified in PR #166, awaiting review/merge.** The examples use the public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
@@ -84,6 +84,22 @@ External identity metadata records the **method and time** of a trusted verifica
 No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
 
 ## Public Python API
+
+### Optional FastAPI adapter (Stage 7 review)
+
+The optional adapter is mounted by the host and receives a trusted actor
+dependency. Never derive the actor from request JSON or blindly trust the
+business ID in the path:
+
+```python
+from customer.presentation.http import create_customer_router
+
+# customer_module and authenticated_customer_actor are provided by the host.
+app.include_router(create_customer_router(customer_module, authenticated_customer_actor))
+```
+
+See [HTTP integration](docs/HTTP_INTEGRATION.md) for the routes, transport
+security, error mapping, migration setup and a complete host-composition pattern.
 
 ### Privacy erasure (Stage 6 review)
 
