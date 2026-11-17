@@ -11,6 +11,21 @@ def test_core_import_has_no_optional_framework_dependencies() -> None:
 
 def test_public_exports_are_controlled() -> None:
     assert set(customer.__all__) == {
+        "ExternalIdentityEvidenceVerifier",
+        "VerifiedExternalIdentityEvidence",
+        "CustomerIdentityConflictError",
+        "CustomerIdentityVerificationError",
+        "CustomerResolution",
+        "ExternalIdentityKey",
+        "ExternalIdentityStatus",
+        "FindExternalIdentityQuery",
+        "GetOrCreateExternalIdentityCommand",
+        "InternalIdentityResolution",
+        "LinkExternalIdentityCommand",
+        "LinkInternalIdentityCommand",
+        "RecordExternalIdentityVerificationCommand",
+        "ResolveInternalIdentityQuery",
+        "RevokeExternalIdentityCommand",
         "AddAddressCommand",
         "AddContactCommand",
         "AddNoteCommand",
