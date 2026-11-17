@@ -27,15 +27,17 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 2. Document the boundary of internal identity links versus provider-scoped external identities; authentication, OTP, messaging and provider verification stay outside Customer.
 3. Define tenant ownership for every entity, deletion/retention rules, candidate duplicate semantics, active-link uniqueness, and minimum fields. Use composite foreign keys for tenant-consistent child relationships.
 4. Define `CustomerActor` (`USER`/`SERVICE`), action permissions, minimum read projections, secure not-found behavior, and host-injected authorization and identity-verification contracts.
-5. Specify stable DTOs, typed error categories, capability-oriented facade, expected-version updates and explicit lookup versus get-or-create.
+5. Specify stable DTOs, typed error categories, capability-oriented facade, expected-version updates and explicit lookup versus get-or-create. Include a minimal `CustomerResolution` (ID, business scope, link status, verification method/time and optionally authorized name), without downstream operation-authorization claims.
 6. Design transaction-local PostgreSQL RLS context and deploy-role requirements, including fail-closed behavior. Define an audit repository sharing the mutation transaction; choose a third-party audit implementation **only after** proving current-session compatibility.
-7. Define error and concurrency outcomes for idempotent identity linking, duplicate external-identity races, and erased-customer references.
-8. Review security and data-minimization requirements. Do not store raw provider tokens, OTP codes, sensitive values in audit records, or LLM-specific types in the core.
+7. Define error and concurrency outcomes for idempotent identity linking, duplicate external-identity races, and erased-customer references. Define **optional create-customer idempotency** independently of external identities: host-supplied keys scoped by business/operation, canonical request fingerprint, same-key/same-payload replay, mismatched-payload conflict, atomic persistence and bounded retention.
+8. Specify verification provenance and freshness semantics: the host/operation owner judges freshness for each action; Customer never treats `ACTIVE` or old verification alone as universal authorization, and never runs a verification challenge.
+9. Review security and data-minimization requirements. Do not store raw provider tokens, OTP codes, sensitive values in audit records, idempotency fingerprints or LLM-specific types in the core.
 
 ### Gate
 
 - [ ] Entity/relationship and ownership matrix signed off, including constraints and retention decisions.
 - [ ] Public API v1 draft, typed error map and permission matrix reviewed.
+- [ ] Resolution projection, freshness policy boundary and create-idempotency contract reviewed.
 - [ ] RLS, audit atomicity, verification provenance and migration approach documented with test cases.
 - [ ] No unowned cross-package dependency or unnecessary abstraction.
 
@@ -65,12 +67,14 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 4. Require `expected_version` on stale-sensitive updates; implement deterministic version conflict behavior.
 5. Search by exact ID, normalized contact values (when available), partial name, stable ordering and pagination. Candidate duplicate suggestions are advisory and cannot automatically merge or block on unverified matches.
 6. Define minimal typed public projections and error codes independent of HTTP.
+7. Add optional `idempotency_key` to create-customer commands and a typed mismatch error; fake-based tests check replay and request equivalence. Stage 5 supplies durable atomic storage and concurrency enforcement.
 
 ### Gate
 
 - [ ] Guest customer creation and tenant-scoped retrieval work with fake contracts.
 - [ ] Archive/reactivate state transitions and erased-customer rejection are deterministic.
 - [ ] Stale version, missing permission, other-business ID and ambiguous duplicate cases are covered.
+- [ ] Same-key retry is semantically stable; conflicting payloads fail in use-case tests.
 
 ## Stage 3 — Customer-owned profile details
 
@@ -100,6 +104,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 4. Add guarded link/revoke/relink; a revoked identity is never used for lookup, and transfers require revocation plus trusted re-verification.
 5. Keep verification/challenge transport in host adapters. Do not treat matching name, username, claimed number or unauthenticated provider metadata as ownership proof.
 6. Describe and test concurrent duplicate link/get-or-create requests; real uniqueness enforcement lands in Stage 5.
+7. Expose a minimal `CustomerResolution` from authorized active-link lookup, including verification method/time but excluding private contacts and internal notes. Record auditable re-verification updates without automatically expiring links; the host decides freshness for each operation.
 
 ### Gate
 
@@ -107,6 +112,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 - [ ] Exact external identity lookup cannot cross business/account namespaces.
 - [ ] Unverified cross-channel matches never silently merge records.
 - [ ] Revoked links do not resolve; relinking requires fresh authorized evidence.
+- [ ] Resolution never implies permission to access downstream records; stale verification can be rejected by host policy without changing Customer linkage.
 
 ## Stage 5 — Async persistence, tenant constraints and RLS
 
@@ -118,6 +124,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 4. Expose SQLAlchemy metadata and Alembic integration helpers. Host manages migration revision history/deployments; no automatic startup migrations.
 5. Implement PostgreSQL RLS `USING` and `WITH CHECK` policies with transaction-local tenant settings, fail-closed defaults and non-bypass database permissions. Ensure connection pool reuse cannot leak tenant scope.
 6. Use database-safe optimistic version updates, bounded conflict handling and correctly scoped repository predicates even with RLS enabled.
+7. Persist bounded, business/operation-scoped idempotency keys and canonical request fingerprints atomically with customer creation. Enforce unique concurrent keys and do not store raw personal-data payloads in the idempotency store.
 
 ### Gate
 
@@ -125,6 +132,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 - [ ] Cross-business read/write attempts fail at both application and PostgreSQL boundaries.
 - [ ] Child foreign keys reject mismatched business ownership and concurrency cannot violate uniqueness.
 - [ ] Runtime role cannot bypass RLS; missing or stale tenant context fails closed.
+- [ ] Concurrent same-key create requests yield one customer, conflicting payloads fail, and replay works within documented retention.
 
 ## Stage 6 — Transactional audit and privacy erasure
 
@@ -151,8 +159,9 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 1. Provide opt-in FastAPI router, DTO mappers and typed-error-to-HTTP mapping; no FastAPI types inside Domain/Application.
 2. Supply a generic consumer example showing a host-owned async engine/session factory, trusted `USER`/`SERVICE` actors, authorization adapters, trusted internal identity resolution and externally verified provider assertions.
 3. Demonstrate an authorized read projection, guest creation, exact external-identity lookup, verified linking and a version-conflict response.
-4. Document safe configuration of tenant context per transaction and migration composition with multiple packages; no real credentials or business-specific assumptions in examples.
-5. Exercise least-privilege service actors and disallow note/erasure access by default.
+4. Demonstrate stable idempotency keys across retries and show that `CustomerResolution` carries verification evidence but no permission to access a separate resource. Describe host-owned proof-freshness rules.
+5. Document safe configuration of tenant context per transaction and migration composition with multiple packages; no real credentials or business-specific assumptions in examples.
+6. Exercise least-privilege service actors and disallow note/erasure access by default.
 
 ### Gate
 
@@ -166,9 +175,10 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 1. Run real PostgreSQL tests under the actual non-bypass application role with RLS enforced, including all child tables and transaction-local tenant context across pooled connections.
 2. Test concurrent create/get-or-create/link/relink, active uniqueness, contact/address defaults, stale `version`, rollback behavior and isolation-level edge cases.
-3. Verify atomic audit/erasure and failure injection, including integrity under forced rollback and retry after conflict.
-4. Run Alembic upgrade tests against a clean and an existing shared schema; confirm migrations do not alter unrelated package-owned tables.
-5. Use deterministic fake-based unit tests, SQLAlchemy integration tests and PostgreSQL-specific acceptance tests in GitHub Actions with explicit matrix/configuration.
+3. Test idempotent creation for guests without external identities: two concurrent requests with the same key, divergent payload reuse, retries after ambiguous timeout, rollback/retry, scope isolation and defined retention expiry.
+4. Verify atomic audit/erasure and failure injection, including integrity under forced rollback and retry after conflict.
+5. Run Alembic upgrade tests against a clean and an existing shared schema; confirm migrations do not alter unrelated package-owned tables.
+6. Use deterministic fake-based unit tests, SQLAlchemy integration tests and PostgreSQL-specific acceptance tests in GitHub Actions with explicit matrix/configuration.
 
 ### Gate
 
