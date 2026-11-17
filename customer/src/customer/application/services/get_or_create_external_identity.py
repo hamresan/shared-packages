@@ -88,5 +88,7 @@ class GetOrCreateExternalIdentityService:
             )
             await transaction.customers.add(customer)
             await transaction.external_identities.add(identity)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "external_identity.get_or_create", customer.id
+            )
             return self.mapper.to_external(identity)

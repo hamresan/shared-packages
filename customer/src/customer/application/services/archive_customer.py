@@ -34,5 +34,5 @@ class ArchiveCustomerService:
                 raise CustomerVersionConflictError("Customer version has changed")
             customer.archive(self.clock.now())
             await transaction.customers.save(customer, command.expected_version)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "customer.archive", command.customer_id)
             return self.mapper.to_result(customer)

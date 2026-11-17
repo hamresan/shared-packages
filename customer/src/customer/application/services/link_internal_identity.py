@@ -69,5 +69,5 @@ class LinkInternalIdentityService:
                 self.clock.now(),
             )
             await transaction.internal_identities.add(link)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "identity.link", command.customer_id)
             return self.mapper.to_internal(link)

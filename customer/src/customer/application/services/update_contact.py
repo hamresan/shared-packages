@@ -40,5 +40,5 @@ class UpdateContactService:
             contact.verified_at = None
             contact.verification_method = None
             await transaction.contacts.save(contact)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "contact.update", command.customer_id)
             return self.mapper.to_result(contact)

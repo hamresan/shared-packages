@@ -38,5 +38,7 @@ class SetPrimaryContactService:
             )
             contact.is_primary = True
             await transaction.contacts.save(contact)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "contact.set_primary", command.customer_id
+            )
             return self.mapper.to_result(contact)

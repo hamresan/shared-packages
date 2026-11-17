@@ -4,9 +4,12 @@ from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 from uuid import UUID
 
+from customer.application.actor import CustomerActor
 from customer.application.contracts.address_repository import CustomerAddressRepository
+from customer.application.contracts.audit_repository import CustomerAuditRepository
 from customer.application.contracts.contact_repository import CustomerContactRepository
 from customer.application.contracts.customer_repository import CustomerRepository
+from customer.application.contracts.erasure_repository import CustomerErasureRepository
 from customer.application.contracts.external_identity_repository import (
     CustomerExternalIdentityRepository,
 )
@@ -19,6 +22,12 @@ from customer.application.contracts.preference_repository import CustomerPrefere
 
 
 class CustomerUnitOfWork(Protocol):
+    @property
+    def audit(self) -> CustomerAuditRepository: ...
+
+    @property
+    def erasure(self) -> CustomerErasureRepository: ...
+
     @property
     def internal_identities(self) -> CustomerIdentityLinkRepository: ...
 
@@ -44,6 +53,10 @@ class CustomerUnitOfWork(Protocol):
     def idempotency(self) -> CustomerIdempotencyRepository: ...
 
     async def commit(self) -> None: ...
+
+    async def commit_audited(
+        self, actor: CustomerActor, action: str, customer_id: UUID
+    ) -> None: ...
 
 
 class CustomerUnitOfWorkFactory(Protocol):

@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–5 complete and merged. Stage 6 is next.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–5 complete and merged. Stage 6 is implemented and PostgreSQL CI-verified in PR #165, awaiting review/merge.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -152,6 +152,10 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 6 — Transactional audit and privacy erasure
 
+**Progress:** Implemented and verified by PostgreSQL-backed CI in PR #165. Final review/merge
+is pending. The library comparison and privacy constraints are recorded in
+[Audit and erasure](docs/AUDIT_AND_ERASURE.md).
+
 ### Work
 
 1. Implement a dedicated `AuditRepository` contract inside the Customer UoW; ensure audit and sensitive mutations share the **same database transaction**.
@@ -163,10 +167,10 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Every designated sensitive action has an audit record in the same committed transaction.
-- [ ] Audit write failure leaves no partially committed business mutation.
-- [ ] Erasure clears customer-owned identifying data, preserves only permitted tombstone metadata and blocks reactivation.
-- [ ] Audit and retained identifiers comply with documented data-minimization and retention rules.
+- [x] All mutating application services commit through the same transactional audit boundary.
+- [x] PostgreSQL audit insert failure rolls back an otherwise valid customer update.
+- [x] Erasure removes all Customer-owned identifying tables, preserves a minimal tombstone and blocks reactivation.
+- [x] Audit stores only trusted actor/subject IDs, action and timestamp; host retention duties are documented.
 
 ## Stage 7 — Optional HTTP adapter and integration example
 

@@ -9,17 +9,32 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from customer.application.actor import CustomerActor, CustomerActorType
 from customer.application.contracts import CustomerCreationReceipt
+from customer.application.contracts.audit_repository import CustomerAuditEvent
+from customer.application.mapping import CustomerResultMapper
+from customer.application.models import CustomerMutationCommand
+from customer.application.policies import CustomerScopePolicy
+from customer.application.services.erase_customer import EraseCustomerService
 from customer.domain.customer import Customer, CustomerStatus
 from customer.domain.errors import CustomerVersionConflictError
 from customer.infrastructure.persistence.sqlalchemy.models import (
+    CustomerAddressModel,
+    CustomerAuditModel,
     CustomerContactModel,
+    CustomerCreationReceiptModel,
     CustomerExternalIdentityModel,
+    CustomerIdentityLinkModel,
     CustomerModel,
+    CustomerNoteModel,
+    CustomerPreferenceModel,
 )
 from customer.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyCustomerUnitOfWorkFactory,
 )
+from tests.support.fakes.authorization import AllowCustomerAuthorizer
+from tests.support.fakes.clock import FixedClock
+from tests.support.fakes.erasure_policy import AllowErasurePolicy
 
 
 def new_customer(business_id: UUID, customer_id: UUID | None = None) -> Customer:
@@ -241,3 +256,163 @@ async def test_partial_unique_indexes_reject_active_duplicates(
         )
         with pytest.raises(IntegrityError):
             await session.flush()
+
+
+async def test_audit_failure_rolls_back_customer_update(
+    postgres_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    business = uuid4()
+    actor = CustomerActor(uuid4(), CustomerActorType.SERVICE, business)
+    factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
+    customer = new_customer(business)
+    async with factory(business) as uow:
+        await uow.customers.add(customer)
+        await uow.commit_audited(actor, "customer.create", customer.id)
+
+    with pytest.raises(IntegrityError):
+        async with factory(business) as uow:
+            updated = await uow.customers.get(business, customer.id)
+            assert updated is not None
+            updated.update_profile("Should rollback", datetime.now(UTC))
+            await uow.customers.save(updated, 1)
+            await uow.audit.add(
+                CustomerAuditEvent(
+                    business, uuid4(), actor.actor_id, actor.actor_type, "customer.update"
+                )
+            )
+            await uow.commit()
+    async with factory(business) as uow:
+        restored = await uow.customers.get(business, customer.id)
+        assert restored is not None and restored.display_name == "Example"
+        assert restored.version == 1
+
+
+async def test_erasure_removes_pii_but_keeps_minimal_audit(
+    postgres_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    business = uuid4()
+    actor = CustomerActor(uuid4(), CustomerActorType.USER, business)
+    customer = new_customer(business)
+    factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
+    async with factory(business) as uow:
+        await uow.customers.add(customer)
+        await uow.commit_audited(actor, "customer.create", customer.id)
+
+    async with postgres_sessions() as session, session.begin():
+        await session.execute(
+            text("SELECT set_config('app.customer_business_id', :business, true)"),
+            {"business": str(business)},
+        )
+        now = datetime.now(UTC)
+        session.add_all(
+            [
+                CustomerContactModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    kind="email",
+                    value="secret@example.org",
+                    is_primary=True,
+                    created_at=now,
+                ),
+                CustomerAddressModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    label="Home",
+                    country_code="OM",
+                    line1="Private street",
+                    city="Muscat",
+                    region=None,
+                    postal_code=None,
+                    is_default=True,
+                ),
+                CustomerPreferenceModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    key="color",
+                    value="blue",
+                ),
+                CustomerNoteModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    author_id=actor.actor_id,
+                    author_type="user",
+                    body="Private note",
+                    created_at=now,
+                ),
+                CustomerIdentityLinkModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    identity_user_id=uuid4(),
+                    linked_at=now,
+                ),
+                CustomerExternalIdentityModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    provider="telegram",
+                    channel_account_id="account",
+                    external_user_id="secret-subject",
+                    status="active",
+                    linked_at=now,
+                    verification_method="provider_assertion",
+                    verified_at=now,
+                ),
+                CustomerCreationReceiptModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    key="creation-123",
+                    fingerprint="digest",
+                    created_at=now,
+                ),
+            ]
+        )
+
+    service = EraseCustomerService(
+        factory,
+        AllowCustomerAuthorizer(),
+        CustomerScopePolicy(),
+        AllowErasurePolicy(),
+        FixedClock(),
+        CustomerResultMapper(),
+    )
+    erased = await service.execute(CustomerMutationCommand(business, actor, customer.id, 1))
+    assert erased.status is CustomerStatus.ERASED and erased.display_name is None
+    async with factory(business) as uow:
+        assert await uow.contacts.list_for_customer(business, customer.id) == ()
+        stored = await uow.customers.get(business, customer.id)
+        assert stored is not None and stored.erased_at is not None
+    async with postgres_sessions() as session, session.begin():
+        await session.execute(
+            text("SELECT set_config('app.customer_business_id', :business, true)"),
+            {"business": str(business)},
+        )
+        events = (
+            await session.scalars(
+                select(CustomerAuditModel).where(CustomerAuditModel.business_id == business)
+            )
+        ).all()
+        assert [event.action for event in events] == ["customer.create", "customer.erase"]
+        assert all("secret@example.org" not in str(event.__dict__) for event in events)
+        for table_name in (
+            "customer_contacts",
+            "customer_addresses",
+            "customer_preferences",
+            "customer_notes",
+            "customer_identity_links",
+            "customer_external_identities",
+            "customer_creation_receipts",
+        ):
+            count = await session.scalar(
+                text(
+                    f'SELECT count(*) FROM "{table_name}" WHERE business_id = :business '
+                    "AND customer_id = :customer"
+                ),
+                {"business": business, "customer": customer.id},
+            )
+            assert count == 0, table_name

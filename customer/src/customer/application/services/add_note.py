@@ -46,5 +46,5 @@ class AddNoteService:
                 self.clock.now(),
             )
             await transaction.notes.add(note)
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "note.add", command.customer_id)
             return self.mapper.to_result(note)

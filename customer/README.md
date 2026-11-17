@@ -2,9 +2,10 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–5 implemented, verified and merged. Transactional audit, privacy erasure and HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–5 implemented, verified and merged. Stage 6 transactional audit and erasure are CI-verified in PR #165, awaiting review/merge; HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
+Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
 
 ## Purpose and boundaries
 
@@ -69,7 +70,7 @@ An exact active external identity may resolve a customer. A new identity must no
 
 The host supplies the database session factory; Customer owns its SQLAlchemy repositories, mappers and unit of work. Each Customer operation commits/rolls back its own transaction. A multi-package workflow is coordinated by the host; customer creation need not be rolled back if a separate downstream operation fails.
 
-Sensitive mutations and their minimal audit records are written **in the same Customer transaction**, through a narrow `AuditRepository` contract implemented by the persistence adapter (potentially using a vetted third-party audit library). An audit failure prevents the mutation from committing. Audit must not retain erased personal values; actor type/id, business, subject reference, action and timestamp are typical safe metadata, subject to retention review.
+Sensitive mutations and their minimal audit records are written **in the same Customer transaction**, through a narrow `AuditRepository` contract implemented by the persistence adapter. An audit failure prevents the mutation from committing. Audit must not retain erased personal values; actor type/id, business, subject reference, action and timestamp are retained only under documented access and retention rules.
 
 `Customer.version` enables optimistic concurrency: updates include `expected_version` and fail with a typed version-conflict error on stale writes. Link uniqueness and get-or-create races additionally rely on atomic database constraints and bounded, operation-specific conflict handling.
 
@@ -82,6 +83,30 @@ External identity metadata records the **method and time** of a trusted verifica
 No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
 
 ## Public Python API
+
+### Privacy erasure (Stage 6 review)
+
+The host implements `CustomerErasurePolicy.require_allowed` to check legal holds and retention
+before allowing a terminal erasure. Configure `CustomerModuleConfig.erasure_policy` with that
+adapter; without it, erasure fails closed. A verified Customer actor also needs the separate
+`customer.erase` permission:
+
+```python
+from customer import CustomerMutationCommand
+
+erased = await customers.customers.erase.execute(
+    CustomerMutationCommand(
+        business_id=trusted_business_id,
+        actor=authenticated_actor,
+        customer_id=target_customer_id,
+        expected_version=current_customer_version,
+    )
+)
+assert erased.display_name is None
+```
+
+Erasure deletes Customer-owned profile details, notes and identity links inside the same
+transaction as its audit event. It never deletes data owned by an unrelated domain.
 
 ### Optional SQLAlchemy/PostgreSQL adapter (Stage 5 review)
 
@@ -266,4 +291,4 @@ The examples use implemented application contracts; production persistence and i
 
 ## Development status
 
-Stages 0–3 are complete. Stage 4 identity application logic has passed local automated checks and awaits GitHub CI/review. PostgreSQL persistence, transaction-level audit and RLS are future stages; the current in-memory fakes are only for tests. See [ROADMAP.md](ROADMAP.md) for stage gates and current status.
+Stages 0–5 are complete and merged. Stage 6 transactional audit and privacy erasure are under review with PostgreSQL CI acceptance required. In-memory fakes are only for unit tests. See [ROADMAP.md](ROADMAP.md) for current stage gates.

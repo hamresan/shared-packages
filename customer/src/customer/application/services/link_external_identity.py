@@ -64,7 +64,9 @@ class LinkExternalIdentityService:
                     raise CustomerIdentityConflictError("External identity already linked")
                 active.record_verification(evidence.method, evidence.verified_at)
                 await transaction.external_identities.save(active)
-                await transaction.commit()
+                await transaction.commit_audited(
+                    command.actor, "external_identity.link", command.customer_id
+                )
                 return self.mapper.to_external(active)
             previous = await transaction.external_identities.find_latest(key)
             self.evidence_policy.require_after_revocation(previous, evidence)
@@ -77,5 +79,7 @@ class LinkExternalIdentityService:
                 self.clock.now(),
             )
             await transaction.external_identities.add(link)
-            await transaction.commit()
+            await transaction.commit_audited(
+                command.actor, "external_identity.link", command.customer_id
+            )
             return self.mapper.to_external(link)

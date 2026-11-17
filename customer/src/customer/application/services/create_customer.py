@@ -76,5 +76,5 @@ class CreateCustomerService:
                         command.business_id, command.idempotency_key, fingerprint, customer.id
                     )
                 )
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "customer.create", customer.id)
             return self.mapper.to_result(customer)

@@ -31,4 +31,4 @@ class UnlinkInternalIdentityService:
                 raise CustomerNotFoundError("Internal identity association not found")
             link.revoked_at = self.clock.now()
             await transaction.internal_identities.revoke(link)
-            await transaction.commit()
+            await transaction.commit_audited(query.actor, "identity.unlink", query.customer_id)

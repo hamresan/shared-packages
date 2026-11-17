@@ -32,4 +32,4 @@ class RemoveContactService:
             await transaction.contacts.remove(
                 command.business_id, command.customer_id, command.contact_id
             )
-            await transaction.commit()
+            await transaction.commit_audited(command.actor, "contact.remove", command.customer_id)
