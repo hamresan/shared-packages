@@ -42,7 +42,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: customer/uv.lock
       - name: Install locked development dependencies
-        run: uv sync --extra test --extra postgres --extra sqlalchemy --extra migrations --locked
+        run: uv sync --extra test --extra postgres --extra sqlalchemy --extra migrations --extra fastapi --locked
       - name: Verify lint, format, typing, tests and build
         run: make check
       - name: Verify clean core-only wheel installation

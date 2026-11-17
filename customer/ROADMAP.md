@@ -174,6 +174,16 @@ is pending. The library comparison and privacy constraints are recorded in
 
 ## Stage 7 — Optional HTTP adapter and integration example
 
+**Progress:** Implemented with an opt-in FastAPI router, host-authenticated actor
+dependency, strict transport DTOs, stable masked errors and POST-based exact
+identity lookup. Mirrored ASGI integration tests cover authentication, tenant
+non-disclosure, idempotent retries, stale versions and client-supplied actor
+rejection and verified minimal identity resolution. Local Ruff, scoped Pyright,
+64 pytest tests (7 PostgreSQL tests skipped locally) and PostgreSQL-backed GitHub
+Actions Customer CI passed.
+PR #166 awaits final review/merge. Integration details are documented in
+[HTTP integration](docs/HTTP_INTEGRATION.md).
+
 ### Work
 
 1. Provide opt-in FastAPI router, DTO mappers and typed-error-to-HTTP mapping; no FastAPI types inside Domain/Application.
@@ -185,9 +195,9 @@ is pending. The library comparison and privacy constraints are recorded in
 
 ### Gate
 
-- [ ] Host can compose the module without importing internal services or implementing Customer persistence.
-- [ ] API responses mask cross-tenant existence and sensitive details.
-- [ ] No provider token, OTP, LLM framework or application workflow dependency enters the Customer core.
+- [x] Host can compose the module without importing internal services or implementing Customer persistence.
+- [x] API responses mask cross-tenant existence and sensitive details.
+- [x] No provider token, OTP, LLM framework or application workflow dependency enters the Customer core.
 
 ## Stage 8 — PostgreSQL acceptance and concurrency hardening
 
