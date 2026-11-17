@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–3 complete. Stage 4 implemented and locally verified, pending GitHub CI/review.** Stage 5 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–3 complete. Stage 4 implemented and verified locally and in GitHub CI, pending PR #163 review/merge.** Stage 5 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -108,7 +108,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 4 — Internal and provider identities
 
-**Progress:** Implemented locally with host-injected trusted verification interfaces, internal and external link repositories, exact namespace lookup, explicit get-or-create, revoke/relink, verification provenance and minimal immutable resolution DTOs. Fake-based security tests cover business boundaries, namespace boundaries, invalid/mismatched evidence, retries, active-link uniqueness and revocation. Local Ruff, strict Pyright and pytest checks pass; GitHub CI/review are pending. Concurrent database uniqueness and transaction recovery await Stage 5/8.
+**Progress:** Implemented with host-injected trusted verification interfaces, internal and external link repositories, exact namespace lookup, explicit get-or-create, revoke/relink, verification provenance and minimal immutable resolution DTOs. Fake-based security tests cover business boundaries, namespace boundaries, invalid/mismatched evidence, retries, active-link uniqueness and revocation. Local Ruff, strict Pyright, 56 pytest tests (97.98% coverage) and build passed; GitHub Actions Customer CI run #44146469993 succeeded. PR #163 awaits review/merge. Concurrent database uniqueness and transaction recovery await Stage 5/8.
 
 ### Work
 
