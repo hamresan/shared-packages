@@ -2,11 +2,12 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–7 implemented and merged. Stage 8 PostgreSQL concurrency and migration acceptance passed CI in PR #167, awaiting review/merge.** The examples use the public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–8 implemented, CI-verified and merged. Stage 9 packaging and release readiness is under verification. No package-index release has been published.** See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
 HTTP composition and security: [optional FastAPI integration](docs/HTTP_INTEGRATION.md).
+Operations, compatibility, retention and release: [Operations and release](docs/OPERATIONS_AND_RELEASE.md), [Changelog](CHANGELOG.md).
 
 ## Purpose and boundaries
 
@@ -101,7 +102,7 @@ app.include_router(create_customer_router(customer_module, authenticated_custome
 See [HTTP integration](docs/HTTP_INTEGRATION.md) for the routes, transport
 security, error mapping, migration setup and a complete host-composition pattern.
 
-### Privacy erasure (Stage 6 review)
+### Privacy erasure
 
 The host implements `CustomerErasurePolicy.require_allowed` to check legal holds and retention
 before allowing a terminal erasure. Configure `CustomerModuleConfig.erasure_policy` with that
@@ -125,7 +126,7 @@ assert erased.display_name is None
 Erasure deletes Customer-owned profile details, notes and identity links inside the same
 transaction as its audit event. It never deletes data owned by an unrelated domain.
 
-### Optional SQLAlchemy/PostgreSQL adapter (Stage 5 review)
+### Optional SQLAlchemy/PostgreSQL adapter
 
 Install the optional database drivers with `pip install 'hamresan-customer[postgres,migrations]'` once a release containing the adapter is available. The host owns the engine, database roles, migrations and session lifetime:
 
@@ -165,13 +166,33 @@ Implemented groups expose service objects with async `.execute(command_or_query)
 
 The planned `CustomerResolution` projection contains `customer_id`, `business_id`, link status, `verification_method` and `verified_at`, plus an optional authorized `display_name`. It is returned only for a matching active link and an authorized lookup. Its evidence describes the stored link; caller authenticity, verification freshness and permission to view or change another resource are checked **outside** Customer by the respective host/operation owner. Avoid ambiguous claims such as `is_trusted` or `can_manage_records`.
 
+### Verified runnable examples
+
+Executable host-injected examples are available in [`examples/`](examples/).
+The test suite runs each flow against explicit Customer fakes, covering guest
+creation, contact/preference updates, verified identity lookup, stale-version
+handling and optional HTTP composition. For instance:
+
+```python
+from examples.guest_lifecycle import create_guest_and_read
+
+# The host constructs CustomerModule and authenticates CustomerActor.
+created, profile = await create_guest_and_read(customers, trusted_actor, "stable-operation-key")
+assert created.id == profile.id
+```
+
+The `examples` directory ships in the source distribution for local execution;
+it is intentionally not installed in the minimal runtime Wheel. Copy the
+function or use the documented public DTOs in your host application. The
+following snippets explain how host-controlled dependencies fit together.
+
 ### Example 1: Compose the module
 
 ```python
 from customer import CustomerModule, CustomerModuleConfig
 
-# The host supplies contract implementations. The package has no built-in
-# database implementation until its persistence stage.
+# The host supplies contract implementations, including the existing
+# SQLAlchemyCustomerUnitOfWorkFactory or its own repository adapter.
 customers = CustomerModule(
     CustomerModuleConfig(
         unit_of_work_factory=customer_uow_factory,
@@ -296,7 +317,9 @@ except CustomerVersionConflictError:
     pass
 ```
 
-The examples use implemented application contracts; production persistence and its concurrent-uniqueness guarantees remain dependent on Stages 5 and 8. Host authorization of a resolved identity never substitutes for authorization of another application's resources.
+The tested examples use implemented application contracts and PostgreSQL CI
+verifies the persistence concurrency guarantees. Host authorization of a
+resolved identity never substitutes for another resource owner's authorization.
 
 ## Persistence, migrations and test expectations
 

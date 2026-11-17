@@ -200,7 +200,7 @@ Merged via PR #166. Integration details are documented in
 
 ## Stage 8 — PostgreSQL acceptance and concurrency hardening
 
-**Progress:** PostgreSQL acceptance hardening implemented in PR #167.
+**Progress:** PostgreSQL acceptance hardening merged via PR #167.
 Real database tests cover concurrent guest creation, recovery after a lost response,
 divergent idempotency fingerprints, business scope and receipt retention,
 rollback/retry, optimistic profile updates and audit atomicity, competing provider
@@ -209,7 +209,7 @@ tenant isolation, and host-composed Alembic-context upgrades on clean and existi
 schemas. Tests use the non-owner/non-BYPASSRLS PostgreSQL runtime role.
 Local Ruff and scoped Pyright passed; PostgreSQL-backed GitHub Actions Customer
 CI run #44178401479 passed all lint, type, migration, acceptance, coverage,
-build and isolated wheel installation checks. PR #167 awaits review/merge.
+build and isolated wheel installation checks.
 
 ### Work
 
@@ -228,6 +228,15 @@ build and isolated wheel installation checks. PR #167 awaits review/merge.
 - [x] CI PostgreSQL acceptance, migrations, Ruff, Pyright and coverage gates pass.
 
 ## Stage 9 — Packaging and release readiness
+
+**Progress:** Packaging and operational review implemented. Wheel/sdist resource
+checks, host-injected executable examples, optional-extra and clean-environment
+installation checks have been added to CI. Public exports and versioning rules
+are documented in [Operations and release](docs/OPERATIONS_AND_RELEASE.md), and
+unpublished changes in [Changelog](CHANGELOG.md). The runtime Wheel remains
+minimal, while source distributions contain documentation and examples.
+Publication remains **out of scope** without an explicit decision and a chosen
+license. Final CI acceptance is pending.
 
 ### Work
 

@@ -52,3 +52,13 @@ jobs:
           uv pip install --python "$RUNNER_TEMP/customer-wheel-check/bin/python" "${wheel_paths[0]}"
           "$RUNNER_TEMP/customer-wheel-check/bin/python" -c "from customer import CustomerModule, CustomerActorType; assert CustomerModule and CustomerActorType.USER.value == 'user'"
           "$RUNNER_TEMP/customer-wheel-check/bin/python" -c "import sys; assert 'fastapi' not in sys.modules and 'sqlalchemy' not in sys.modules"
+      - name: Verify optional extras and source-distribution installation
+        run: |
+          python -m venv "$RUNNER_TEMP/customer-extras-check"
+          wheel_paths=(dist/hamresan_customer-*.whl)
+          uv pip install --python "$RUNNER_TEMP/customer-extras-check/bin/python" "${wheel_paths[0]}[fastapi,postgres,migrations]"
+          "$RUNNER_TEMP/customer-extras-check/bin/python" -c "from customer.presentation.http import create_customer_router; from customer.migrations import install_customer_rls; assert create_customer_router and install_customer_rls"
+          python -m venv "$RUNNER_TEMP/customer-sdist-check"
+          source_paths=(dist/hamresan_customer-*.tar.gz)
+          uv pip install --python "$RUNNER_TEMP/customer-sdist-check/bin/python" "${source_paths[0]}"
+          "$RUNNER_TEMP/customer-sdist-check/bin/python" -c "from customer import CustomerModule; assert CustomerModule"

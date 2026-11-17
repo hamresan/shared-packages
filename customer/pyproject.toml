@@ -29,6 +29,13 @@ test = [
 packages = ["src/customer"]
 artifacts = ["src/customer/py.typed"]
 
+[tool.hatch.build.targets.sdist]
+include = ["/src/customer/**", "/examples/**", "/docs/**", "/README.md", "/ROADMAP.md", "/CHANGELOG.md", "/pyproject.toml"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"docs" = "docs"
+"examples" = "examples"
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
