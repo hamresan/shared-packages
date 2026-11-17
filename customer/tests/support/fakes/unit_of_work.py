@@ -7,16 +7,50 @@ from customer.application.contracts import (
     CustomerUnitOfWork,
     CustomerUnitOfWorkFactory,
 )
+from customer.application.contracts.address_repository import CustomerAddressRepository
+from customer.application.contracts.contact_repository import CustomerContactRepository
+from customer.application.contracts.note_repository import CustomerNoteRepository
+from customer.application.contracts.preference_repository import CustomerPreferenceRepository
+from tests.support.fakes.address_repository import InMemoryAddressRepository
+from tests.support.fakes.contact_repository import InMemoryContactRepository
 from tests.support.fakes.customer_repository import InMemoryCustomerRepository
 from tests.support.fakes.idempotency_repository import InMemoryCustomerIdempotencyRepository
+from tests.support.fakes.note_repository import InMemoryNoteRepository
+from tests.support.fakes.preference_repository import InMemoryPreferenceRepository
 
 
 class FakeCustomerUnitOfWork(CustomerUnitOfWork):
     def __init__(
-        self, customers: CustomerRepository, idempotency: CustomerIdempotencyRepository
+        self,
+        customers: CustomerRepository,
+        idempotency: CustomerIdempotencyRepository,
+        contacts: CustomerContactRepository,
+        addresses: CustomerAddressRepository,
+        preferences: CustomerPreferenceRepository,
+        notes: CustomerNoteRepository,
     ) -> None:
         self._customers = customers
         self._idempotency = idempotency
+        self._contacts = contacts
+        self._addresses = addresses
+        self._preferences = preferences
+        self._notes = notes
+
+    @property
+    def addresses(self) -> CustomerAddressRepository:
+        return self._addresses
+
+    @property
+    def preferences(self) -> CustomerPreferenceRepository:
+        return self._preferences
+
+    @property
+    def notes(self) -> CustomerNoteRepository:
+        return self._notes
+
+    @property
+    def contacts(self) -> CustomerContactRepository:
+        return self._contacts
 
     @property
     def customers(self) -> CustomerRepository:
@@ -50,8 +84,19 @@ class FakeCustomerUnitOfWorkFactory(CustomerUnitOfWorkFactory):
     def __init__(self) -> None:
         self.customers = InMemoryCustomerRepository()
         self.idempotency = InMemoryCustomerIdempotencyRepository()
+        self.contacts = InMemoryContactRepository()
+        self.addresses = InMemoryAddressRepository()
+        self.preferences = InMemoryPreferenceRepository()
+        self.notes = InMemoryNoteRepository()
 
     def __call__(self) -> AbstractAsyncContextManager[CustomerUnitOfWork]:
         return FakeCustomerUnitOfWorkContext(
-            FakeCustomerUnitOfWork(self.customers, self.idempotency)
+            FakeCustomerUnitOfWork(
+                self.customers,
+                self.idempotency,
+                self.contacts,
+                self.addresses,
+                self.preferences,
+                self.notes,
+            )
         )
