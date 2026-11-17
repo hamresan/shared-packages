@@ -1,0 +1,40 @@
+name: Customer CI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "customer/**"
+      - ".github/workflows/customer-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "customer/**"
+      - ".github/workflows/customer-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: customer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: customer/uv.lock
+      - name: Install locked development dependencies
+        run: uv sync --extra test --locked
+      - name: Verify lint, format, typing, tests and build
+        run: make check
+      - name: Verify clean core-only wheel installation
+        run: |
+          python -m venv "$RUNNER_TEMP/customer-wheel-check"
+          wheel_paths=(dist/hamresan_customer-*.whl)
+          uv pip install --python "$RUNNER_TEMP/customer-wheel-check/bin/python" "${wheel_paths[0]}"
+          "$RUNNER_TEMP/customer-wheel-check/bin/python" -c "from customer import CustomerModule, CustomerActorType; assert CustomerModule and CustomerActorType.USER.value == 'user'"
+          "$RUNNER_TEMP/customer-wheel-check/bin/python" -c "import sys; assert 'fastapi' not in sys.modules and 'sqlalchemy' not in sys.modules"

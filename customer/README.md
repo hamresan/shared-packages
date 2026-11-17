@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: design approved; implementation not started.** The interfaces and examples below describe the **planned public API**, not APIs available to import yet. See [ROADMAP.md](ROADMAP.md) for implementation stages and acceptance gates.
+> **Status: Stage 1 package foundation implemented; domain use cases and persistence not implemented.** The feature interfaces and examples below still describe the **planned public API**, except the explicitly available Stage 1 bootstrap and actor/permission contracts. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Stage 0 design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md). These drafts await their review gate before implementation begins.
 
@@ -22,15 +22,15 @@ The package is designed to compose with other independently installed packages t
 - Python 3.12+; standards-based `pyproject.toml` and `src/customer` layout; Hatchling build, `py.typed`, wheel and sdist.
 - Lean framework-independent core. Optional extras for async SQLAlchemy, PostgreSQL (`asyncpg`), FastAPI, migration tooling and development/testing.
 - Host owns the SQLAlchemy engine, connection pool, async session factory, credentials and the Alembic deployment sequence.
-- No published distribution or executable `customer` module exists yet.
+- No published distribution exists yet. The Stage 1 importable module provides the bootstrap and foundational contracts; customer creation, lookups, persistence and HTTP adapters remain unimplemented.
 
-Once Stage 1 is complete, source installation from this monorepo is intended to look like:
+Core installation from this monorepo now works with:
 
 ```bash
-python -m pip install './customer[postgres,fastapi]'
+python -m pip install ./customer
 ```
 
-The actual extra names and install command are an acceptance item for Stage 1, not a claim that this command works today.
+Optional extras are declared for `sqlalchemy`, `postgres`, `fastapi` and `migrations`, but their corresponding adapters are implemented in later stages. Installing an extra does not make that future functionality available yet.
 
 ## Domain model
 
@@ -111,8 +111,8 @@ uow_factory = SqlAlchemyCustomerUnitOfWorkFactory(session_factory=session_factor
 customers = CustomerModule(
     CustomerModuleConfig(
         unit_of_work_factory=uow_factory,
-        authorizer=customer_authorizer,     # host adapter; implements CustomerAuthorizer
-        identity_verifier=identity_verifier, # host adapter; implements IdentityVerifier
+        authorizer=customer_authorizer,  # host adapter; implements CustomerAuthorizer
+        identity_verifier=identity_verifier,  # host adapter; implements IdentityVerifier
     )
 )
 ```
@@ -187,7 +187,7 @@ except CustomerVersionConflictError:
     pass
 ```
 
-These sketches document expected use, **not a frozen constructor signature**. Stage 1 will fix import names, DTO fields, stable error codes and public API versioning, then replace examples with tested executable code.
+These feature sketches document expected use, **not executable feature implementations**. The Stage 1 `CustomerModuleConfig` and `CustomerModule` exist, but feature capability groups and their command DTOs will be implemented incrementally; the composition example still references a future SQLAlchemy adapter. Executable feature examples replace the sketches as their stages pass.
 
 ## Persistence, migrations and test expectations
 
@@ -199,4 +199,4 @@ These sketches document expected use, **not a frozen constructor signature**. St
 
 ## Development status
 
-This directory initially contains only design documentation. Implementation proceeds through independently reviewable stages in [ROADMAP.md](ROADMAP.md). No APIs shown here should be treated as production-ready until the relevant stage passes its gate.
+Stage 0 design is approved and Stage 1 foundational code is under CI/review. Implementation proceeds through independently reviewable stages in [ROADMAP.md](ROADMAP.md). No feature API shown here should be treated as production-ready until its implementation stage passes its gate.
