@@ -36,7 +36,7 @@ class SetPrimaryContactService:
             await transaction.contacts.unset_primary(
                 command.business_id, command.customer_id, contact.kind
             )
-            contact.is_primary = True
+            contact.make_primary()
             await transaction.contacts.save(contact)
             await transaction.commit_audited(
                 command.actor, "contact.set_primary", command.customer_id
