@@ -19,10 +19,15 @@ from customer.application.services.erase_customer import EraseCustomerService
 from customer.domain.customer import Customer, CustomerStatus
 from customer.domain.errors import CustomerVersionConflictError
 from customer.infrastructure.persistence.sqlalchemy.models import (
+    CustomerAddressModel,
     CustomerAuditModel,
     CustomerContactModel,
+    CustomerCreationReceiptModel,
     CustomerExternalIdentityModel,
+    CustomerIdentityLinkModel,
     CustomerModel,
+    CustomerNoteModel,
+    CustomerPreferenceModel,
 )
 from customer.infrastructure.persistence.sqlalchemy.unit_of_work import (
     SqlAlchemyCustomerUnitOfWorkFactory,
@@ -298,16 +303,74 @@ async def test_erasure_removes_pii_but_keeps_minimal_audit(
             text("SELECT set_config('app.customer_business_id', :business, true)"),
             {"business": str(business)},
         )
-        session.add(
-            CustomerContactModel(
-                id=uuid4(),
-                business_id=business,
-                customer_id=customer.id,
-                kind="email",
-                value="secret@example.org",
-                is_primary=True,
-                created_at=datetime.now(UTC),
-            )
+        now = datetime.now(UTC)
+        session.add_all(
+            [
+                CustomerContactModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    kind="email",
+                    value="secret@example.org",
+                    is_primary=True,
+                    created_at=now,
+                ),
+                CustomerAddressModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    label="Home",
+                    country_code="OM",
+                    line1="Private street",
+                    city="Muscat",
+                    region=None,
+                    postal_code=None,
+                    is_default=True,
+                ),
+                CustomerPreferenceModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    key="color",
+                    value="blue",
+                ),
+                CustomerNoteModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    author_id=actor.actor_id,
+                    author_type="user",
+                    body="Private note",
+                    created_at=now,
+                ),
+                CustomerIdentityLinkModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    identity_user_id=uuid4(),
+                    linked_at=now,
+                ),
+                CustomerExternalIdentityModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    provider="telegram",
+                    channel_account_id="account",
+                    external_user_id="secret-subject",
+                    status="active",
+                    linked_at=now,
+                    verification_method="provider_assertion",
+                    verified_at=now,
+                ),
+                CustomerCreationReceiptModel(
+                    id=uuid4(),
+                    business_id=business,
+                    customer_id=customer.id,
+                    key="creation-123",
+                    fingerprint="digest",
+                    created_at=now,
+                ),
+            ]
         )
 
     service = EraseCustomerService(
@@ -336,3 +399,20 @@ async def test_erasure_removes_pii_but_keeps_minimal_audit(
         ).all()
         assert [event.action for event in events] == ["customer.create", "customer.erase"]
         assert all("secret@example.org" not in str(event.__dict__) for event in events)
+        for table_name in (
+            "customer_contacts",
+            "customer_addresses",
+            "customer_preferences",
+            "customer_notes",
+            "customer_identity_links",
+            "customer_external_identities",
+            "customer_creation_receipts",
+        ):
+            count = await session.scalar(
+                text(
+                    f'SELECT count(*) FROM "{table_name}" WHERE business_id = :business '
+                    "AND customer_id = :customer"
+                ),
+                {"business": business, "customer": customer.id},
+            )
+            assert count == 0, table_name
