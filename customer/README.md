@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–5 implemented, verified and merged. Transactional audit and privacy erasure are in Stage 6 review; HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–5 implemented, verified and merged. Stage 6 transactional audit and erasure are CI-verified in PR #165, awaiting review/merge; HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
