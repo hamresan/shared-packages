@@ -28,6 +28,9 @@ async def postgres_sessions() -> AsyncIterator[async_sessionmaker[AsyncSession]]
         )
         await connection.run_sync(customer_metadata().create_all)
         await connection.run_sync(install_customer_rls)
+        # Host migrations may reapply package DDL/policies during deployment.
+        await connection.run_sync(customer_metadata().create_all)
+        await connection.run_sync(install_customer_rls)
         await connection.execute(text(f'GRANT USAGE ON SCHEMA public TO "{runtime_role}"'))
         for table_name in customer_metadata().tables:
             await connection.execute(

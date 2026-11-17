@@ -52,6 +52,12 @@ async def test_rls_fails_closed_and_rejects_cross_business_writes(
             await uow.commit()
 
     async with postgres_sessions() as session, session.begin():
+        assert (
+            await session.scalar(
+                text("SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user")
+            )
+            is False
+        )
         assert (await session.scalars(select(CustomerModel))).all() == []
         with pytest.raises(DBAPIError):
             await session.execute(
