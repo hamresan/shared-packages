@@ -2,10 +2,11 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–5 implemented, verified and merged. Stage 6 transactional audit and erasure are CI-verified in PR #165, awaiting review/merge; HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–6 implemented and merged. Stage 7 optional FastAPI integration is under verification.** The examples use the public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
+HTTP composition and security: [optional FastAPI integration](docs/HTTP_INTEGRATION.md).
 
 ## Purpose and boundaries
 
@@ -23,7 +24,7 @@ The package is designed to compose with other independently installed packages t
 - Python 3.12+; standards-based `pyproject.toml` and `src/customer` layout; Hatchling build, `py.typed`, wheel and sdist.
 - Lean framework-independent core. Optional extras for async SQLAlchemy, PostgreSQL (`asyncpg`), FastAPI, migration tooling and development/testing.
 - Host owns the SQLAlchemy engine, connection pool, async session factory, credentials and the Alembic deployment sequence.
-- No published package index release exists yet. The installable core includes Customer, profile-detail and identity use cases. The host must inject real or fake repository implementations, authorization and verification contracts; SQLAlchemy, RLS and HTTP adapters arrive in later stages.
+- No published package index release exists yet. The host must inject repository, authorization and verification implementations; SQLAlchemy, PostgreSQL RLS and an optional HTTP adapter are available.
 
 Core installation from this monorepo now works with:
 
@@ -31,7 +32,7 @@ Core installation from this monorepo now works with:
 python -m pip install ./customer
 ```
 
-Optional extras are declared for `sqlalchemy`, `postgres`, `fastapi` and `migrations`, but their corresponding adapters are implemented in later stages. Installing an extra does not make that future functionality available yet.
+Optional extras `sqlalchemy`, `postgres`, `fastapi` and `migrations` enable their corresponding integrations; installing an extra does not configure host infrastructure automatically.
 
 ## Domain model
 
