@@ -60,6 +60,7 @@ An exact active external identity may resolve a customer. A new identity must no
 - Repositories always filter by `business_id`, and PostgreSQL **row-level security (RLS)** independently constrains all customer-owned tables. The host establishes transaction-local, fail-closed tenant context on the very connection used by the unit of work. No bypass-RLS application role.
 - Read projections expose only needed fields; internal notes and sensitive identifiers never appear in general-purpose or AI-facing projections by default. The host decides which authorized data to forward to third-party systems.
 - Search returns business-scoped, paginated and minimally disclosed results. Exact normalized email/phone lookup, partial-name search, exact ID lookup and external-identity lookup precede any future fuzzy search. Duplicate suggestions are advisory, never an automatic merge or uniqueness rejection for unverified data.
+- An external-identity resolution returns a **minimal typed `CustomerResolution`**, not the complete customer profile. Verification provenance is descriptive evidence, not a blanket grant to access unrelated resources.
 - `ARCHIVED` may be reactivated with permission; `ERASED` is terminal. Erasure atomically sanitizes/removes customer-owned personal data and retains only a minimal non-identifying tombstone. A host coordinates retention and erasure across other data owners; it does not mutate historical snapshots owned elsewhere.
 
 ### Consistency and audit
@@ -69,6 +70,12 @@ The host supplies the database session factory; Customer owns its SQLAlchemy rep
 Sensitive mutations and their minimal audit records are written **in the same Customer transaction**, through a narrow `AuditRepository` contract implemented by the persistence adapter (potentially using a vetted third-party audit library). An audit failure prevents the mutation from committing. Audit must not retain erased personal values; actor type/id, business, subject reference, action and timestamp are typical safe metadata, subject to retention review.
 
 `Customer.version` enables optimistic concurrency: updates include `expected_version` and fail with a typed version-conflict error on stale writes. Link uniqueness and get-or-create races additionally rely on atomic database constraints and bounded, operation-specific conflict handling.
+
+Customer creation also accepts an **optional host-supplied `idempotency_key`**. Its scope includes business and operation; a retry with the same key and equivalent canonical request returns the previous result, while reuse with different data raises a typed `CustomerIdempotencyConflictError`. Customer creation and the idempotency record commit atomically; concurrent first requests are serialized or resolved by database uniqueness. Key records have bounded configurable retention and must not store raw personal data in request fingerprints. This works for guest creation **without** an external identity and complements (rather than replaces) external-identity uniqueness. A retry after retention expiry is not guaranteed to deduplicate; hosts must preserve keys across retries within the supported window.
+
+### Verification freshness
+
+External identity metadata records the **method and time** of a trusted verification, and may be updated after an authorized re-verification. `ACTIVE` means the link can resolve a customer; it does **not** guarantee that proof is fresh enough for a particular sensitive operation. The host or operation owner applies a purpose-specific freshness policy using that evidence, and can request another challenge when needed. Customer neither expires links automatically by age nor performs challenges, sends OTPs or queries messaging providers. Re-verification updates are auditable.
 
 No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
 
@@ -87,6 +94,8 @@ Illustrative capability groups (final names may be adjusted before the Stage 1 p
 | `notes` | `add`, `list`, `remove` (separate permissions) |
 | `identities` | `link`, `unlink`, `resolve` (trusted internal identities) |
 | `external_identities` | `find`, `get_or_create`, `link`, `revoke`, `relink` |
+
+The planned `CustomerResolution` projection contains `customer_id`, `business_id`, link status, `verification_method` and `verified_at`, plus an optional authorized `display_name`. It is returned only for a matching active link and an authorized lookup. Its evidence describes the stored link; caller authenticity, verification freshness and permission to view or change another resource are checked **outside** Customer by the respective host/operation owner. Avoid ambiguous claims such as `is_trusted` or `can_manage_records`.
 
 ### Example 1: Compose the module (illustrative; not executable yet)
 
@@ -118,6 +127,7 @@ created = await customers.customers.create(
         business_id=trusted_business_id,
         actor=trusted_actor,
         display_name="Alex Rivera",
+        idempotency_key=stable_host_operation_key,  # optional; reuse on retries
     )
 )
 
@@ -137,7 +147,7 @@ A guest does **not** need an internal identity account. Contact information can 
 ```python
 from customer import FindCustomerByExternalIdentityQuery
 
-found = await customers.external_identities.find(
+resolution = await customers.external_identities.find(
     FindCustomerByExternalIdentityQuery(
         business_id=trusted_business_id,
         actor=trusted_service_actor,
@@ -148,6 +158,8 @@ found = await customers.external_identities.find(
 )
 
 # A missing match returns None; no customer is created.
+# A match is a minimal CustomerResolution with link verification metadata.
+# The host still checks whether that evidence is recent enough for its operation.
 # An explicitly authorized get_or_create operation is a separate call.
 ```
 
