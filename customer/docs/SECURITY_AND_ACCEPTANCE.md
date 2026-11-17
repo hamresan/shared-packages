@@ -1,6 +1,6 @@
 # Customer security model and Stage 0 acceptance scenarios
 
-> **Status:** Design-level acceptance inventory. Tests are **not yet implemented or run**. This inventory defines the PostgreSQL/security gates for later stages.
+> **Status:** Acceptance inventory backed by staged unit, HTTP and PostgreSQL CI tests through Stage 8. See [ROADMAP.md](../ROADMAP.md) for the individual stage gates; operational duties remain host-owned.
 
 ## Trust boundaries and threats
 
@@ -48,4 +48,4 @@ Customer erasure leaves only non-identifying tombstone fields and safe audit met
 - **HTTP/host integration:** trusted actor injection, denied accesses with indistinguishable safe errors, minimal projection and no accidental ORM/PII serialization.
 - **Packaging/CI:** mirrored test folders, narrowly scoped fakes/builders, Ruff, strict Pyright, coverage gate, wheel/sdist clean installation and PostgreSQL GitHub Actions service.
 
-The security checklist is a release gate, not an assertion that these tests currently pass. Each later stage must link test evidence to its own acceptance criteria.
+Each release must rerun these checks, review newly introduced contracts and link CI evidence to the relevant stage gate. For operational review, see [Operations and release](OPERATIONS_AND_RELEASE.md).

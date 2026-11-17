@@ -200,7 +200,7 @@ Merged via PR #166. Integration details are documented in
 
 ## Stage 8 — PostgreSQL acceptance and concurrency hardening
 
-**Progress:** PostgreSQL acceptance hardening implemented in PR #167.
+**Progress:** PostgreSQL acceptance hardening merged via PR #167.
 Real database tests cover concurrent guest creation, recovery after a lost response,
 divergent idempotency fingerprints, business scope and receipt retention,
 rollback/retry, optimistic profile updates and audit atomicity, competing provider
@@ -209,7 +209,7 @@ tenant isolation, and host-composed Alembic-context upgrades on clean and existi
 schemas. Tests use the non-owner/non-BYPASSRLS PostgreSQL runtime role.
 Local Ruff and scoped Pyright passed; PostgreSQL-backed GitHub Actions Customer
 CI run #44178401479 passed all lint, type, migration, acceptance, coverage,
-build and isolated wheel installation checks. PR #167 awaits review/merge.
+build and isolated wheel installation checks.
 
 ### Work
 
@@ -229,6 +229,18 @@ build and isolated wheel installation checks. PR #167 awaits review/merge.
 
 ## Stage 9 — Packaging and release readiness
 
+**Progress:** Technical release readiness complete and CI-verified in PR #168.
+Wheel/sdist resource
+checks, host-injected executable examples, optional-extra and clean-environment
+installation checks have been added to CI. Public exports and versioning rules
+are documented in [Operations and release](docs/OPERATIONS_AND_RELEASE.md), and
+unpublished changes in [Changelog](CHANGELOG.md). The runtime Wheel remains
+minimal, while source distributions contain documentation and examples.
+Publication remains **out of scope** without an explicit decision and a chosen
+license. GitHub Actions Customer CI run #44180412239 passed Ruff, strict Pyright,
+PostgreSQL acceptance, coverage, build, clean Wheel, optional extras and clean
+source-distribution installation.
+
 ### Work
 
 1. Stabilize the versioned public facade, DTOs, documented errors, API compatibility rules and controlled `__init__.py` exports.
@@ -239,9 +251,13 @@ build and isolated wheel installation checks. PR #167 awaits review/merge.
 
 ### Gate
 
-- [ ] Installation, import, documented examples and distribution contents pass in clean environments.
-- [ ] Public API compatibility, security threat model and operational setup are reviewed.
-- [ ] All prior stage gates are satisfied; no known cross-tenant or audit atomicity failures remain.
+- [x] Installation, import, documented examples and distribution contents pass in clean environments.
+- [x] Public API compatibility, security threat model and operational setup are reviewed.
+- [x] All prior stage gates are satisfied; no known cross-tenant or audit atomicity failures remain.
+
+**Publication decisions intentionally deferred:** license selection, final version
+tagging and package-index release authorization. These do not block internal
+installation from source or Wheel but must be resolved before public publishing.
 
 ## Explicitly deferred
 

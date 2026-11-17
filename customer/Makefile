@@ -14,5 +14,6 @@ test:
 
 build:
 	uv build
+	uv run --no-sync python scripts/verify_distribution.py
 
 check: lint format-check typecheck test build
