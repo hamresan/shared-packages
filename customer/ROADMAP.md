@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–1 complete; Stage 2 implemented and locally verified, pending PR review and GitHub CI.** Stage 3 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–1 complete; Stage 2 implemented and verified locally and in GitHub CI, pending PR #161 review/merge.** Stage 3 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -67,7 +67,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 2 — Customer aggregate, lifecycle and search
 
-**Progress:** Implemented locally with explicit domain, application and repository contracts, dependency-injected use cases, mirrored tests and in-memory fakes. Python 3.12 quality checks and test coverage passed. Awaiting PR review and GitHub CI; real database atomicity, contact search and uniqueness remain in later stages.
+**Progress:** Implemented locally with explicit domain, application and repository contracts, dependency-injected use cases, mirrored tests and in-memory fakes. Python 3.12 checks, 24 tests and 100% measured branch coverage passed; GitHub Actions Customer CI run #44138834947 succeeded. PR #161 awaits review/merge; real database atomicity, contact search and uniqueness remain in later stages.
 
 ### Work
 
