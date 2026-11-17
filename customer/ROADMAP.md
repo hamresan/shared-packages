@@ -1,0 +1,207 @@
+# hamresan-customer — staged implementation roadmap
+
+> **Status: architecture approved; implementation not started.** This plan is public and product-agnostic. Each stage has a review gate; do not advance before its implementation, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+
+## Stage overview
+
+| Stage | Focus | Demonstrable outcome |
+| --- | --- | --- |
+| **0** | Contract and security design freeze | Reviewed schemas, ownership rules, API version, audit/RLS approach |
+| **1** | Installable Python foundation | Clean wheel/sdist, strict quality tooling, public API skeleton |
+| **2** | Customer core and lifecycle | Scoped create/read/update/search, versions, archive/reactivate |
+| **3** | Contacts, addresses, preferences and notes | Independently authorized, validated child entities |
+| **4** | Trusted identity and external-identity linking | Verified linking, lookup, explicit get-or-create, revoke/relink |
+| **5** | Async PostgreSQL persistence and migrations | Schema constraints, tenant-safe repositories, RLS |
+| **6** | Transactional audit and erasure | Audit-coupled mutations, terminal privacy erasure |
+| **7** | Optional HTTP adapter and host composition | Real, authenticated, tenant-scoped integration example |
+| **8** | PostgreSQL security/concurrency acceptance | Verified isolation, races, failure recovery and migrations |
+| **9** | Packaging, documentation and release hardening | Clean install, compatibility, stable public contracts |
+
+The stages describe delivery order, not forced one-file-per-concept scaffolding. Where end-to-end verification depends on persistence (for example atomic uniqueness, RLS or transactional audit), earlier stages use fakes and Stage 5 onward provide the real guarantees. Never claim a security invariant is proven solely by an in-memory test.
+
+## Stage 0 — Freeze contracts and threat model
+
+### Work
+
+1. Confirm a Customer is **business-owned** (one business has many customers), branch-independent, and unrelated to any specific workflow. Guest customers are first-class.
+2. Document the boundary of internal identity links versus provider-scoped external identities; authentication, OTP, messaging and provider verification stay outside Customer.
+3. Define tenant ownership for every entity, deletion/retention rules, candidate duplicate semantics, active-link uniqueness, and minimum fields. Use composite foreign keys for tenant-consistent child relationships.
+4. Define `CustomerActor` (`USER`/`SERVICE`), action permissions, minimum read projections, secure not-found behavior, and host-injected authorization and identity-verification contracts.
+5. Specify stable DTOs, typed error categories, capability-oriented facade, expected-version updates and explicit lookup versus get-or-create.
+6. Design transaction-local PostgreSQL RLS context and deploy-role requirements, including fail-closed behavior. Define an audit repository sharing the mutation transaction; choose a third-party audit implementation **only after** proving current-session compatibility.
+7. Define error and concurrency outcomes for idempotent identity linking, duplicate external-identity races, and erased-customer references.
+8. Review security and data-minimization requirements. Do not store raw provider tokens, OTP codes, sensitive values in audit records, or LLM-specific types in the core.
+
+### Gate
+
+- [ ] Entity/relationship and ownership matrix signed off, including constraints and retention decisions.
+- [ ] Public API v1 draft, typed error map and permission matrix reviewed.
+- [ ] RLS, audit atomicity, verification provenance and migration approach documented with test cases.
+- [ ] No unowned cross-package dependency or unnecessary abstraction.
+
+## Stage 1 — Installable package foundation
+
+### Work
+
+1. Add `pyproject.toml` with Python 3.12+, Hatchling, `src/customer`, `py.typed`, intentional optional extras (`sqlalchemy`, `postgres`, `fastapi`, `migrations`, `test`) and package metadata.
+2. Establish controlled public package exports, a typed facade/configuration entry point, dependency injection and explicit contract locations; no accidental broad barrel exports.
+3. Add Ruff, strict Pyright, pytest/pytest-asyncio, build checks and a reproducible development lockfile/Makefile consistent with the repository.
+4. Mirror production module structure in `tests/`; place fakes, factories and builders in narrowly named support files.
+5. Add CI jobs for package quality and clean wheel/sdist installation. Keep domain and application free of SQLAlchemy, FastAPI and external package imports.
+
+### Gate
+
+- [ ] Wheel/sdist install and import successfully in a fresh environment.
+- [ ] Ruff, format, strict Pyright, unit test and build jobs pass.
+- [ ] Optional dependencies are not loaded by core-only import.
+
+## Stage 2 — Customer aggregate, lifecycle and search
+
+### Work
+
+1. Implement the Customer entity, creation factory, profile validators, `ACTIVE / ARCHIVED / ERASED` state rules and stable business ownership.
+2. Add small use cases for create, tenant-scoped get/list/search, profile update, archive and reactivate; implement erasure policy contract now, but defer real multi-table erasure to Stage 6.
+3. Require trusted actor and business scope; check operation permissions through `CustomerAuthorizer` with explicit adapters/fakes.
+4. Require `expected_version` on stale-sensitive updates; implement deterministic version conflict behavior.
+5. Search by exact ID, normalized contact values (when available), partial name, stable ordering and pagination. Candidate duplicate suggestions are advisory and cannot automatically merge or block on unverified matches.
+6. Define minimal typed public projections and error codes independent of HTTP.
+
+### Gate
+
+- [ ] Guest customer creation and tenant-scoped retrieval work with fake contracts.
+- [ ] Archive/reactivate state transitions and erased-customer rejection are deterministic.
+- [ ] Stale version, missing permission, other-business ID and ambiguous duplicate cases are covered.
+
+## Stage 3 — Customer-owned profile details
+
+### Work
+
+1. Implement `CustomerContact` for normalized phone/email, primary selection and verified metadata that can only originate from trusted verification.
+2. Implement `CustomerAddress` with country-aware minimal fields, labels and at most one default.
+3. Implement simple keyed `CustomerPreference` values, deterministic validation and per-customer uniqueness.
+4. Implement internal `CustomerNote` creation/list/removal with author provenance and independent read/write permissions; default customer/agent projections exclude notes.
+5. Add dedicated validators, normalizers, mappers and repository interfaces only where justified; no generic dynamic-form framework or arbitrary JSON helper buckets.
+6. Keep child modifications within the parent business and define version/concurrency behavior for conflicting edits.
+
+### Gate
+
+- [ ] Multiple contact values/addresses and single primary/default policies behave correctly.
+- [ ] Unverified contact similarity cannot create a trusted identity link.
+- [ ] Internal notes require explicit permission and never leak through basic projections.
+- [ ] Per-business access and child ownership violations fail with typed errors.
+
+## Stage 4 — Internal and provider identities
+
+### Work
+
+1. Implement `CustomerIdentityLink` with optional association to a host-verified internal user, uniqueness of active links per customer and per `(business_id, identity_user_id)`, and explicit link/unlink use cases.
+2. Implement `CustomerExternalIdentity` with provider, channel/account scope, canonical external ID, optional mutable display metadata, verification provenance and `ACTIVE / REVOKED` lifecycle.
+3. Add exact `find_by_external_identity` (read only) and explicitly authorized `get_or_create_by_external_identity` (may create a guest customer). No customer is created merely from a message being received.
+4. Add guarded link/revoke/relink; a revoked identity is never used for lookup, and transfers require revocation plus trusted re-verification.
+5. Keep verification/challenge transport in host adapters. Do not treat matching name, username, claimed number or unauthenticated provider metadata as ownership proof.
+6. Describe and test concurrent duplicate link/get-or-create requests; real uniqueness enforcement lands in Stage 5.
+
+### Gate
+
+- [ ] Same internal identity can link to separate business-owned customers without profile sharing.
+- [ ] Exact external identity lookup cannot cross business/account namespaces.
+- [ ] Unverified cross-channel matches never silently merge records.
+- [ ] Revoked links do not resolve; relinking requires fresh authorized evidence.
+
+## Stage 5 — Async persistence, tenant constraints and RLS
+
+### Work
+
+1. Implement async SQLAlchemy models, dedicated mappers, repository adapters and Customer Unit of Work over a host-injected session factory. Package never creates a global engine.
+2. Use package-owned `customer_*` tables and `business_id` on every tenant-scoped table; enforce parent consistency with composite foreign keys and suitable indexes.
+3. Enforce at most one active external mapping per provider/account/external ID/business; active internal identity linking uniqueness; contact primary and address default invariants. Use partial indexes or constraints appropriate to PostgreSQL.
+4. Expose SQLAlchemy metadata and Alembic integration helpers. Host manages migration revision history/deployments; no automatic startup migrations.
+5. Implement PostgreSQL RLS `USING` and `WITH CHECK` policies with transaction-local tenant settings, fail-closed defaults and non-bypass database permissions. Ensure connection pool reuse cannot leak tenant scope.
+6. Use database-safe optimistic version updates, bounded conflict handling and correctly scoped repository predicates even with RLS enabled.
+
+### Gate
+
+- [ ] Migration upgrade creates only Customer-owned schema and policy objects; repeated deployments are safe.
+- [ ] Cross-business read/write attempts fail at both application and PostgreSQL boundaries.
+- [ ] Child foreign keys reject mismatched business ownership and concurrency cannot violate uniqueness.
+- [ ] Runtime role cannot bypass RLS; missing or stale tenant context fails closed.
+
+## Stage 6 — Transactional audit and privacy erasure
+
+### Work
+
+1. Implement a dedicated `AuditRepository` contract inside the Customer UoW; ensure audit and sensitive mutations share the **same database transaction**.
+2. Evaluate a maintained existing audit library against AsyncSession participation, privacy controls, fail-closed semantics and PostgreSQL behavior. Wrap it in a dedicated adapter if appropriate; do not introduce a second autonomous transaction.
+3. Record minimal actor type/id, business scope, subject, action, timestamp and safe correlation metadata without raw contact details, addresses, internal note text or verification codes.
+4. Implement atomic terminal `ERASED` transition: minimal tombstone, removal/sanitization of contacts, addresses, preferences, notes, internal and external links; no automatic changes to independently owned historical records.
+5. Coordinate authorization and legal retention decisions through explicit host-facing policy contracts; document limits of package-local erasure.
+6. Verify audit failure rolls back mutations, audit entries do not preserve erased values, and erased records cannot be reactivated or linked.
+
+### Gate
+
+- [ ] Every designated sensitive action has an audit record in the same committed transaction.
+- [ ] Audit write failure leaves no partially committed business mutation.
+- [ ] Erasure clears customer-owned identifying data, preserves only permitted tombstone metadata and blocks reactivation.
+- [ ] Audit and retained identifiers comply with documented data-minimization and retention rules.
+
+## Stage 7 — Optional HTTP adapter and integration example
+
+### Work
+
+1. Provide opt-in FastAPI router, DTO mappers and typed-error-to-HTTP mapping; no FastAPI types inside Domain/Application.
+2. Supply a generic consumer example showing a host-owned async engine/session factory, trusted `USER`/`SERVICE` actors, authorization adapters, trusted internal identity resolution and externally verified provider assertions.
+3. Demonstrate an authorized read projection, guest creation, exact external-identity lookup, verified linking and a version-conflict response.
+4. Document safe configuration of tenant context per transaction and migration composition with multiple packages; no real credentials or business-specific assumptions in examples.
+5. Exercise least-privilege service actors and disallow note/erasure access by default.
+
+### Gate
+
+- [ ] Host can compose the module without importing internal services or implementing Customer persistence.
+- [ ] API responses mask cross-tenant existence and sensitive details.
+- [ ] No provider token, OTP, LLM framework or application workflow dependency enters the Customer core.
+
+## Stage 8 — PostgreSQL acceptance and concurrency hardening
+
+### Work
+
+1. Run real PostgreSQL tests under the actual non-bypass application role with RLS enforced, including all child tables and transaction-local tenant context across pooled connections.
+2. Test concurrent create/get-or-create/link/relink, active uniqueness, contact/address defaults, stale `version`, rollback behavior and isolation-level edge cases.
+3. Verify atomic audit/erasure and failure injection, including integrity under forced rollback and retry after conflict.
+4. Run Alembic upgrade tests against a clean and an existing shared schema; confirm migrations do not alter unrelated package-owned tables.
+5. Use deterministic fake-based unit tests, SQLAlchemy integration tests and PostgreSQL-specific acceptance tests in GitHub Actions with explicit matrix/configuration.
+
+### Gate
+
+- [ ] Cross-tenant leakage tests fail if any essential RLS policy or query scope is removed.
+- [ ] Duplicate-provider races never result in multiple active mappings.
+- [ ] Failed audit writes prevent committed sensitive changes.
+- [ ] CI PostgreSQL acceptance, migrations, Ruff, Pyright and coverage gates pass.
+
+## Stage 9 — Packaging and release readiness
+
+### Work
+
+1. Stabilize the versioned public facade, DTOs, documented errors, API compatibility rules and controlled `__init__.py` exports.
+2. Replace all illustrative README snippets with passing executable examples and verify optional extras in isolated clean environments.
+3. Build wheel and sdist with included typed marker and migration resources; test installation without editable source paths.
+4. Review indexes, pagination, operational metrics, personal-data logging, default authorizations, migration rollback strategy and backup/retention documentation.
+5. Publish release notes and a documented SemVer strategy. Package publication is separate and requires an explicit release decision.
+
+### Gate
+
+- [ ] Installation, import, documented examples and distribution contents pass in clean environments.
+- [ ] Public API compatibility, security threat model and operational setup are reviewed.
+- [ ] All prior stage gates are satisfied; no known cross-tenant or audit atomicity failures remain.
+
+## Explicitly deferred
+
+- Automatic customer merging or cross-business identity graphs.
+- General CRM campaigns, tagging engines, rich activity timelines or attachments.
+- Fuzzy name matching, external search infrastructure and ML-based identity decisions.
+- Internal OTP/messaging transports, provider webhook handling, agent prompts and conversation state.
+- Domain event infrastructure, event bus, transactional outbox, distributed transactions and a saga framework.
+- A multi-provider database portability framework; PostgreSQL remains the production acceptance target.
+
+## Implementation discipline
+
+Use small, use-case-oriented application services. Keep mapping, validation, policy, persistence, cryptography and provider integration in explicitly named responsible components. Respect dependency direction and explicit contracts; implementations inherit their interface/Protocol where appropriate. Structure tests to mirror production modules. Do not add speculative interfaces or folders, and do not silently carry forward wrong structure only to minimize a diff. Pause at every stage gate for review before advancing.
