@@ -1,6 +1,6 @@
-# Customer public contracts — Stage 0 draft
+# Customer public contracts — design and implementation reference
 
-> **Status:** Proposed version 1 contract surface for review. Names and example shapes are not yet executable. Public names are frozen at the Stage 1 gate only after typed implementation tests.
+> **Status:** Stage 0 design with Stage 1–4 facade/DTOs implemented. Persistence, RLS and transactional guarantees remain future stages.
 
 ## Public entry point
 
@@ -85,4 +85,14 @@ Proposed stable actions include `customer.read`, `customer.create`, `customer.up
 
 ## Versioning
 
-Use a documented version-1 public API, SemVer releases and explicit breaking-change review. `__init__.py` exports only intentional public types and entry points; internal mappers/models/services are not stable imports. Source-code examples in the README are illustrative until Stage 1 binds these names to tested implementations.
+Use a documented version-1 public API, SemVer releases and explicit breaking-change review. `__init__.py` exports only intentional public types and entry points; internal mappers/models/services are not stable imports. The README distinguishes implemented operations from future database adapters.
+
+## Stage 4 identity contract details
+
+- `IdentityVerifier.require_linkable_user(identity_user_id, actor, customer_id)` must confirm both existence of the global identity and authority to establish this exact association. Existence alone is insufficient.
+- `ExternalIdentityEvidenceVerifier.require_verified(key, evidence_reference)` must return a trusted `VerifiedExternalIdentityEvidence` for the exact normalized business/provider/account/subject namespace. The reference is opaque to Customer. Provider authentication, signature verification, OTP/challenge transport and replay protection belong to the host.
+- External `find` requires `customer.external_identity.lookup`; `link`, `relink`, `revoke`, `record_verification`, and explicit `get_or_create` require `customer.external_identity.manage`. The latter additionally requires `customer.create`.
+- Internal `resolve` requires `customer.identity.resolve`, independently of `customer.identity.link`.
+- `relink` requires a prior revoked association and verification evidence dated after revocation. Revoked identities cannot resolve or implicitly create a replacement Customer through `get_or_create`.
+- `CustomerResolution` contains only customer/business IDs, active status and verification provenance. It grants no downstream resource authority; the host applies purpose-specific freshness policies.
+- Stage 4 fakes check deterministic ownership and retry semantics. Only Stage 5/8 database constraints and transactions can prove concurrency guarantees.
