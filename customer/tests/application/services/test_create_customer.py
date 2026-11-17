@@ -96,6 +96,7 @@ async def test_host_authorization_is_enforced_before_mutation() -> None:
             module.config.clock,
             module.config.identifiers,
             module.config.creation_fingerprinter,
+            module.config.external_evidence_verifier,
         )
     )
     actor = build_actor(uuid4())
