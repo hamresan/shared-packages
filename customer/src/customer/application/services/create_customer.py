@@ -50,8 +50,9 @@ class CreateCustomerService:
             raise CustomerValidationError("Invalid idempotency key")
 
         fingerprint = self.fingerprinter.fingerprint(name)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             if command.idempotency_key is not None:
+                await transaction.idempotency.lock_key(command.business_id, command.idempotency_key)
                 existing = await transaction.idempotency.find(
                     command.business_id, command.idempotency_key
                 )

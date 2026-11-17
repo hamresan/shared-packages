@@ -11,7 +11,7 @@ class RemoveNoteService:
         self.access = access
 
     async def execute(self, command: CustomerChildMutation) -> None:
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             await self.access.require(
                 transaction.customers,
                 command.business_id,

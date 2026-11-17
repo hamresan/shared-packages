@@ -25,7 +25,7 @@ class SearchCustomersService:
         self.scope.require_matching_business(query.business_id, query.actor)
         await self.authorizer.require_permission(query.actor, CustomerPermission.READ)
         self.validator.validate(query)
-        async with self.uow() as transaction:
+        async with self.uow(query.business_id) as transaction:
             customers = await transaction.customers.search(
                 query.business_id, query.name_contains, query.offset, query.limit + 1
             )

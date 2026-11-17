@@ -39,7 +39,7 @@ class AddContactService:
             command.actor, CustomerPermission.UPDATE, command.customer_id
         )
         normalized = self.normalizer.normalize(command.kind, command.value)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             customer = await transaction.customers.get(command.business_id, command.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer was not found")

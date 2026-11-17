@@ -65,7 +65,7 @@ class GetOrCreateExternalIdentityService:
         name = self.name_validator.normalize(command.display_name)
         evidence = await self.verifier.require_verified(key, command.evidence_reference)
         self.evidence_policy.require_matching(key, evidence)
-        async with self.uow() as transaction:
+        async with self.uow(command.key.business_id) as transaction:
             active = await transaction.external_identities.find_active(key)
             if active is not None:
                 customer = await transaction.customers.get(key.business_id, active.customer_id)

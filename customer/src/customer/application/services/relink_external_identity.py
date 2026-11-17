@@ -32,7 +32,7 @@ class RelinkExternalIdentityService:
             command.actor, CustomerPermission.EXTERNAL_IDENTITY_MANAGE, command.customer_id
         )
         key = self.validator.normalize(command.key)
-        async with self.uow() as transaction:
+        async with self.uow(command.key.business_id) as transaction:
             previous = await transaction.external_identities.find_latest(key)
             if previous is None:
                 raise CustomerNotFoundError("No previous external identity exists")

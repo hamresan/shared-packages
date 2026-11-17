@@ -19,7 +19,7 @@ class RemovePreferenceService:
 
     async def execute(self, command: RemovePreferenceCommand) -> None:
         key = self.validator.normalize_key(command.key)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             await self.access.require(
                 transaction.customers,
                 command.business_id,

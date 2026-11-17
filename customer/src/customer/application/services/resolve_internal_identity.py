@@ -24,7 +24,7 @@ class ResolveInternalIdentityService:
     ) -> InternalIdentityResolution | None:
         self.scope.require_matching_business(query.business_id, query.actor)
         await self.authorizer.require_permission(query.actor, CustomerPermission.IDENTITY_RESOLVE)
-        async with self.uow() as transaction:
+        async with self.uow(query.business_id) as transaction:
             link = await transaction.internal_identities.find_by_user(
                 query.business_id, query.identity_user_id
             )

@@ -25,7 +25,7 @@ class SetPrimaryContactService:
         await self.authorizer.require_permission(
             command.actor, CustomerPermission.UPDATE, command.customer_id
         )
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             customer = await transaction.customers.get(command.business_id, command.customer_id)
             contact = await transaction.contacts.get(
                 command.business_id, command.customer_id, command.contact_id

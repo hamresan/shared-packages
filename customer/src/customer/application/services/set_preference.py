@@ -25,7 +25,7 @@ class SetPreferenceService:
 
     async def execute(self, command: SetPreferenceCommand) -> PreferenceResult:
         key = self.validator.validate(command.key, command.value)
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             await self.access.require(
                 transaction.customers,
                 command.business_id,

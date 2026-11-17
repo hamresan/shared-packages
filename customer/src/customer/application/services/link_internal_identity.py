@@ -41,7 +41,7 @@ class LinkInternalIdentityService:
         await self.verifier.require_linkable_user(
             command.identity_user_id, command.actor, command.customer_id
         )
-        async with self.uow() as transaction:
+        async with self.uow(command.business_id) as transaction:
             customer = await transaction.customers.get(command.business_id, command.customer_id)
             if customer is None:
                 raise CustomerNotFoundError("Customer not found")
