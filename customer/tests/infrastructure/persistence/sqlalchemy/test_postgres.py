@@ -1,7 +1,7 @@
 """Database-backed tenant isolation, integrity, optimistic writes and retries."""
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
@@ -148,6 +148,14 @@ async def test_concurrent_idempotency_replays_single_customer(
     async with factory(business) as uow:
         customers = await uow.customers.search(business, None, 0, 10)
         assert len(customers) == 1
+        removed = await uow.idempotency.prune_expired(
+            business, datetime.now(UTC) + timedelta(days=1)
+        )
+        assert removed == 1
+        await uow.commit()
+    async with factory(business) as uow:
+        assert await uow.idempotency.find(business, "operation-123") is None
+        assert await uow.customers.get(business, first) is not None
 
 
 async def test_partial_unique_indexes_reject_active_duplicates(

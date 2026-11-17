@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import CursorResult, delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from customer.application.contracts.idempotency_repository import (
@@ -33,3 +34,12 @@ class SqlAlchemyIdempotencyRepository(CustomerIdempotencyRepository):
 
     async def add(self, receipt: CustomerCreationReceipt) -> None:
         self.session.add(IdempotencyMapper.to_row(receipt))
+
+    async def prune_expired(self, business_id: UUID, before: datetime) -> int:
+        result = await self.session.execute(
+            delete(CustomerCreationReceiptModel).where(
+                CustomerCreationReceiptModel.business_id == business_id,
+                CustomerCreationReceiptModel.created_at < before,
+            )
+        )
+        return result.rowcount if isinstance(result, CursorResult) else 0

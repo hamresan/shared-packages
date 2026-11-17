@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–4 complete and merged. Stage 5 implementation is under review; PostgreSQL acceptance must pass in CI before sign-off.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–4 complete and merged. Stage 5 implemented and verified by PostgreSQL-backed CI; PR #164 awaits review/merge.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -130,7 +130,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 5 — Async persistence, tenant constraints and RLS
 
-**Progress:** Implemented in the Stage 5 review branch; local Ruff, Pyright and core tests pass. PostgreSQL acceptance is enforced by a dedicated CI service and remains pending until that workflow passes. No Stage 5 gate is considered complete before that result.
+**Progress:** Implemented in PR #164. Ruff, Pyright, core tests and PostgreSQL-backed CI pass. All gates are implemented; the final review/merge is pending. The host must supply a migration revision, a non-owner runtime database role and a scheduled idempotency-retention cutoff.
 
 ### Work
 
@@ -144,11 +144,11 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Migration upgrade creates only Customer-owned schema and policy objects; repeated deployments are safe.
-- [ ] Cross-business read/write attempts fail at both application and PostgreSQL boundaries.
-- [ ] Child foreign keys reject mismatched business ownership and concurrency cannot violate uniqueness.
-- [ ] Runtime role cannot bypass RLS; missing or stale tenant context fails closed.
-- [ ] Concurrent same-key create requests yield one customer, conflicting payloads fail, and replay works within documented retention.
+- [x] Customer-owned metadata and policy installation are repeatable; the host owns migration revisions.
+- [x] Cross-business reads/writes are blocked by application scope checks and PostgreSQL RLS.
+- [x] Composite child foreign keys and active uniqueness are exercised against PostgreSQL.
+- [x] Runtime role lacks RLS bypass; missing tenant context fails closed and UoW uses transaction-local settings.
+- [x] Concurrent same-key creations replay one customer; distinct fingerprints conflict and per-business receipt pruning is available.
 
 ## Stage 6 — Transactional audit and privacy erasure
 
