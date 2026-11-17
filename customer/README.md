@@ -103,6 +103,7 @@ The planned `CustomerResolution` projection contains `customer_id`, `business_id
 
 ```python
 from customer import CustomerModule, CustomerModuleConfig
+
 # The host supplies contract implementations. The package has no built-in
 # database implementation until its persistence stage.
 customers = CustomerModule(
