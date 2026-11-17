@@ -12,4 +12,6 @@ class CustomerPermission(StrEnum):
     NOTES_READ = "customer.notes.read"
     NOTES_WRITE = "customer.notes.write"
     IDENTITY_LINK = "customer.identity.link"
+    IDENTITY_RESOLVE = "customer.identity.resolve"
     EXTERNAL_IDENTITY_MANAGE = "customer.external_identity.manage"
+    EXTERNAL_IDENTITY_LOOKUP = "customer.external_identity.lookup"

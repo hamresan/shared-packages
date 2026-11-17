@@ -57,6 +57,7 @@ async def test_note_access_uses_independent_permission() -> None:
             module.config.clock,
             module.config.identifiers,
             module.config.creation_fingerprinter,
+            module.config.external_evidence_verifier,
         )
     )
     with pytest.raises(CustomerPermissionDeniedError):

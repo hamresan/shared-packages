@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–2 complete. Stage 3 implemented and verified locally and in GitHub CI, pending PR #162 review/merge.** Stage 4 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–3 complete. Stage 4 implemented and verified locally and in GitHub CI, pending PR #163 review/merge.** Stage 5 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -88,7 +88,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 3 — Customer-owned profile details
 
-**Progress:** Contact, address, preference and note use cases implemented using business/customer-scoped repository contracts, host-authorized access, explicit validators, immutable result projections and mirrored fake-based tests. Ruff, formatting, strict Pyright, 39 pytest tests (98.45% measured coverage) and package build passed locally; GitHub Actions Customer CI run #44142771589 succeeded. PR #162 awaits review/merge. Database uniqueness, rollback and race guarantees will be verified in Stages 5 and 8.
+**Progress:** Complete. Contact, address, preference and note use cases implemented using business/customer-scoped repository contracts, host-authorized access, explicit validators, immutable result projections and mirrored fake-based tests. GitHub Actions Customer CI run #44142895435 succeeded and PR #162 was merged. Database uniqueness, rollback and race guarantees will be verified in Stages 5 and 8.
 
 ### Work
 
@@ -108,6 +108,8 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 4 — Internal and provider identities
 
+**Progress:** Implemented with host-injected trusted verification interfaces, internal and external link repositories, exact namespace lookup, explicit get-or-create, revoke/relink, verification provenance and minimal immutable resolution DTOs. Fake-based security tests cover business boundaries, namespace boundaries, invalid/mismatched evidence, retries, active-link uniqueness and revocation. Local Ruff, strict Pyright, 56 pytest tests (97.98% coverage) and build passed; GitHub Actions Customer CI run #44146469993 succeeded. PR #163 awaits review/merge. Concurrent database uniqueness and transaction recovery await Stage 5/8.
+
 ### Work
 
 1. Implement `CustomerIdentityLink` with optional association to a host-verified internal user, uniqueness of active links per customer and per `(business_id, identity_user_id)`, and explicit link/unlink use cases.
@@ -120,11 +122,11 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Same internal identity can link to separate business-owned customers without profile sharing.
-- [ ] Exact external identity lookup cannot cross business/account namespaces.
-- [ ] Unverified cross-channel matches never silently merge records.
-- [ ] Revoked links do not resolve; relinking requires fresh authorized evidence.
-- [ ] Resolution never implies permission to access downstream records; stale verification can be rejected by host policy without changing Customer linkage.
+- [x] Same internal identity can link to separate business-owned customers without profile sharing.
+- [x] Exact external identity lookup cannot cross business/account namespaces.
+- [x] Unverified cross-channel matches never silently merge records.
+- [x] Revoked links do not resolve; relinking requires fresh evidence after revocation.
+- [x] Resolution does not grant downstream authorization; freshness decisions stay with the host.
 
 ## Stage 5 — Async persistence, tenant constraints and RLS
 

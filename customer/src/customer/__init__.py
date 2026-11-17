@@ -7,6 +7,10 @@ from customer.application import (
     CustomerPermission,
     IdentityVerifier,
 )
+from customer.application.contracts.external_identity_evidence import (
+    ExternalIdentityEvidenceVerifier,
+    VerifiedExternalIdentityEvidence,
+)
 from customer.application.models import (
     CreateCustomerCommand,
     CustomerMutationCommand,
@@ -25,6 +29,21 @@ from customer.application.models.contact_commands import (
     UpdateContactCommand,
 )
 from customer.application.models.contact_result import ContactResult
+from customer.application.models.external_identity_commands import (
+    FindExternalIdentityQuery,
+    GetOrCreateExternalIdentityCommand,
+    LinkExternalIdentityCommand,
+    RecordExternalIdentityVerificationCommand,
+    RevokeExternalIdentityCommand,
+)
+from customer.application.models.identity_resolution import (
+    CustomerResolution,
+    InternalIdentityResolution,
+)
+from customer.application.models.internal_identity_commands import (
+    LinkInternalIdentityCommand,
+    ResolveInternalIdentityQuery,
+)
 from customer.application.models.note_commands import AddNoteCommand
 from customer.application.models.note_result import NoteResult
 from customer.application.models.preference_commands import (
@@ -41,6 +60,8 @@ from customer.domain import (
     CustomerErasedError,
     CustomerError,
     CustomerIdempotencyConflictError,
+    CustomerIdentityConflictError,
+    CustomerIdentityVerificationError,
     CustomerInvalidStateError,
     CustomerNotFoundError,
     CustomerPermissionDeniedError,
@@ -49,8 +70,24 @@ from customer.domain import (
     CustomerVersionConflictError,
 )
 from customer.domain.contact import ContactKind
+from customer.domain.external_identity import ExternalIdentityKey, ExternalIdentityStatus
 
 __all__ = [
+    "ExternalIdentityEvidenceVerifier",
+    "VerifiedExternalIdentityEvidence",
+    "CustomerIdentityConflictError",
+    "CustomerIdentityVerificationError",
+    "CustomerResolution",
+    "ExternalIdentityKey",
+    "ExternalIdentityStatus",
+    "FindExternalIdentityQuery",
+    "GetOrCreateExternalIdentityCommand",
+    "InternalIdentityResolution",
+    "LinkExternalIdentityCommand",
+    "LinkInternalIdentityCommand",
+    "RecordExternalIdentityVerificationCommand",
+    "ResolveInternalIdentityQuery",
+    "RevokeExternalIdentityCommand",
     "AddAddressCommand",
     "AddContactCommand",
     "AddNoteCommand",
