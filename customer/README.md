@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Customer core and profile-detail use cases implemented through Stage 3; PostgreSQL persistence, external-identity linking and HTTP adapters remain planned.** The examples use the actual Stage 3 public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Customer, profile-detail and identity-link use cases implemented through Stage 4; PostgreSQL persistence and HTTP adapters remain planned.** The examples use the implemented public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 
@@ -22,7 +22,7 @@ The package is designed to compose with other independently installed packages t
 - Python 3.12+; standards-based `pyproject.toml` and `src/customer` layout; Hatchling build, `py.typed`, wheel and sdist.
 - Lean framework-independent core. Optional extras for async SQLAlchemy, PostgreSQL (`asyncpg`), FastAPI, migration tooling and development/testing.
 - Host owns the SQLAlchemy engine, connection pool, async session factory, credentials and the Alembic deployment sequence.
-- No published package index release exists yet. The installable core includes Customer and profile-detail use cases. The host must inject real or fake repository implementations, authorization and other contracts; SQLAlchemy, RLS and HTTP adapters arrive in later stages.
+- No published package index release exists yet. The installable core includes Customer, profile-detail and identity use cases. The host must inject real or fake repository implementations, authorization and verification contracts; SQLAlchemy, RLS and HTTP adapters arrive in later stages.
 
 Core installation from this monorepo now works with:
 
@@ -110,7 +110,8 @@ customers = CustomerModule(
     CustomerModuleConfig(
         unit_of_work_factory=customer_uow_factory,
         authorizer=customer_authorizer,  # host adapter; implements CustomerAuthorizer
-        identity_verifier=identity_verifier,  # host adapter; implements IdentityVerifier
+        identity_verifier=identity_verifier,  # validates authorization for exact user/customer link
+        external_evidence_verifier=external_evidence_verifier,  # trusted provider proof adapter
         clock=clock,  # Clock contract
         identifiers=identifier_generator,  # IdentifierGenerator contract
         creation_fingerprinter=creation_fingerprinter,  # keyed stable digest provider
@@ -178,18 +179,24 @@ preference = await customers.preferences.set.execute(
 
 Contact creation does **not** establish verified ownership. Internal notes are available only through `customers.notes` with separately granted `customer.notes.read` and `customer.notes.write` permissions. Basic profile projections never contain notes.
 
-### Example 4: Resolve an external identity without implicit creation (illustrative; Stage 4)
+### Example 4: Resolve an external identity without implicit creation
 
 ```python
-from customer import FindCustomerByExternalIdentityQuery
+from customer import ExternalIdentityKey, FindExternalIdentityQuery
 
-resolution = await customers.external_identities.find(
-    FindCustomerByExternalIdentityQuery(
-        business_id=trusted_business_id,
+# trusted_service_actor must have customer.external_identity.lookup permission.
+# The host has already authenticated the channel/source; raw messages are not trusted.
+key = ExternalIdentityKey(
+    business_id=trusted_business_id,
+    provider="telegram",
+    channel_account_id=trusted_channel_account_id,
+    external_user_id=trusted_provider_user_id,
+)
+
+resolution = await customers.external_identities.find.execute(
+    FindExternalIdentityQuery(
         actor=trusted_service_actor,
-        provider="telegram",
-        channel_account_id=trusted_channel_account_id,
-        external_user_id=trusted_provider_user_id,
+        key=key,
     )
 )
 
@@ -200,6 +207,8 @@ resolution = await customers.external_identities.find(
 ```
 
 Provider authentication and any proof-of-control challenge occur **before** the host calls link/relink. A newly observed identifier does not prove that it belongs to an existing customer. A lookup is also not sufficient authorization to disclose private history.
+
+To create an identity-backed guest explicitly, use `customers.external_identities.get_or_create.execute(GetOrCreateExternalIdentityCommand(...))` with a host-attested `evidence_reference` and separate create/manage permissions. `ExternalIdentityEvidenceVerifier` must reject unsupported or mismatched evidence and attest the exact business/provider/account/subject key. Revoked identities must be explicitly relinked; a new or reused channel identifier is never matched by name or phone similarity.
 
 ### Example 5: Handle a stale update
 
@@ -221,7 +230,7 @@ except CustomerVersionConflictError:
     pass
 ```
 
-The examples for Customer and profile details use implemented APIs with host-supplied dependencies. External identity lookup remains a **future** feature; never import that illustrative Stage 4 query until implemented.
+The examples use implemented application contracts; production persistence and its concurrent-uniqueness guarantees remain dependent on Stages 5 and 8. Host authorization of a resolved identity never substitutes for authorization of another application's resources.
 
 ## Persistence, migrations and test expectations
 
@@ -233,4 +242,4 @@ The examples for Customer and profile details use implemented APIs with host-sup
 
 ## Development status
 
-Stages 0–2 are complete. Stage 3 core and profile-detail logic has passed local automated checks and awaits GitHub CI/review. PostgreSQL persistence, transaction-level audit, RLS and external identity linking are future stages; the current in-memory fakes are only for tests. See [ROADMAP.md](ROADMAP.md) for stage gates and current status.
+Stages 0–3 are complete. Stage 4 identity application logic has passed local automated checks and awaits GitHub CI/review. PostgreSQL persistence, transaction-level audit and RLS are future stages; the current in-memory fakes are only for tests. See [ROADMAP.md](ROADMAP.md) for stage gates and current status.
