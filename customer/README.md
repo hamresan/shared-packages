@@ -4,6 +4,8 @@ Reusable, business-scoped customer profiles and external-identity links for Pyth
 
 > **Status: design approved; implementation not started.** The interfaces and examples below describe the **planned public API**, not APIs available to import yet. See [ROADMAP.md](ROADMAP.md) for implementation stages and acceptance gates.
 
+Stage 0 design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md). These drafts await their review gate before implementation begins.
+
 ## Purpose and boundaries
 
 `hamresan-customer` provides customer records owned by a single business, without imposing a particular product, workflow, channel, authentication provider, or web framework. The same natural person may have a separate customer record in several businesses; customer data is never shared across them merely because an identity matches.
