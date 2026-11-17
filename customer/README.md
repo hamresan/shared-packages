@@ -2,9 +2,9 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stage 1 package foundation implemented; domain use cases and persistence not implemented.** The feature interfaces and examples below still describe the **planned public API**, except the explicitly available Stage 1 bootstrap and actor/permission contracts. See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Customer core and profile-detail use cases implemented through Stage 3; PostgreSQL persistence, external-identity linking and HTTP adapters remain planned.** The examples use the actual Stage 3 public facade with host-injected dependencies. See [ROADMAP.md](ROADMAP.md) for stage gates.
 
-Stage 0 design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md). These drafts await their review gate before implementation begins.
+Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 
 ## Purpose and boundaries
 
@@ -16,13 +16,13 @@ Stage 0 design references: [architecture and data ownership](docs/ARCHITECTURE.m
 
 The package is designed to compose with other independently installed packages through **host-supplied adapters**. It must not import implementation classes from [`hamresan-business`](../business) or [`hamresan-identity`](../identity). A host can use those packages to implement the customer-owned authorization and identity-check contracts.
 
-## Distribution and installation (planned)
+## Distribution and installation
 
 - Distribution: `hamresan-customer`; import package: `customer`.
 - Python 3.12+; standards-based `pyproject.toml` and `src/customer` layout; Hatchling build, `py.typed`, wheel and sdist.
 - Lean framework-independent core. Optional extras for async SQLAlchemy, PostgreSQL (`asyncpg`), FastAPI, migration tooling and development/testing.
 - Host owns the SQLAlchemy engine, connection pool, async session factory, credentials and the Alembic deployment sequence.
-- No published distribution exists yet. The Stage 1 importable module provides the bootstrap and foundational contracts; customer creation, lookups, persistence and HTTP adapters remain unimplemented.
+- No published package index release exists yet. The installable core includes Customer and profile-detail use cases. The host must inject real or fake repository implementations, authorization and other contracts; SQLAlchemy, RLS and HTTP adapters arrive in later stages.
 
 Core installation from this monorepo now works with:
 
@@ -81,11 +81,11 @@ External identity metadata records the **method and time** of a trusted verifica
 
 No domain-event bus, messaging worker, distributed transactions, automatic profile merge, or automatic schema migration is included in the initial implementation.
 
-## Planned public Python API
+## Public Python API
 
 A stable `CustomerModule` facade exposes small capability groups with typed command/query DTOs and typed errors. The public import surface is controlled through package `__init__.py` exports; consumers should not depend on internal repository or SQLAlchemy model layouts.
 
-Illustrative capability groups (final names may be adjusted before the Stage 1 public-contract gate):
+Implemented groups expose service objects with async `.execute(command_or_query)` methods. Other listed operations are planned:
 
 | Group | Representative operations |
 | --- | --- |
@@ -99,32 +99,33 @@ Illustrative capability groups (final names may be adjusted before the Stage 1 p
 
 The planned `CustomerResolution` projection contains `customer_id`, `business_id`, link status, `verification_method` and `verified_at`, plus an optional authorized `display_name`. It is returned only for a matching active link and an authorized lookup. Its evidence describes the stored link; caller authenticity, verification freshness and permission to view or change another resource are checked **outside** Customer by the respective host/operation owner. Avoid ambiguous claims such as `is_trusted` or `can_manage_records`.
 
-### Example 1: Compose the module (illustrative; not executable yet)
+### Example 1: Compose the module
 
 ```python
 from customer import CustomerModule, CustomerModuleConfig
-from customer.infrastructure.persistence.sqlalchemy import SqlAlchemyCustomerUnitOfWorkFactory
 
-# The host already owns session_factory, authenticated actors, authorization,
-# trusted identity verification and tenant-scoped database configuration.
-uow_factory = SqlAlchemyCustomerUnitOfWorkFactory(session_factory=session_factory)
+# The host supplies contract implementations. The package has no built-in
+# database implementation until its persistence stage.
 customers = CustomerModule(
     CustomerModuleConfig(
-        unit_of_work_factory=uow_factory,
+        unit_of_work_factory=customer_uow_factory,
         authorizer=customer_authorizer,  # host adapter; implements CustomerAuthorizer
         identity_verifier=identity_verifier,  # host adapter; implements IdentityVerifier
+        clock=clock,  # Clock contract
+        identifiers=identifier_generator,  # IdentifierGenerator contract
+        creation_fingerprinter=creation_fingerprinter,  # keyed stable digest provider
     )
 )
 ```
 
 The composition root wires contracts explicitly. The module must not create an engine, discover dependencies through a global registry, or generate trusted actors from raw request values. The audit repository participates in the injected unit of work.
 
-### Example 2: Create and read a guest customer (illustrative)
+### Example 2: Create and read a guest customer
 
 ```python
 from customer import CreateCustomerCommand, GetCustomerQuery
 
-created = await customers.customers.create(
+created = await customers.customers.create.execute(
     CreateCustomerCommand(
         business_id=trusted_business_id,
         actor=trusted_actor,
@@ -133,7 +134,7 @@ created = await customers.customers.create(
     )
 )
 
-profile = await customers.customers.get(
+profile = await customers.customers.get.execute(
     GetCustomerQuery(
         business_id=trusted_business_id,
         actor=trusted_actor,
@@ -144,7 +145,40 @@ profile = await customers.customers.get(
 
 A guest does **not** need an internal identity account. Contact information can be added separately with its own provenance and authorization rules.
 
-### Example 3: Resolve an external identity without implicit creation (illustrative)
+### Example 3: Store a contact and a preference
+
+```python
+from customer import (
+    AddContactCommand,
+    ContactKind,
+    SetPreferenceCommand,
+)
+
+contact = await customers.contacts.add.execute(
+    AddContactCommand(
+        business_id=trusted_business_id,
+        actor=trusted_actor,
+        customer_id=created.id,
+        kind=ContactKind.EMAIL,
+        value="alex@example.com",
+        is_primary=True,
+    )
+)
+
+preference = await customers.preferences.set.execute(
+    SetPreferenceCommand(
+        business_id=trusted_business_id,
+        actor=trusted_actor,
+        customer_id=created.id,
+        key="language",
+        value="en",
+    )
+)
+```
+
+Contact creation does **not** establish verified ownership. Internal notes are available only through `customers.notes` with separately granted `customer.notes.read` and `customer.notes.write` permissions. Basic profile projections never contain notes.
+
+### Example 4: Resolve an external identity without implicit creation (illustrative; Stage 4)
 
 ```python
 from customer import FindCustomerByExternalIdentityQuery
@@ -167,13 +201,13 @@ resolution = await customers.external_identities.find(
 
 Provider authentication and any proof-of-control challenge occur **before** the host calls link/relink. A newly observed identifier does not prove that it belongs to an existing customer. A lookup is also not sufficient authorization to disclose private history.
 
-### Example 4: Handle a stale update (illustrative)
+### Example 5: Handle a stale update
 
 ```python
 from customer import CustomerVersionConflictError, UpdateCustomerCommand
 
 try:
-    await customers.customers.update(
+    await customers.customers.update.execute(
         UpdateCustomerCommand(
             business_id=trusted_business_id,
             actor=trusted_actor,
@@ -187,7 +221,7 @@ except CustomerVersionConflictError:
     pass
 ```
 
-These feature sketches document expected use, **not executable feature implementations**. The Stage 1 `CustomerModuleConfig` and `CustomerModule` exist, but feature capability groups and their command DTOs will be implemented incrementally; the composition example still references a future SQLAlchemy adapter. Executable feature examples replace the sketches as their stages pass.
+The examples for Customer and profile details use implemented APIs with host-supplied dependencies. External identity lookup remains a **future** feature; never import that illustrative Stage 4 query until implemented.
 
 ## Persistence, migrations and test expectations
 
@@ -199,4 +233,4 @@ These feature sketches document expected use, **not executable feature implement
 
 ## Development status
 
-Stage 0 design is approved and Stage 1 foundational code is under CI/review. Implementation proceeds through independently reviewable stages in [ROADMAP.md](ROADMAP.md). No feature API shown here should be treated as production-ready until its implementation stage passes its gate.
+Stages 0–2 are complete. Stage 3 core and profile-detail logic has passed local automated checks and awaits GitHub CI/review. PostgreSQL persistence, transaction-level audit, RLS and external identity linking are future stages; the current in-memory fakes are only for tests. See [ROADMAP.md](ROADMAP.md) for stage gates and current status.

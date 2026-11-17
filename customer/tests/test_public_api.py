@@ -11,6 +11,22 @@ def test_core_import_has_no_optional_framework_dependencies() -> None:
 
 def test_public_exports_are_controlled() -> None:
     assert set(customer.__all__) == {
+        "AddAddressCommand",
+        "AddContactCommand",
+        "AddNoteCommand",
+        "AddressResult",
+        "ContactKind",
+        "ContactMutationCommand",
+        "ContactResult",
+        "CustomerChildMutation",
+        "CustomerDetailsQuery",
+        "ListContactsQuery",
+        "NoteResult",
+        "PreferenceResult",
+        "RemovePreferenceCommand",
+        "SetPreferenceCommand",
+        "UpdateAddressCommand",
+        "UpdateContactCommand",
         "CustomerActor",
         "CustomerActorType",
         "CustomerAuthorizer",

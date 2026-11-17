@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–1 complete; Stage 2 implemented and verified locally and in GitHub CI, pending PR #161 review/merge.** Stage 3 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–2 complete. Stage 3 implemented and verified locally and in GitHub CI, pending PR #162 review/merge.** Stage 4 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -88,6 +88,8 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 3 — Customer-owned profile details
 
+**Progress:** Contact, address, preference and note use cases implemented using business/customer-scoped repository contracts, host-authorized access, explicit validators, immutable result projections and mirrored fake-based tests. Ruff, formatting, strict Pyright, 39 pytest tests (98.45% measured coverage) and package build passed locally; GitHub Actions Customer CI run #44142771589 succeeded. PR #162 awaits review/merge. Database uniqueness, rollback and race guarantees will be verified in Stages 5 and 8.
+
 ### Work
 
 1. Implement `CustomerContact` for normalized phone/email, primary selection and verified metadata that can only originate from trusted verification.
@@ -99,10 +101,10 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Multiple contact values/addresses and single primary/default policies behave correctly.
-- [ ] Unverified contact similarity cannot create a trusted identity link.
-- [ ] Internal notes require explicit permission and never leak through basic projections.
-- [ ] Per-business access and child ownership violations fail with typed errors.
+- [x] Multiple contact values/addresses and single primary/default policies behave correctly with fake repositories.
+- [x] Contact values are unverified by default and cannot create an identity link; Stage 4 owns linking.
+- [x] Internal notes require independent permissions and are absent from basic customer projections.
+- [x] Business scope and child ownership violations produce typed errors in application tests.
 
 ## Stage 4 — Internal and provider identities
 
