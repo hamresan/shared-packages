@@ -369,6 +369,64 @@ accepted their invitation. The prior Owner becomes a Manager, and a database
 constraint prevents two simultaneously active Owners. Ordinary role changes
 cannot create or demote an Owner.
 
+### Check business roles and branch access from other packages
+
+`BusinessApplicationFactory.authorization()` returns a read-only service that
+implements the public `BusinessAuthorizationReader` contract. Other packages
+can depend on this contract instead of querying Business tables directly.
+The host creates and injects the implementation using the same unit-of-work
+configuration shown above:
+
+```python
+from business.application import BusinessAuthorizationReader
+from business.domain import MembershipRole
+
+
+async def can_manage_appointments(
+    authorization: BusinessAuthorizationReader,
+    business_id,
+    branch_id,
+    trusted_user_id,
+) -> bool:
+    is_manager = await authorization.has_role(
+        business_id,
+        trusted_user_id,
+        frozenset({MembershipRole.OWNER, MembershipRole.MANAGER}),
+    )
+    return is_manager and await authorization.can_access_branch(
+        business_id, branch_id, trusted_user_id
+    )
+
+
+# Host composition root:
+# authorization: BusinessAuthorizationReader = services.authorization()
+```
+
+The three methods are:
+
+| Query | Return | Meaning |
+| --- | --- | --- |
+| `get_membership(business_id, user_id)` | `MembershipAuthorizationInfo \| None` | Immutable summary with `business_id`, `user_id`, `role`, `status` and `branch_access_scope`; current active or invited membership only |
+| `has_role(business_id, user_id, allowed_roles)` | `bool` | `True` only for an active membership matching one of the supplied roles |
+| `can_access_branch(business_id, branch_id, user_id)` | `bool` | `True` only for an active member authorized for a branch of that same business |
+
+`allowed_roles` is a `frozenset[MembershipRole]`; an empty set denies access.
+Invited, revoked, missing and cross-business memberships never grant role or
+branch access. Revoked historical memberships are not returned by
+`get_membership` because its repository resolves only current memberships.
+Owners/Managers have access to all branches, Members may have `ALL` or
+`SELECTED` scope, and an empty selected scope denies access to every branch.
+The service checks that the referenced branch exists in the given business.
+As with the existing Business read API, archived businesses and branches
+remain readable; this **does not** authorize mutations to archived resources.
+
+These are organization-level facts, **not** a general action-permission
+system. A consuming package must decide which role can perform each of its
+own operations and enforce additional business rules. The host must derive
+`trusted_user_id` and selected tenant scope from authenticated/authorized
+context; neither value should be trusted merely because a client submitted
+it. No JWT, Identity adapter or new database table is required.
+
 ### Add the FastAPI routes
 
 The optional adapter mounts the REST routes onto an existing host application.

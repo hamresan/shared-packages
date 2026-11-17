@@ -1,4 +1,6 @@
 from business.application import BranchUseCases, BusinessUseCases, MembershipUseCases
+from business.application.authorization import BusinessAuthorizationService
+from business.application.authorization.mapper import MembershipAuthorizationMapper
 from business.application.branch_access import BranchBusinessAccess, BranchScopePolicy
 from business.application.branch_validators import (
     BranchAddressValidator,
@@ -132,4 +134,12 @@ class BusinessApplicationFactory:
             revoke=RevokeMembershipService(self._uow, access, self._clock, auditor),
             set_access=SetMemberBranchAccessService(self._uow, access, self._clock, auditor),
             transfer=TransferOwnershipService(self._uow, access, self._clock, auditor),
+        )
+
+    def authorization(self) -> BusinessAuthorizationService:
+        return BusinessAuthorizationService(
+            self._uow,
+            BusinessAccessPolicy(),
+            MembershipBranchVisibility(),
+            MembershipAuthorizationMapper(),
         )

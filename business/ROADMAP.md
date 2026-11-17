@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stages 1–7 have been merged. Stage 8 is planned to expose read-only organization authorization to consuming packages. Distribution publication and GitHub CI verification remain separate release gates.
+> **Status:** Stages 1–7 have been merged. Stage 8 read-only organization authorization is implemented on a feature branch pending review. Distribution publication and GitHub CI verification remain separate release gates.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -199,17 +199,17 @@ repositories, repeat role checks, or query Business-owned tables directly.
 
 ### Gate
 
-- [ ] An authenticated consumer can read its actor's role and check allowed
+- [x] An authenticated consumer can read its actor's role and check allowed
       roles and branch visibility through one public, stable API.
-- [ ] Invited/revoked/missing memberships never pass role or branch checks;
+- [x] Invited/revoked/missing memberships never pass role or branch checks;
       foreign-business branch IDs and empty selected scopes are denied.
-- [ ] Branchless businesses, active and archived branches, and archived
+- [x] Branchless businesses, active and archived branches, and archived
       businesses have explicitly tested authorization semantics consistent
       with the existing Business read policies.
-- [ ] Unit tests cover the role/scope matrix; SQLAlchemy integration tests
+- [x] Unit tests cover the role/scope matrix; SQLAlchemy integration tests
       exercise real persistence and tenant isolation. Tests mirror the package
       structure and use independent fakes or factories where appropriate.
-- [ ] Ruff, strict Pyright, coverage, build and existing Business tests pass;
+- [x] Ruff, strict Pyright, coverage, build and existing Business tests pass;
       no application or domain dependency on FastAPI/Identity is introduced.
 
 ## Deliberately deferred
