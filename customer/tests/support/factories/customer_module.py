@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 from customer import CustomerActor, CustomerActorType, CustomerModule, CustomerModuleConfig
 from tests.support.fakes.authorization import AllowCustomerAuthorizer
 from tests.support.fakes.clock import FixedClock
+from tests.support.fakes.external_evidence import FakeExternalEvidenceVerifier
 from tests.support.fakes.fingerprinter import FakeCustomerCreationFingerprinter
 from tests.support.fakes.identifiers import RandomIdentifierGenerator
 from tests.support.fakes.identity_verification import AcceptIdentityVerifier
@@ -20,6 +21,7 @@ def build_customer_module() -> tuple[CustomerModule, FakeCustomerUnitOfWorkFacto
                 FixedClock(),
                 RandomIdentifierGenerator(),
                 FakeCustomerCreationFingerprinter(),
+                FakeExternalEvidenceVerifier(),
             )
         ),
         uow,
