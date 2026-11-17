@@ -31,3 +31,11 @@ class CustomerErasedError(CustomerInvalidStateError):
 
 class CustomerIdempotencyConflictError(CustomerError):
     """Same idempotency key was used for materially different creation inputs."""
+
+
+class CustomerIdentityConflictError(CustomerError):
+    """A verified identity is already actively linked to another customer."""
+
+
+class CustomerIdentityVerificationError(CustomerError):
+    """The host did not provide acceptable identity verification evidence."""
