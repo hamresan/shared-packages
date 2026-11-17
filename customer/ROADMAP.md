@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stage 0 approved. Stage 1 foundation implemented locally and awaiting GitHub CI/review.** No Stage 2 domain behavior has been implemented. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status: Stages 0–1 complete; Stage 2 implemented and verified locally and in GitHub CI, pending PR #161 review/merge.** Stage 3 has not begun. Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -49,7 +49,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 1 — Installable package foundation
 
-**Progress:** Foundation coded and verified locally with Python 3.12 (Ruff, format, strict Pyright, six pytest tests at 100% measured coverage, wheel/sdist build and clean core-only wheel install). GitHub Actions result and stage review are pending. Domain use cases and persistence remain future work.
+**Progress:** Complete; Python 3.12, Ruff, format, strict Pyright, six foundation pytest tests, wheel/sdist build and clean core-only install verified locally. PR #160 merged; GitHub Actions run #44124900711 succeeded. Stage 2 adds domain use cases; persistence remains future work.
 
 ### Work
 
@@ -62,10 +62,12 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 ### Gate
 
 - [x] Wheel/sdist build; wheel installs and imports in a fresh local environment.
-- [ ] Ruff, format, strict Pyright, unit test and build **GitHub CI** jobs pass (local checks passed).
+- [x] Ruff, format, strict Pyright, unit test and build **GitHub CI** jobs pass.
 - [x] Optional dependencies are not loaded by core-only import.
 
 ## Stage 2 — Customer aggregate, lifecycle and search
+
+**Progress:** Implemented locally with explicit domain, application and repository contracts, dependency-injected use cases, mirrored tests and in-memory fakes. Python 3.12 checks, 24 tests and 100% measured branch coverage passed; GitHub Actions Customer CI run #44138834947 succeeded. PR #161 awaits review/merge; real database atomicity, contact search and uniqueness remain in later stages.
 
 ### Work
 
@@ -79,10 +81,10 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ### Gate
 
-- [ ] Guest customer creation and tenant-scoped retrieval work with fake contracts.
-- [ ] Archive/reactivate state transitions and erased-customer rejection are deterministic.
-- [ ] Stale version, missing permission, other-business ID and ambiguous duplicate cases are covered.
-- [ ] Same-key retry is semantically stable; conflicting payloads fail in use-case tests.
+- [x] Guest customer creation and tenant-scoped retrieval work with fake contracts.
+- [x] Archive/reactivate state transitions and erased-customer rejection are deterministic.
+- [x] Stale version, missing permission and other-business ID are covered. Similar-contact duplicate suggestions await Stage 3.
+- [x] Same-key retry is semantically stable; conflicting payloads fail in use-case tests. Atomic concurrent-key enforcement awaits Stage 5/8.
 
 ## Stage 3 — Customer-owned profile details
 
