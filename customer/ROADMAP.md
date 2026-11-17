@@ -229,14 +229,17 @@ build and isolated wheel installation checks.
 
 ## Stage 9 — Packaging and release readiness
 
-**Progress:** Packaging and operational review implemented. Wheel/sdist resource
+**Progress:** Technical release readiness complete and CI-verified in PR #168.
+Wheel/sdist resource
 checks, host-injected executable examples, optional-extra and clean-environment
 installation checks have been added to CI. Public exports and versioning rules
 are documented in [Operations and release](docs/OPERATIONS_AND_RELEASE.md), and
 unpublished changes in [Changelog](CHANGELOG.md). The runtime Wheel remains
 minimal, while source distributions contain documentation and examples.
 Publication remains **out of scope** without an explicit decision and a chosen
-license. Final CI acceptance is pending.
+license. GitHub Actions Customer CI run #44180412239 passed Ruff, strict Pyright,
+PostgreSQL acceptance, coverage, build, clean Wheel, optional extras and clean
+source-distribution installation.
 
 ### Work
 
@@ -248,9 +251,13 @@ license. Final CI acceptance is pending.
 
 ### Gate
 
-- [ ] Installation, import, documented examples and distribution contents pass in clean environments.
-- [ ] Public API compatibility, security threat model and operational setup are reviewed.
-- [ ] All prior stage gates are satisfied; no known cross-tenant or audit atomicity failures remain.
+- [x] Installation, import, documented examples and distribution contents pass in clean environments.
+- [x] Public API compatibility, security threat model and operational setup are reviewed.
+- [x] All prior stage gates are satisfied; no known cross-tenant or audit atomicity failures remain.
+
+**Publication decisions intentionally deferred:** license selection, final version
+tagging and package-index release authorization. These do not block internal
+installation from source or Wheel but must be resolved before public publishing.
 
 ## Explicitly deferred
 

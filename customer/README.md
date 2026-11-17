@@ -2,7 +2,7 @@
 
 Reusable, business-scoped customer profiles and external-identity links for Python applications.
 
-> **Status: Stages 0–8 implemented, CI-verified and merged. Stage 9 packaging and release readiness is under verification. No package-index release has been published.** See [ROADMAP.md](ROADMAP.md) for stage gates.
+> **Status: Stages 0–8 implemented, CI-verified and merged. Stage 9 technical release-readiness checks passed CI in PR #168. No package-index release has been published; license and publication decisions are pending.** See [ROADMAP.md](ROADMAP.md) for stage gates.
 
 Design references: [architecture and data ownership](docs/ARCHITECTURE.md), [public contract draft](docs/PUBLIC_CONTRACTS.md), and [security and acceptance scenarios](docs/SECURITY_AND_ACCEPTANCE.md).
 Privacy details: [transactional audit and erasure](docs/AUDIT_AND_ERASURE.md).
