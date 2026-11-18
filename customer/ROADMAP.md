@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status (2026-11-18): Stages 0–9 implemented and merged (PRs #160–#169); all existing Customer CI gates pass. One follow-up acceptance gap remains open: concurrent service-level `get_or_create_by_external_identity` must recover the existing customer after a uniqueness race. Do not declare the roadmap fully closed until its PostgreSQL test passes.** Package-index publication and licensing are separately deferred. Favor lean, responsibility-based design over speculative frameworks.
+> **Status (2026-11-18): Implementation roadmap complete.** Stages 0–9 were implemented and merged (PRs #160–#169); the final concurrent external-identity acceptance follow-up was verified and merged in PR #171 with PostgreSQL CI run #44256224422 passing. Package-index publication and licensing are separately deferred. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -261,8 +261,13 @@ installation from source or Wheel but must be resolved before public publishing.
 
 ## Outstanding acceptance follow-up — Concurrent external-identity resolution
 
-**Status:** Open; required to close the implementation roadmap. This is a focused
-Stage 4/8 hardening task, not a new feature or a reason to reopen completed stages.
+**Status:** Complete. The focused Stage 4/8 hardening change was merged in
+[PR #171](https://github.com/hamresan/shared-packages/pull/171).
+PostgreSQL-backed Customer CI
+[run #44256224422](https://github.com/hamresan/shared-packages/actions/runs/44256224422)
+passed lint, strict typing, integration tests, coverage, build and isolated
+installation checks. This closes the implementation roadmap's remaining
+acceptance follow-up; package-index publication is still a separate decision.
 
 When two authorized requests call `get_or_create_by_external_identity` concurrently
 for the same business/provider/channel account/external ID, PostgreSQL correctly
@@ -289,11 +294,13 @@ customer. Revoked identities still require explicit, freshly verified relinking.
 
 ### Gate
 
-- [ ] Concurrent identical service requests both return the same customer.
-- [ ] Exactly one customer and one active provider mapping remain persisted.
-- [ ] Tenant/account boundaries and explicit revoked-link behavior are unchanged.
-- [ ] Unrelated database errors are not disguised as successful retries.
-- [ ] PostgreSQL-backed CI passes; merge and commit/run references are recorded.
+- [x] Concurrent identical service requests both return the same customer.
+- [x] Exactly one customer and one active provider mapping remain persisted.
+- [x] Tenant/account boundaries and explicit revoked-link behavior are unchanged.
+- [x] Unrelated database errors are not disguised as successful retries (only the exact
+  PostgreSQL active-identity unique-index violation is translated).
+- [x] PostgreSQL-backed CI passes; PR #171, merge commit
+  `b8406719e6f4338532553f8075e246906362e300` and run #44256224422 recorded.
 
 ## Explicitly deferred
 
