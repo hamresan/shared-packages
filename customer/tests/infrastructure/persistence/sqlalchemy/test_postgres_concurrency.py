@@ -16,8 +16,12 @@ from customer import (
     CustomerModule,
     CustomerModuleConfig,
     CustomerVersionConflictError,
+    ExternalIdentityKey,
+    GetOrCreateExternalIdentityCommand,
+    RevokeExternalIdentityCommand,
 )
 from customer.application.contracts import CustomerCreationReceipt
+from customer.domain.errors import CustomerIdentityConflictError
 from customer.infrastructure.persistence.sqlalchemy.models import (
     CustomerAddressModel,
     CustomerAuditModel,
@@ -49,6 +53,61 @@ def create_module(sessions: async_sessionmaker[AsyncSession]) -> CustomerModule:
             external_evidence_verifier=FakeExternalEvidenceVerifier(),
         )
     )
+
+
+async def test_concurrent_get_or_create_resolves_one_customer_and_one_identity(
+    postgres_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    verifier = FakeExternalEvidenceVerifier()
+    module = CustomerModule(
+        CustomerModuleConfig(
+            unit_of_work_factory=SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions),
+            authorizer=AllowCustomerAuthorizer(),
+            identity_verifier=AcceptIdentityVerifier(),
+            clock=FixedClock(),
+            identifiers=RandomIdentifierGenerator(),
+            creation_fingerprinter=FakeCustomerCreationFingerprinter(),
+            external_evidence_verifier=verifier,
+        )
+    )
+    actor = build_actor(uuid4())
+    key = ExternalIdentityKey(actor.business_id, "telegram", "bot-1", "sender-1")
+    verifier.register("verified", key)
+    command = GetOrCreateExternalIdentityCommand(actor, key, "verified", "Guest")
+
+    results = await asyncio.gather(
+        module.external_identities.get_or_create.execute(command),
+        module.external_identities.get_or_create.execute(command),
+    )
+    assert results[0].customer_id == results[1].customer_id
+
+    factory = SqlAlchemyCustomerUnitOfWorkFactory(postgres_sessions)
+    async with factory(actor.business_id) as uow:
+        assert len(await uow.customers.search(actor.business_id, None, 0, 10)) == 1
+        active = await uow.external_identities.find_active(key)
+        assert active is not None and active.customer_id == results[0].customer_id
+
+    other_account = ExternalIdentityKey(actor.business_id, "telegram", "bot-2", "sender-1")
+    other_business = build_actor(uuid4())
+    other_key = ExternalIdentityKey(other_business.business_id, "telegram", "bot-1", "sender-1")
+    verifier.register("account", other_account)
+    verifier.register("business", other_key)
+    account_result, business_result = await asyncio.gather(
+        module.external_identities.get_or_create.execute(
+            GetOrCreateExternalIdentityCommand(actor, other_account, "account", "Guest")
+        ),
+        module.external_identities.get_or_create.execute(
+            GetOrCreateExternalIdentityCommand(other_business, other_key, "business", "Guest")
+        ),
+    )
+    distinct = {results[0].customer_id, account_result.customer_id, business_result.customer_id}
+    assert len(distinct) == 3
+
+    await module.external_identities.revoke.execute(
+        RevokeExternalIdentityCommand(actor, key, results[0].customer_id)
+    )
+    with pytest.raises(CustomerIdentityConflictError, match="Revoked identity"):
+        await module.external_identities.get_or_create.execute(command)
 
 
 async def test_guest_creation_retry_conflict_scope_and_expiry(

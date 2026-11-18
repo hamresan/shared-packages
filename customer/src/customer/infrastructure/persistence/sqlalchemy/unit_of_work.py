@@ -4,11 +4,13 @@ from contextlib import AbstractAsyncContextManager
 from types import TracebackType
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from customer.application.actor import CustomerActor
 from customer.application.contracts import CustomerUnitOfWork, CustomerUnitOfWorkFactory
 from customer.application.contracts.audit_repository import CustomerAuditEvent
+from customer.domain.errors import CustomerExternalIdentityRaceError
 from customer.infrastructure.persistence.sqlalchemy.repositories.address import (
     SqlAlchemyAddressRepository,
 )
@@ -135,7 +137,23 @@ class SqlAlchemyCustomerUnitOfWork(
         if self.session is None:
             raise RuntimeError("Unit of Work has not entered a transaction")
         # Flush pending parent rows before the audit FK is checked; still one transaction.
-        await self.session.flush()
+        try:
+            await self.session.flush()
+        except IntegrityError as exc:
+            diagnostic = getattr(exc.orig, "diag", None)
+            constraint = getattr(diagnostic, "constraint_name", None) or getattr(
+                exc.orig, "constraint_name", None
+            )
+            if constraint is None and '"uq_customer_external_identity_active_key"' in str(exc.orig):
+                constraint = "uq_customer_external_identity_active_key"
+            if (
+                getattr(exc.orig, "sqlstate", None) == "23505"
+                and constraint == "uq_customer_external_identity_active_key"
+            ):
+                raise CustomerExternalIdentityRaceError(
+                    "Concurrent external identity creation"
+                ) from exc
+            raise
         await self.audit.add(
             CustomerAuditEvent(
                 business_id=self.business_id,
