@@ -1,6 +1,6 @@
 # hamresan-customer — staged implementation roadmap
 
-> **Status: Stages 0–5 complete and merged. Stage 6 is implemented and PostgreSQL CI-verified in PR #165, awaiting review/merge.** Each stage has a review gate; do not advance before its code, tests and dependency boundaries pass. Favor lean, responsibility-based design over speculative frameworks.
+> **Status (2026-11-18): Stages 0–9 implemented and merged (PRs #160–#169); all existing Customer CI gates pass. One follow-up acceptance gap remains open: concurrent service-level `get_or_create_by_external_identity` must recover the existing customer after a uniqueness race. Do not declare the roadmap fully closed until its PostgreSQL test passes.** Package-index publication and licensing are separately deferred. Favor lean, responsibility-based design over speculative frameworks.
 
 ## Stage overview
 
@@ -67,7 +67,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 2 — Customer aggregate, lifecycle and search
 
-**Progress:** Implemented locally with explicit domain, application and repository contracts, dependency-injected use cases, mirrored tests and in-memory fakes. Python 3.12 checks, 24 tests and 100% measured branch coverage passed; GitHub Actions Customer CI run #44138834947 succeeded. PR #161 awaits review/merge; real database atomicity, contact search and uniqueness remain in later stages.
+**Progress:** Complete and merged via PR #161. The initial fake-based use cases were extended by the real persistence, concurrency and acceptance work in Stages 5–8.
 
 ### Work
 
@@ -108,7 +108,7 @@ The stages describe delivery order, not forced one-file-per-concept scaffolding.
 
 ## Stage 4 — Internal and provider identities
 
-**Progress:** Implemented with host-injected trusted verification interfaces, internal and external link repositories, exact namespace lookup, explicit get-or-create, revoke/relink, verification provenance and minimal immutable resolution DTOs. Fake-based security tests cover business boundaries, namespace boundaries, invalid/mismatched evidence, retries, active-link uniqueness and revocation. Local Ruff, strict Pyright, 56 pytest tests (97.98% coverage) and build passed; GitHub Actions Customer CI run #44146469993 succeeded. PR #163 awaits review/merge. Concurrent database uniqueness and transaction recovery await Stage 5/8.
+**Progress:** Implemented and merged via PR #163, with PostgreSQL uniqueness constraints and related acceptance tests added in Stages 5–8. A remaining service-level recovery gap for concurrent external-identity get-or-create is tracked below; database uniqueness alone is not sufficient for the required replay result.
 
 ### Work
 
@@ -229,7 +229,7 @@ build and isolated wheel installation checks.
 
 ## Stage 9 — Packaging and release readiness
 
-**Progress:** Technical release readiness complete and CI-verified in PR #168.
+**Progress:** Technical release readiness complete and merged via PR #168; a subsequent Clean Code refactor was merged via PR #169 with successful CI.
 Wheel/sdist resource
 checks, host-injected executable examples, optional-extra and clean-environment
 installation checks have been added to CI. Public exports and versioning rules
@@ -258,6 +258,42 @@ source-distribution installation.
 **Publication decisions intentionally deferred:** license selection, final version
 tagging and package-index release authorization. These do not block internal
 installation from source or Wheel but must be resolved before public publishing.
+
+## Outstanding acceptance follow-up — Concurrent external-identity resolution
+
+**Status:** Open; required to close the implementation roadmap. This is a focused
+Stage 4/8 hardening task, not a new feature or a reason to reopen completed stages.
+
+When two authorized requests call `get_or_create_by_external_identity` concurrently
+for the same business/provider/channel account/external ID, PostgreSQL correctly
+prevents duplicate active links. The application must also recover the winning
+customer after a unique-constraint race instead of returning a raw persistence
+error. This must not swallow unrelated constraint violations or create a second
+customer. Revoked identities still require explicit, freshly verified relinking.
+
+### Work
+
+1. Add a real PostgreSQL test that races two **application-service** get-or-create
+   requests (not only direct model inserts) with identical trusted evidence and
+   asserts both resolve to one customer and one active external identity.
+2. Implement bounded, transaction-safe race recovery by re-reading the exact
+   trusted business/provider/account/external-ID key in a fresh transaction
+   after the losing transaction rolls back. Keep the existing authorization,
+   verification, tenant scope and revoked-link rules intact.
+3. Test divergent business/account scopes, revoked identities, non-uniqueness
+   database failures and failed transactions; ensure the recovery path never
+   returns a customer from another namespace.
+4. Run Ruff, format, strict Pyright, full pytest with real PostgreSQL/RLS,
+   coverage, wheel/sdist and isolated installation in GitHub CI. Mark this
+   section complete only after the PR is merged and CI succeeds.
+
+### Gate
+
+- [ ] Concurrent identical service requests both return the same customer.
+- [ ] Exactly one customer and one active provider mapping remain persisted.
+- [ ] Tenant/account boundaries and explicit revoked-link behavior are unchanged.
+- [ ] Unrelated database errors are not disguised as successful retries.
+- [ ] PostgreSQL-backed CI passes; merge and commit/run references are recorded.
 
 ## Explicitly deferred
 
