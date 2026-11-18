@@ -37,5 +37,9 @@ class CustomerIdentityConflictError(CustomerError):
     """A verified identity is already actively linked to another customer."""
 
 
+class CustomerExternalIdentityRaceError(CustomerIdentityConflictError):
+    """Concurrent insertion won the same active external identity namespace."""
+
+
 class CustomerIdentityVerificationError(CustomerError):
     """The host did not provide acceptable identity verification evidence."""
