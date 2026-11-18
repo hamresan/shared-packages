@@ -1,4 +1,9 @@
 from business.application.actor import AuthenticatedActor
+from business.application.authorization import (
+    BusinessAuthorizationReader,
+    BusinessAuthorizationService,
+    MembershipAuthorizationInfo,
+)
 from business.application.branch_access import BranchBusinessAccess, BranchScopePolicy
 from business.application.branch_validators import (
     BranchAddressValidator,
@@ -86,6 +91,8 @@ __all__ = [
     "BranchScopePolicy",
     "BranchUseCases",
     "BusinessAccessPolicy",
+    "BusinessAuthorizationReader",
+    "BusinessAuthorizationService",
     "BusinessFactory",
     "BusinessMembershipRepository",
     "BusinessProfileValidator",
@@ -111,6 +118,7 @@ __all__ = [
     "ListBranchesService",
     "ListMembershipsService",
     "MembershipAuditRepository",
+    "MembershipAuthorizationInfo",
     "MembershipAuditor",
     "MembershipBranchAccessRepository",
     "MembershipBranchVisibility",

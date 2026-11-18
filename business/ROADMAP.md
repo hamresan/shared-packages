@@ -1,6 +1,6 @@
 # hamresan-business — staged implementation roadmap
 
-> **Status:** Stages 1–6 are merged. Stage 7 hardening is underway on a separate branch. A developer reported that the PostgreSQL concurrent ownership-transfer test passed against a live database (1 passed in 0.33s); GitHub CI remains unverified.
+> **Status:** Stages 1–7 have been merged. Stage 8 read-only organization authorization is implemented on a feature branch pending review. Distribution publication and GitHub CI verification remain separate release gates.
 >
 > **Goal:** A generic, reusable Python package for business and branch organization, with multi-business ownership, independent of any specific consuming application.
 
@@ -18,6 +18,7 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 | **5** | Async persistence and migrations | Host-composed SQLAlchemy and Alembic integration |
 | **6** | FastAPI and Identity/Notification composition | Secure OTP-authenticated consumer example |
 | **7** | Integration hardening and packaging | Verified public contracts and release-ready distribution |
+| **8** | Shared organization authorization queries | Other packages can safely check business role and branch access without reading Business tables directly |
 
 ## Stage 0 — Domain boundaries and reuse assessment
 
@@ -159,6 +160,57 @@ Each stage ends with focused tests and a review gate. Do not advance to the next
 - [x] Execute PostgreSQL ownership-transfer concurrency test against a live server (developer-reported result: 1 passed in 0.33s after updating the expected permission-denial error).
 - [ ] Observe the same PostgreSQL test passing in GitHub Actions; no run has yet been verified.
 - [ ] Verify the full release gate in CI before tagging or publishing a distribution.
+
+## Stage 8 — Read-only authorization API for consuming packages
+
+### Goal
+
+Expose existing Business membership and branch-access rules through a small,
+framework-independent public application contract. Consumers such as appointment
+booking, catalog and scheduling should not import Business's concrete SQLAlchemy
+repositories, repeat role checks, or query Business-owned tables directly.
+
+### Work
+
+1. Define a narrow `BusinessAuthorizationService` backed by the existing
+   `BusinessUnitOfWorkFactory`, membership repositories and domain policies.
+   Keep the service read-only, async and independent of FastAPI, JWT and Identity.
+2. Provide three focused queries:
+   - `get_membership(business_id, user_id)`: return a minimal, typed, immutable
+     membership summary (role, status and branch-access scope) or `None` when
+     unavailable; do not expose mutable domain entities or audit records.
+   - `has_role(business_id, user_id, allowed_roles)`: return a boolean for an
+     **active** membership whose role is in the requested set.
+   - `can_access_branch(business_id, branch_id, user_id)`: return a boolean only
+     when the active membership has access to a branch belonging to that same
+     business. Owner/Manager and `ALL` scope grant visibility; `SELECTED` scope
+     requires an explicit association, and an empty selection grants nothing.
+3. Document that `user_id` and business scope must be provided by trusted host
+   authentication/tenant context. The read-only service does not authenticate
+   identities or authorize arbitrary application-specific actions. Consumers
+   decide whether a role is sufficient for operations such as booking changes,
+   product editing and cancellation.
+4. Reuse the current repository and authorization contracts, with explicit
+   dependency injection and controlled public exports. Do not introduce a
+   general permission registry, policy DSL, token format or cross-package
+   database foreign keys.
+5. Document direct Python usage and, only if needed by an actual consumer,
+   provide a thin optional HTTP adapter without changing the core contract.
+
+### Gate
+
+- [x] An authenticated consumer can read its actor's role and check allowed
+      roles and branch visibility through one public, stable API.
+- [x] Invited/revoked/missing memberships never pass role or branch checks;
+      foreign-business branch IDs and empty selected scopes are denied.
+- [x] Branchless businesses, active and archived branches, and archived
+      businesses have explicitly tested authorization semantics consistent
+      with the existing Business read policies.
+- [x] Unit tests cover the role/scope matrix; SQLAlchemy integration tests
+      exercise real persistence and tenant isolation. Tests mirror the package
+      structure and use independent fakes or factories where appropriate.
+- [x] Ruff, strict Pyright, coverage, build and existing Business tests pass;
+      no application or domain dependency on FastAPI/Identity is introduced.
 
 ## Deliberately deferred
 

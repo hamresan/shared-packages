@@ -1,3 +1,5 @@
+from business.application.authorization import BusinessAuthorizationService
+from business.application.authorization.mapper import MembershipAuthorizationMapper
 from business.application.branch_access import BranchBusinessAccess, BranchScopePolicy
 from business.application.branch_validators import (
     BranchAddressValidator,
@@ -153,6 +155,12 @@ def build_list_branch_service(
 
 def build_membership_access() -> MembershipManagementAccess:
     return MembershipManagementAccess(BusinessAccessPolicy())
+
+
+def build_authorization_service(uow: BusinessUnitOfWorkFactory) -> BusinessAuthorizationService:
+    return BusinessAuthorizationService(
+        uow, BusinessAccessPolicy(), MembershipBranchVisibility(), MembershipAuthorizationMapper()
+    )
 
 
 def build_invite_member_service(
